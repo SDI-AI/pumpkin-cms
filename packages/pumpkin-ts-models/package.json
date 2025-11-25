@@ -1,0 +1,36 @@
+{
+  "name": "pumpkin-ts-models",
+  "version": "1.0.0",
+  "description": "TypeScript models and utilities for Pumpkin CMS",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rimraf dist",
+    "test": "jest",
+    "lint": "eslint src/**/*.ts"
+  },
+  "keywords": [
+    "pumpkin-cms",
+    "typescript",
+    "models",
+    "html-blocks",
+    "cms"
+  ],
+  "author": "Pumpkin CMS Team",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.19.25",
+    "rimraf": "^5.0.10",
+    "typescript": "^5.9.3"
+  },
+  "files": [
+    "dist/**/*",
+    "README.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pumpkin-cms/pumpkin"
+  }
+}
