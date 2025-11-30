@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("pumpkin-api")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c76cb48f0e4f5d353d9f78c51f8c6adefa2b8ef1")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f41c4796f64478e711cdbd806a3d8ee305134454")]
 [assembly: System.Reflection.AssemblyProductAttribute("pumpkin-api")]
 [assembly: System.Reflection.AssemblyTitleAttribute("pumpkin-api")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
