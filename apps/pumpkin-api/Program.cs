@@ -38,7 +38,7 @@ app.MapGet("/api/pages/{tenantId}/{pageSlug}",
 
 // Save a new page
 app.MapPost("/api/pages/{tenantId}",
-    (ICosmosDbFacade cosmosDb, string tenantId, Page page, HttpContext context) =>
+    (ICosmosDbFacade cosmosDb, string tenantId, pumpkin_net_models.Models.Page page, HttpContext context) =>
     {
         // Extract API key from Authorization header (Bearer token format)
         var authHeader = context.Request.Headers.Authorization.FirstOrDefault();
@@ -57,7 +57,7 @@ app.MapPost("/api/pages/{tenantId}",
 
 // Update an existing page
 app.MapPut("/api/pages/{tenantId}/{pageId}",
-    (ICosmosDbFacade cosmosDb, string tenantId, string pageId, Page page, HttpContext context) =>
+    (ICosmosDbFacade cosmosDb, string tenantId, string pageId, pumpkin_net_models.Models.Page page, HttpContext context) =>
     {
         // Extract API key from Authorization header (Bearer token format)
         var authHeader = context.Request.Headers.Authorization.FirstOrDefault();

@@ -65,7 +65,7 @@ public static class PumpkinManager
             
             return Results.Created($"/api/pages/{tenantId}/{savedPage.PageId}", savedPage);
         }
-        catch (UnauthorizedAccessException ex)
+        catch (UnauthorizedAccessException)
         {
             return Results.Unauthorized();
         }
@@ -100,7 +100,7 @@ public static class PumpkinManager
             
             return Results.Ok(updatedPage);
         }
-        catch (UnauthorizedAccessException ex)
+        catch (UnauthorizedAccessException)
         {
             return Results.Unauthorized();
         }
