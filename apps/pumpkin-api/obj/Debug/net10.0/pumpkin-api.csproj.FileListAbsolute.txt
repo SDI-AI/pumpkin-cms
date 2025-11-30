@@ -7,8 +7,6 @@
 /Users/shawniuliucci/Documents/GitHub/pumpkin-cms/apps/pumpkin-api/bin/Debug/net10.0/appsettings.json
 /Users/shawniuliucci/Documents/GitHub/pumpkin-cms/apps/pumpkin-api/bin/Debug/net10.0/DataSample/html-blocks.json
 /Users/shawniuliucci/Documents/GitHub/pumpkin-cms/apps/pumpkin-api/bin/Debug/net10.0/DataSample/page.json
-/Users/shawniuliucci/Documents/GitHub/pumpkin-cms/apps/pumpkin-api/bin/Debug/net10.0/pumpkin-api.Tests/obj/project.assets.json
-/Users/shawniuliucci/Documents/GitHub/pumpkin-cms/apps/pumpkin-api/bin/Debug/net10.0/pumpkin-api.Tests/obj/pumpkin-api.Tests.csproj.nuget.dgspec.json
 /Users/shawniuliucci/Documents/GitHub/pumpkin-cms/apps/pumpkin-api/bin/Debug/net10.0/pumpkin-api.staticwebassets.endpoints.json
 /Users/shawniuliucci/Documents/GitHub/pumpkin-cms/apps/pumpkin-api/bin/Debug/net10.0/pumpkin-api
 /Users/shawniuliucci/Documents/GitHub/pumpkin-cms/apps/pumpkin-api/bin/Debug/net10.0/pumpkin-api.deps.json
@@ -67,15 +65,3 @@
 /Users/shawniuliucci/Documents/GitHub/pumpkin-cms/apps/pumpkin-api/obj/Debug/net10.0/pumpkin-api.pdb
 /Users/shawniuliucci/Documents/GitHub/pumpkin-cms/apps/pumpkin-api/obj/Debug/net10.0/pumpkin-api.genruntimeconfig.cache
 /Users/shawniuliucci/Documents/GitHub/pumpkin-cms/apps/pumpkin-api/obj/Debug/net10.0/ref/pumpkin-api.dll
-/Users/shawniuliucci/Documents/GitHub/pumpkin-cms/apps/pumpkin-api/bin/Debug/net10.0/pumpkin-api.Tests/bin/Debug/net10.0/appsettings.Development.json
-/Users/shawniuliucci/Documents/GitHub/pumpkin-cms/apps/pumpkin-api/bin/Debug/net10.0/pumpkin-api.Tests/bin/Debug/net10.0/appsettings.json
-/Users/shawniuliucci/Documents/GitHub/pumpkin-cms/apps/pumpkin-api/bin/Debug/net10.0/pumpkin-api.Tests/bin/Debug/net10.0/DataSample/html-blocks.json
-/Users/shawniuliucci/Documents/GitHub/pumpkin-cms/apps/pumpkin-api/bin/Debug/net10.0/pumpkin-api.Tests/bin/Debug/net10.0/DataSample/page.json
-/Users/shawniuliucci/Documents/GitHub/pumpkin-cms/apps/pumpkin-api/bin/Debug/net10.0/pumpkin-api.Tests/bin/Debug/net10.0/pumpkin-api.deps.json
-/Users/shawniuliucci/Documents/GitHub/pumpkin-cms/apps/pumpkin-api/bin/Debug/net10.0/pumpkin-api.Tests/bin/Debug/net10.0/pumpkin-api.runtimeconfig.json
-/Users/shawniuliucci/Documents/GitHub/pumpkin-cms/apps/pumpkin-api/bin/Debug/net10.0/pumpkin-api.Tests/bin/Debug/net10.0/pumpkin-api.staticwebassets.endpoints.json
-/Users/shawniuliucci/Documents/GitHub/pumpkin-cms/apps/pumpkin-api/bin/Debug/net10.0/pumpkin-api.Tests/bin/Debug/net10.0/pumpkin-api.Tests/obj/project.assets.json
-/Users/shawniuliucci/Documents/GitHub/pumpkin-cms/apps/pumpkin-api/bin/Debug/net10.0/pumpkin-api.Tests/bin/Debug/net10.0/pumpkin-api.Tests/obj/pumpkin-api.Tests.csproj.nuget.dgspec.json
-/Users/shawniuliucci/Documents/GitHub/pumpkin-cms/apps/pumpkin-api/bin/Debug/net10.0/pumpkin-api.Tests/bin/Debug/net10.0/PumpkinApiTestRunner.deps.json
-/Users/shawniuliucci/Documents/GitHub/pumpkin-cms/apps/pumpkin-api/bin/Debug/net10.0/pumpkin-api.Tests/bin/Debug/net10.0/PumpkinApiTestRunner.runtimeconfig.json
-/Users/shawniuliucci/Documents/GitHub/pumpkin-cms/apps/pumpkin-api/bin/Debug/net10.0/pumpkin-api.Tests/obj/Debug/net10.0/pumpkin-api.Tests.sourcelink.json
