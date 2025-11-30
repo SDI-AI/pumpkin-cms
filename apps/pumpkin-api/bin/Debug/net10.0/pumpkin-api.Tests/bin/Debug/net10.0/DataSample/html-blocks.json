@@ -1,0 +1,376 @@
+{
+    "ContentData": {
+        "ContentBlocks": [
+            {
+                "type": "Breadcrumbs",
+                "content": {
+                    "items": [
+                        {
+                            "label": "Home",
+                            "url": "/"
+                        },
+                        {
+                            "label": "New Jersey",
+                            "url": "/new-jersey"
+                        },
+                        {
+                            "label": "Princeton",
+                            "url": "/new-jersey/princeton"
+                        },
+                        {
+                            "label": "Pumpkin CMS",
+                            "url": "/new-jersey/princeton/pumpkin-cms",
+                            "current": true
+                        }
+                    ]
+                }
+            },
+            {
+                "type": "Hero",
+                "content": {
+                    "headline": "Pumpkin CMS – Princeton, NJ",
+                    "subheadline": "The open-source headless CMS trusted by Princeton agencies, startups, and enterprises. Fast, free, and fully developer-owned.",
+                    "backgroundImage": "hero-pumpkin-cms-princeton.jpg",
+                    "backgroundImageAltText": "Princeton University with Pumpkin CMS overlay",
+                    "mainImage": "pumpkin-cms-editor-princeton.png",
+                    "mainImageAltText": "Pumpkin CMS clean content editor",
+                    "buttonText": "Start Free →",
+                    "buttonLink": "https://github.com/pumpkin-cms/pumpkin"
+                }
+            },
+            {
+                "type": "HeroSecondary",
+                "content": {
+                    "headline": "Perfect for Princeton Agencies & Freelancers",
+                    "subheadline": "Deliver blazing-fast Next.js sites with zero vendor lock-in. Keep full control — and your clients happy.",
+                    "backgroundImage": "princeton-agency-pumpkin-bg.jpg",
+                    "backgroundImageAltText": "Princeton web agency using Pumpkin CMS",
+                    "mainImage": "pumpkin-cms-multi-device.png",
+                    "mainImageAltText": "Pumpkin CMS on desktop, tablet, and phone",
+                    "buttonText": "Agency Guide",
+                    "buttonLink": "/agency"
+                }
+            },
+            {
+                "type": "HeroTertiary",
+                "content": {
+                    "headline": "Enterprise-Ready for Princeton Organizations",
+                    "subheadline": "Multi-site, multi-language, SSO, role-based access — all in the free open-source core.",
+                    "backgroundImage": "princeton-enterprise-pumpkin-bg.jpg",
+                    "backgroundImageAltText": "Princeton enterprise team collaborating with Pumpkin CMS",
+                    "mainImage": "pumpkin-cms-enterprise-workflow.png",
+                    "mainImageAltText": "Pumpkin CMS enterprise dashboard",
+                    "buttonText": "Enterprise Features",
+                    "buttonLink": "/enterprise"
+                }
+            },
+            {
+                "type": "TrustBar",
+                "content": {
+                    "items": [
+                        {
+                            "icon": "github",
+                            "title": "100% Open Source",
+                            "text": "MIT licensed. No lock-in. You own everything.",
+                            "alt": "Pumpkin CMS GitHub"
+                        },
+                        {
+                            "icon": "zap",
+                            "title": "Blazing Fast",
+                            "text": "Princeton sites routinely hit 100 Lighthouse scores.",
+                            "alt": "Fast Pumpkin CMS"
+                        },
+                        {
+                            "icon": "git-branch",
+                            "title": "Git-Backed",
+                            "text": "Content as Markdown/MDX in your repo — full history & PRs.",
+                            "alt": "Git workflow Pumpkin CMS"
+                        },
+                        {
+                            "icon": "users",
+                            "title": "Princeton Community",
+                            "text": "Monthly meetups & active #princeton Slack channel.",
+                            "alt": "Princeton Pumpkin CMS community"
+                        }
+                    ]
+                }
+            },
+            {
+                "type": "PrimaryCTA",
+                "content": {
+                    "title": "Ready to Launch Your Princeton Site with Pumpkin CMS?",
+                    "description": "Go live in minutes. Used by Princeton startups, agencies, and universities.",
+                    "buttonText": "Get Started Free",
+                    "buttonLink": "https://pumpkincms.dev/docs",
+                    "secondaryText": "Need local help?",
+                    "secondaryLinkText": "Book a free consult",
+                    "secondaryLink": "https://cal.com/pumpkin-cms/princeton",
+                    "backgroundImage": "cta-pumpkin-princeton.jpg",
+                    "mainImage": "pumpkin-cms-dashboard-screenshot.png",
+                    "alt": "Start using Pumpkin CMS in Princeton"
+                }
+            },
+            {
+                "type": "CardGrid",
+                "content": {
+                    "title": "Why Princeton Loves Pumpkin CMS",
+                    "subtitle": "Modern, developer-first, and completely free.",
+                    "layout": "grid",
+                    "cards": [
+                        {
+                            "title": "Next.js App Router Ready",
+                            "description": "Built for modern React — full App Router & Edge support.",
+                            "image": "pumpkin-nextjs-card.jpg",
+                            "icon": "react",
+                            "link": "/docs/nextjs",
+                            "alt": "Pumpkin CMS with Next.js"
+                        },
+                        {
+                            "title": "Visual Editor for Teams",
+                            "description": "Non-technical editors love the clean block-based UI.",
+                            "image": "pumpkin-visual-editor.jpg",
+                            "icon": "edit",
+                            "link": "/features/editor",
+                            "alt": "Pumpkin CMS visual editor"
+                        },
+                        {
+                            "title": "Deploy Anywhere",
+                            "description": "Vercel, Netlify, Cloudflare, or your own server.",
+                            "image": "pumpkin-deploy-card.jpg",
+                            "icon": "cloud",
+                            "link": "/docs/deploy",
+                            "alt": "Deploy Pumpkin CMS anywhere"
+                        },
+                        {
+                            "title": "Image Optimization",
+                            "description": "Automatic AVIF/WebP, CDN delivery, lazy loading.",
+                            "image": "pumpkin-images-card.jpg",
+                            "icon": "image",
+                            "link": "/features/images",
+                            "alt": "Pumpkin CMS image optimization"
+                        }
+                    ]
+                }
+            },
+            {
+                "type": "HowItWorks",
+                "content": {
+                    "title": "Get Started in 3 Simple Steps",
+                    "steps": [
+                        {
+                            "title": "Step 1: Install",
+                            "text": "npx create-pumpkin-app@latest — takes under 60 seconds.",
+                            "image": "step1-install-pumpkin.jpg",
+                            "alt": "Install Pumpkin CMS"
+                        },
+                        {
+                            "title": "Step 2: Connect Your Repo",
+                            "text": "Push to GitHub — content lives as Markdown/MDX.",
+                            "image": "step2-git-pumpkin.jpg",
+                            "alt": "Connect Git repo to Pumpkin CMS"
+                        },
+                        {
+                            "title": "Step 3: Deploy",
+                            "text": "One-click deploy to Vercel, Netlify, or your server.",
+                            "image": "step3-deploy-pumpkin.jpg",
+                            "alt": "Deploy Pumpkin CMS site"
+                        }
+                    ]
+                }
+            },
+            {
+                "type": "ServiceAreaMap",
+                "content": {
+                    "title": "Princeton & Central NJ Coverage",
+                    "subtitle": "We’re active across the Princeton corridor and beyond.",
+                    "mapEmbedUrl": "https://maps.google.com/maps?q=Princeton,+NJ&output=embed",
+                    "neighborhoods": [
+                        "Downtown Princeton",
+                        "Princeton University",
+                        "Palmer Square",
+                        "West Windsor",
+                        "Princeton Junction",
+                        "Lawrenceville",
+                        "Skillman"
+                    ],
+                    "zipCodes": [
+                        "08540",
+                        "08542",
+                        "08544",
+                        "08550"
+                    ],
+                    "nearbyCities": [
+                        "Trenton",
+                        "New Brunswick",
+                        "Plainsboro",
+                        "Hopewell",
+                        "Pennington"
+                    ]
+                }
+            },
+            {
+                "type": "LocalProTips",
+                "content": {
+                    "title": "Princeton Developer Tips",
+                    "items": [
+                        {
+                            "icon": "code",
+                            "image": "tip-nextjs-princeton.jpg",
+                            "title": "Use App Router",
+                            "text": "Pumpkin works best with Next.js App Router — examples in the repo."
+                        },
+                        {
+                            "icon": "users",
+                            "image": "tip-meetup-princeton.jpg",
+                            "title": "Join Our Meetup",
+                            "text": "Monthly Pumpkin CMS meetups at Princeton co-working spaces."
+                        },
+                        {
+                            "icon": "slack",
+                            "image": "tip-slack-princeton.jpg",
+                            "title": "Ask in #princeton",
+                            "text": "Get instant help from local devs in our Slack."
+                        }
+                    ]
+                }
+            },
+            {
+                "type": "Gallery",
+                "content": {
+                    "title": "Princeton Sites Powered by Pumpkin CMS",
+                    "subtitle": "Real projects from the Princeton community.",
+                    "images": [
+                        {
+                            "src": "gallery-princeton-agency.jpg",
+                            "alt": "Princeton agency site built with Pumpkin CMS",
+                            "caption": "Local agency portfolio – 100 Lighthouse"
+                        },
+                        {
+                            "src": "gallery-princeton-startup.jpg",
+                            "alt": "Princeton startup marketing site",
+                            "caption": "Startup landing page with MDX content"
+                        },
+                        {
+                            "src": "gallery-princeton-university.jpg",
+                            "alt": "Princeton University department site",
+                            "caption": "Academic department using Pumpkin CMS"
+                        }
+                    ]
+                }
+            },
+            {
+                "type": "Testimonials",
+                "content": {
+                    "title": "What Princeton Says",
+                    "subtitle": "Loved by local developers, agencies, and teams.",
+                    "layout": "carousel",
+                    "items": [
+                        {
+                            "quote": "Finally a CMS that doesn’t fight my Next.js workflow. Love it!",
+                            "author": "Alex R., Princeton Agency",
+                            "eventType": "Web Agency",
+                            "rating": 5
+                        },
+                        {
+                            "quote": "Deployed our new site in a weekend. Zero lock-in. Perfect.",
+                            "author": "Sarah T., Princeton Startup",
+                            "eventType": "Startup Founder",
+                            "rating": 5
+                        },
+                        {
+                            "quote": "Our marketing team edits content without touching code. Huge win.",
+                            "author": "Princeton University Dept.",
+                            "eventType": "Higher Education",
+                            "rating": 4.9
+                        }
+                    ]
+                }
+            },
+            {
+                "type": "FAQ",
+                "content": {
+                    "title": "Pumpkin CMS FAQs – Princeton Edition",
+                    "subtitle": "Common questions from the Princeton community",
+                    "layout": "accordion",
+                    "items": [
+                        {
+                            "question": "Is Pumpkin CMS really free?",
+                            "answer": "Yes! Fully MIT-licensed and free forever. Optional paid cloud & support available."
+                        },
+                        {
+                            "question": "Do you have a Princeton meetup?",
+                            "answer": "Yes — monthly at local co-working spaces. Join our Slack for invites!"
+                        },
+                        {
+                            "question": "Can I self-host it?",
+                            "answer": "Absolutely. One-click deploy or run on your own infrastructure."
+                        },
+                        {
+                            "question": "Does it work with Next.js App Router?",
+                            "answer": "Built for it. Full examples in the official repo."
+                        }
+                    ]
+                }
+            },
+            {
+                "type": "Contact",
+                "content": {
+                    "id": "contact",
+                    "title": "Get in Touch – Princeton Team",
+                    "subtitle": "We’re local and ready to help.",
+                    "address": "Princeton, NJ (remote-first team)",
+                    "phone": "+1 (609) 123-4567",
+                    "email": "hello@pumpkincms.dev",
+                    "hours": "We reply fast — usually within an hour",
+                    "formFields": [
+                        {
+                            "label": "Name",
+                            "type": "text",
+                            "required": true,
+                            "placeholder": "Your Name"
+                        },
+                        {
+                            "label": "Email",
+                            "type": "email",
+                            "required": true,
+                            "placeholder": "you@company.com"
+                        },
+                        {
+                            "label": "Message",
+                            "type": "textarea",
+                            "required": true,
+                            "placeholder": "How can we help your Princeton project?"
+                        }
+                    ],
+                    "submitButtonText": "Send Message",
+                    "socialLinks": [
+                        {
+                            "platform": "GitHub",
+                            "url": "https://github.com/pumpkin-cms",
+                            "icon": "github"
+                        },
+                        {
+                            "platform": "Twitter",
+                            "url": "https://twitter.com/pumpkincms",
+                            "icon": "twitter"
+                        },
+                        {
+                            "platform": "Slack",
+                            "url": "https://slack.pumpkincms.dev",
+                            "icon": "slack"
+                        }
+                    ]
+                }
+            },
+            {
+                "type": "SecondaryCTA",
+                "content": {
+                    "title": "Start your Princeton project today",
+                    "description": "No credit card. No setup fees. Just great websites.",
+                    "buttonText": "Launch Pumpkin CMS →",
+                    "buttonLink": "https://pumpkincms.dev/start"
+                }
+            }
+        ]
+    }
+}

@@ -1,0 +1,12 @@
+/Users/shawniuliucci/Documents/GitHub/pumpkin-cms/apps/pumpkin-net-models/bin/Debug/net10.0/pumpkin-net-models.deps.json
+/Users/shawniuliucci/Documents/GitHub/pumpkin-cms/apps/pumpkin-net-models/bin/Debug/net10.0/pumpkin-net-models.dll
+/Users/shawniuliucci/Documents/GitHub/pumpkin-cms/apps/pumpkin-net-models/bin/Debug/net10.0/pumpkin-net-models.pdb
+/Users/shawniuliucci/Documents/GitHub/pumpkin-cms/apps/pumpkin-net-models/obj/Debug/net10.0/pumpkin-net-models.GeneratedMSBuildEditorConfig.editorconfig
+/Users/shawniuliucci/Documents/GitHub/pumpkin-cms/apps/pumpkin-net-models/obj/Debug/net10.0/pumpkin-net-models.AssemblyInfoInputs.cache
+/Users/shawniuliucci/Documents/GitHub/pumpkin-cms/apps/pumpkin-net-models/obj/Debug/net10.0/pumpkin-net-models.AssemblyInfo.cs
+/Users/shawniuliucci/Documents/GitHub/pumpkin-cms/apps/pumpkin-net-models/obj/Debug/net10.0/pumpkin-net-models.csproj.CoreCompileInputs.cache
+/Users/shawniuliucci/Documents/GitHub/pumpkin-cms/apps/pumpkin-net-models/obj/Debug/net10.0/pumpkin-net-models.sourcelink.json
+/Users/shawniuliucci/Documents/GitHub/pumpkin-cms/apps/pumpkin-net-models/obj/Debug/net10.0/pumpkin-net-models.dll
+/Users/shawniuliucci/Documents/GitHub/pumpkin-cms/apps/pumpkin-net-models/obj/Debug/net10.0/refint/pumpkin-net-models.dll
+/Users/shawniuliucci/Documents/GitHub/pumpkin-cms/apps/pumpkin-net-models/obj/Debug/net10.0/pumpkin-net-models.pdb
+/Users/shawniuliucci/Documents/GitHub/pumpkin-cms/apps/pumpkin-net-models/obj/Debug/net10.0/ref/pumpkin-net-models.dll

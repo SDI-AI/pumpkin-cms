@@ -1,0 +1,252 @@
+{
+    "PageId": "pa-philadelphia-pumpkin-cms",
+    "fullSlug": "pa/philadelphia/pumpkin-cms",
+    "PageVersion": 1,
+    "Layout": "6",
+    "MetaData": {
+        "category": "headless-cms",
+        "product": "pumpkin-cms",
+        "keyword": "pumpkin cms",
+        "title": "Pumpkin CMS Philadelphia PA | Open-Source Headless CMS",
+        "description": "Pumpkin CMS: Fast, flexible, open-source headless CMS for Philadelphia businesses and developers. Built with Next.js, Markdown/MDX, Git-backed. Free forever core. Deploy in minutes.",
+        "createdAt": "2025-11-18T10:00:00Z",
+        "updatedAt": "2025-11-18T10:00:00Z",
+        "author": "Pumpkin CMS Team",
+        "language": "en-us",
+        "market": "philadelphia-pa"
+    },
+    "searchData": {
+        "state": "PA",
+        "city": "Philadelphia",
+        "keyword": "pumpkin cms",
+        "tags": [
+            "pumpkin cms",
+            "headless cms philadelphia",
+            "open source cms pa",
+            "next.js cms philadelphia",
+            "markdown cms pennsylvania",
+            "git-based cms philadelphia",
+            "jamstack cms pa",
+            "static site cms philadelphia"
+        ],
+        "contentSummary": "Pumpkin CMS is a modern, open-source, Git-backed headless CMS perfect for Philadelphia agencies, startups, and enterprises. Lightning-fast content editing, Next.js-ready, fully free core with optional cloud hosting.",
+        "blockTypes": [
+            "Hero",
+            "PrimaryCTA",
+            "HeroSecondary",
+            "HeroTertiary",
+            "CardGrid",
+            "CardGrid",
+            "FAQ"
+        ]
+    },
+    "ContentData": {
+        "ContentBlocks": [
+            {
+                "type": "Hero",
+                "content": {
+                    "headline": "Pumpkin CMS Philadelphia",
+                    "subheadline": "The open-source headless CMS Philadelphia developers love. Built for speed, flexibility, and total content freedom.",
+                    "backgroundImage": "philadelphia-pumpkin-cms-hero-bg.jpg",
+                    "backgroundImageAltText": "Philadelphia skyline with Pumpkin CMS interface",
+                    "mainImage": "philadelphia-pumpkin-cms-hero-main.png",
+                    "mainImageAltText": "Pumpkin CMS clean content editor",
+                    "buttonText": "Get Started Free",
+                    "buttonLink": "https://github.com/pumpkin-cms/pumpkin"
+                }
+            },
+            {
+                "type": "PrimaryCTA",
+                "content": {
+                    "title": "Ready to Launch Your Philadelphia Site with Pumpkin CMS?",
+                    "description": "Go live in minutes. No vendor lock-in. Full control with Git. Used by Philly startups, agencies, and enterprises.",
+                    "buttonText": "Start Free →",
+                    "buttonLink": "https://pumpkincms.dev/docs",
+                    "secondaryText": "Need help in Philly?",
+                    "secondaryLinkText": "Book a free consult",
+                    "secondaryLink": "https://cal.com/pumpkin-cms/philadelphia",
+                    "backgroundImage": "philadelphia-pumpkin-cta-bg.jpg",
+                    "mainImage": "philadelphia-pumpkin-cta-main.png",
+                    "alt": "Launch your site with Pumpkin CMS in Philadelphia"
+                }
+            },
+            {
+                "type": "HeroSecondary",
+                "content": {
+                    "headline": "Perfect for Philadelphia Agencies & Freelancers",
+                    "subheadline": "Deliver faster, charge more, and keep full ownership. Your clients stay happy — you stay in control.",
+                    "backgroundImage": "philadelphia-agency-pumpkin-bg.jpg",
+                    "backgroundImageAltText": "Philadelphia web agency using Pumpkin CMS",
+                    "mainImage": "philadelphia-agency-pumpkin-main.png",
+                    "mainImageAltText": "Pumpkin CMS dashboard on multiple devices",
+                    "buttonText": "Agency Guide",
+                    "buttonLink": "/agency"
+                }
+            },
+            {
+                "type": "HeroTertiary",
+                "content": {
+                    "headline": "Enterprise-Ready for Philly Companies",
+                    "subheadline": "Multi-site, multi-language, role-based access, webhooks, and SSO — all in the open-source core.",
+                    "backgroundImage": "philadelphia-enterprise-pumpkin-bg.jpg",
+                    "backgroundImageAltText": "Philadelphia enterprise team using Pumpkin CMS",
+                    "mainImage": "philadelphia-enterprise-pumpkin-main.png",
+                    "mainImageAltText": "Pumpkin CMS enterprise workflow",
+                    "buttonText": "Enterprise Features",
+                    "buttonLink": "/enterprise"
+                }
+            },
+            {
+                "type": "CardGrid",
+                "content": {
+                    "title": "Why Philadelphia Loves Pumpkin CMS",
+                    "subtitle": "Modern, developer-first, and 100% open source — the CMS Philly actually wants to use.",
+                    "layout": "grid",
+                    "cards": [
+                        {
+                            "title": "100% Free & Open Source",
+                            "description": "MIT licensed. No hidden fees. Self-host or use our cloud — you always own your data.",
+                            "image": "pumpkin-card-opensource.jpg",
+                            "image-alt": "Pumpkin CMS open source GitHub repo",
+                            "icon": "github"
+                        },
+                        {
+                            "title": "Blazing Fast Sites",
+                            "description": "Static generation + ISR. Philly sites routinely score 95–100 on Lighthouse.",
+                            "image": "pumpkin-card-speed.jpg",
+                            "image-alt": "100 Lighthouse score with Pumpkin CMS",
+                            "icon": "zap"
+                        },
+                        {
+                            "title": "Git-Backend Workflow",
+                            "description": "Content stored as Markdown/MDX in your repo. Full history, PRs, and rollbacks.",
+                            "image": "pumpkin-card-git.jpg",
+                            "image-alt": "Git workflow in Pumpkin CMS",
+                            "icon": "git-branch"
+                        },
+                        {
+                            "title": "Philadelphia Community",
+                            "description": "Active Slack, monthly meetups at Indy Hall, and local contributors welcome.",
+                            "image": "pumpkin-card-community.jpg",
+                            "image-alt": "Philadelphia Pumpkin CMS meetup",
+                            "icon": "users"
+                        }
+                    ]
+                }
+            },
+            {
+                "type": "CardGrid",
+                "content": {
+                    "title": "Core Features Philadelphia Teams Use Daily",
+                    "subtitle": "Everything you need — nothing you don’t.",
+                    "layout": "grid",
+                    "cards": [
+                        {
+                            "title": "Visual Editor + Code",
+                            "description": "Non-technical editors love the clean UI. Devs love full MDX control.",
+                            "icon": "edit"
+                        },
+                        {
+                            "title": "Next.js & React Ready",
+                            "description": "First-class support for App Router, SSR, SSG, and Edge.",
+                            "icon": "react"
+                        },
+                        {
+                            "title": "Image Optimization",
+                            "description": "Automatic WebP, AVIF, lazy loading, and CDN delivery.",
+                            "icon": "image"
+                        },
+                        {
+                            "title": "Preview & Drafts",
+                            "description": "Instant previews, scheduled publishing, and content versioning.",
+                            "icon": "eye"
+                        },
+                        {
+                            "title": "Multi-Site & Multi-Language",
+                            "description": "Run 50 sites or 10 languages from one Pumpkin instance.",
+                            "icon": "globe"
+                        },
+                        {
+                            "title": "Deploy Anywhere",
+                            "description": "Vercel, Netlify, Cloudflare, AWS, or your own server.",
+                            "icon": "cloud"
+                        }
+                    ]
+                }
+            },
+            {
+                "type": "FAQ",
+                "content": {
+                    "title": "Pumpkin CMS FAQs – Philadelphia Edition",
+                    "subtitle": "Common questions from Philly developers and agencies",
+                    "layout": "accordion",
+                    "items": [
+                        {
+                            "question": "Is Pumpkin CMS really free?",
+                            "answer": "Yes! The entire core is MIT-licensed and free forever. Optional paid cloud hosting and enterprise support are available."
+                        },
+                        {
+                            "question": "Can I self-host Pumpkin CMS?",
+                            "answer": "Absolutely. One-click deploy to Vercel/Netlify or run on your own Docker/K8s cluster."
+                        },
+                        {
+                            "question": "Do you have a Philadelphia Slack or meetup?",
+                            "answer": "Yes! Join our #philly channel in the official Slack and come to our monthly meetups at Indy Hall."
+                        },
+                        {
+                            "question": "Does it work with Next.js App Router?",
+                            "answer": "Built for it. Full App Router examples in the repo."
+                        },
+                        {
+                            "question": "Can editors use it without knowing code?",
+                            "answer": "Yes – the block-based visual editor is designed for marketing teams and content editors."
+                        },
+                        {
+                            "question": "How do I get help in Philadelphia?",
+                            "answer": "Book a free 30-min call with our Philly-based team or hire one of our certified local partners."
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "seo": {
+        "metaTitle": "Pumpkin CMS Philadelphia PA | Open-Source Headless CMS",
+        "metaDescription": "Pumpkin CMS – the fast, free, open-source headless CMS loved by Philadelphia developers and agencies. Next.js-ready, Git-backed, no lock-in.",
+        "keywords": [
+            "pumpkin cms",
+            "headless cms philadelphia",
+            "open source cms",
+            "next.js cms",
+            "markdown cms",
+            "git cms philadelphia",
+            "jamstack cms pa"
+        ],
+        "robots": "index, follow",
+        "canonicalUrl": "https://pumpkincms.dev/pa/philadelphia/pumpkin-cms",
+        "alternateUrls": [
+            {
+                "hrefLang": "en-us",
+                "href": "https://pumpkincms.dev/pa/philadelphia/pumpkin-cms"
+            }
+        ],
+        "openGraph": {
+            "og:title": "Pumpkin CMS | Open-Source Headless CMS – Philadelphia",
+            "og:description": "Fast, free, developer-first headless CMS. Perfect for Philly agencies, startups, and enterprises.",
+            "og:type": "website",
+            "og:url": "https://pumpkincms.dev/pa/philadelphia/pumpkin-cms",
+            "og:image": "philadelphia-pumpkin-og.jpg",
+            "og:image:alt": "Pumpkin CMS running on Philadelphia skyline background",
+            "og:site_name": "Pumpkin CMS",
+            "og:locale": "en_US"
+        },
+        "twitterCard": {
+            "twitter:card": "summary_large_image",
+            "twitter:title": "Pumpkin CMS – Open Source Headless CMS Philadelphia",
+            "twitter:description": "The CMS Philly devs actually enjoy using. Free, fast, Git-backed.",
+            "twitter:image": "philadelphia-pumpkin-twitter.jpg",
+            "twitter:site": "@pumpkincms",
+            "twitter:creator": "@pumpkincms"
+        }
+    }
+}
