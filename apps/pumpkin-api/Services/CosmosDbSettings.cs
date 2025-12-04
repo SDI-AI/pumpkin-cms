@@ -1,4 +1,4 @@
-namespace pumpkin_api.Models;
+namespace pumpkin_api.Services;
 
 public class CosmosDbSettings
 {

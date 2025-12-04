@@ -58,3 +58,8 @@ yarn-error.log*
 .env.development.local
 .env.test.local
 .env.production.local
+
+# App settings with secrets
+appsettings.Development.json
+appsettings.*.json
+!appsettings.json
