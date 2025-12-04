@@ -43,7 +43,7 @@ public class CosmosDbFacade : ICosmosDbFacade, IDisposable
             cosmosSettings.DatabaseName);
     }
 
-    public async Task<ContentItem?> GetPageAsync(string apiKey, string tenantId, string pageSlug)
+    public async Task<Page?> GetPageAsync(string apiKey, string tenantId, string pageSlug)
     {
         try
         {
@@ -69,19 +69,21 @@ public class CosmosDbFacade : ICosmosDbFacade, IDisposable
             if (iterator.HasMoreResults)
             {
                 var response = await iterator.ReadNextAsync();
-                var page = response.FirstOrDefault();
+                var contentItem = response.FirstOrDefault();
                 
-                if (page != null)
+                if (contentItem != null)
                 {
                     _logger.LogDebug("Page retrieved successfully - Slug: {Slug}, TenantId: {TenantId}, RU Cost: {RequestCharge}", 
                         pageSlug, tenantId, response.RequestCharge);
+                    
+                    // Convert ContentItem to Page
+                    var page = System.Text.Json.JsonSerializer.Deserialize<Page>(contentItem.Content);
+                    return page;
                 }
                 else
                 {
                     _logger.LogDebug("Page not found - Slug: {Slug}, TenantId: {TenantId}", pageSlug, tenantId);
                 }
-                
-                return page;
             }
             
             return null;
