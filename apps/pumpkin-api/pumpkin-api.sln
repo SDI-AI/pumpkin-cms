@@ -1,11 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.5.2.0
+# Visual Studio Version 18
+VisualStudioVersion = 18.1.11304.174 d18.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pumpkin-api", "pumpkin-api.csproj", "{E430CBFF-F29D-8430-AAA6-E50BFA38F57C}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pumpkin-api.Tests", "..\pumpkin-api.Tests\pumpkin-api.Tests.csproj", "{CC0BA845-D28C-479D-9CC4-9C0D1BCB2E7C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pumpkin-net-models", "..\pumpkin-net-models\pumpkin-net-models.csproj", "{AFA37105-9E06-DF96-2C49-F4B656E3E5DD}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -41,6 +43,18 @@ Global
 		{CC0BA845-D28C-479D-9CC4-9C0D1BCB2E7C}.Release|x64.Build.0 = Release|Any CPU
 		{CC0BA845-D28C-479D-9CC4-9C0D1BCB2E7C}.Release|x86.ActiveCfg = Release|Any CPU
 		{CC0BA845-D28C-479D-9CC4-9C0D1BCB2E7C}.Release|x86.Build.0 = Release|Any CPU
+		{AFA37105-9E06-DF96-2C49-F4B656E3E5DD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AFA37105-9E06-DF96-2C49-F4B656E3E5DD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AFA37105-9E06-DF96-2C49-F4B656E3E5DD}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{AFA37105-9E06-DF96-2C49-F4B656E3E5DD}.Debug|x64.Build.0 = Debug|Any CPU
+		{AFA37105-9E06-DF96-2C49-F4B656E3E5DD}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{AFA37105-9E06-DF96-2C49-F4B656E3E5DD}.Debug|x86.Build.0 = Debug|Any CPU
+		{AFA37105-9E06-DF96-2C49-F4B656E3E5DD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AFA37105-9E06-DF96-2C49-F4B656E3E5DD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AFA37105-9E06-DF96-2C49-F4B656E3E5DD}.Release|x64.ActiveCfg = Release|Any CPU
+		{AFA37105-9E06-DF96-2C49-F4B656E3E5DD}.Release|x64.Build.0 = Release|Any CPU
+		{AFA37105-9E06-DF96-2C49-F4B656E3E5DD}.Release|x86.ActiveCfg = Release|Any CPU
+		{AFA37105-9E06-DF96-2C49-F4B656E3E5DD}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

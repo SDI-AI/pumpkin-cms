@@ -5,7 +5,7 @@ import { IHtmlBlock } from './IHtmlBlock';
  */
 export interface Page {
   PageId: string;
-  fullSlug: string;
+  pageSlug: string;
   PageVersion: number;
   Layout: string;
   MetaData: PageMetaData;
@@ -14,6 +14,7 @@ export interface Page {
   seo: SeoData;
   isPublished: boolean;
   publishedAt: string | null;
+  includeInSitemap: boolean;
 }
 
 /**

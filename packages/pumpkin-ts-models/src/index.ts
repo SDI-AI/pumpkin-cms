@@ -1,6 +1,16 @@
 // Core interfaces and types
 export type { IHtmlBlock, GenericHtmlBlock } from './models/IHtmlBlock';
 
+// Tenant models
+export type {
+  Tenant,
+  ApiKeyMeta,
+  TenantSettings,
+  Features,
+  Contact,
+  Billing
+} from './models/Tenant';
+
 // Page models
 export type {
   Page,

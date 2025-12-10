@@ -13,7 +13,7 @@ public static class PageJsonConverter
     {
         PropertyNameCaseInsensitive = true,
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        Converters = { new HtmlBlockJsonConverter() },
+        Converters = { new HtmlBlockJsonConverter(), new HtmlBlockBaseJsonConverter() },
         WriteIndented = true
     };
 
@@ -183,7 +183,7 @@ public static class PageJsonConverter
         {
             PropertyNameCaseInsensitive = true,
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            Converters = { new HtmlBlockJsonConverter() },
+            Converters = { new HtmlBlockJsonConverter(), new HtmlBlockBaseJsonConverter() },
             WriteIndented = true
         };
     }

@@ -1,6 +1,5 @@
 using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Options;
-using pumpkin_api.Models;
 using pumpkin_net_models.Models;
 using System.Net;
 
@@ -22,10 +21,7 @@ public class CosmosDbFacade : ICosmosDbFacade, IDisposable
         {
             MaxRetryAttemptsOnRateLimitedRequests = cosmosSettings.MaxRetryAttemptsOnRateLimitedRequests,
             MaxRetryWaitTimeOnRateLimitedRequests = TimeSpan.FromSeconds(cosmosSettings.MaxRetryWaitTimeOnRateLimitedRequests),
-            SerializerOptions = new CosmosSerializationOptions
-            {
-                PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase
-            }
+            Serializer = new CosmosSystemTextJsonSerializer()
         };
 
         // Add preferred regions if specified
@@ -56,28 +52,29 @@ public class CosmosDbFacade : ICosmosDbFacade, IDisposable
             }
 
             // If tenant is valid, proceed to get the page
-            var pagesContainer = _database.GetContainer("Pages");
+            var pagesContainer = _database.GetContainer("Page");
             
-            // Query for page by slug and tenantId (no need to check apiKey again since we validated the tenant)
-            var query = "SELECT * FROM c WHERE c.slug = @slug AND c.tenantId = @tenantId AND c.status = 'published'";
+            // Query for page by fullSlug and tenantId (partition key)
+            var query = "SELECT * FROM c WHERE c.tenantId = @tenantId AND c.pageSlug = @slug AND c.isPublished = true";
             var queryDefinition = new QueryDefinition(query)
                 .WithParameter("@slug", pageSlug)
                 .WithParameter("@tenantId", tenantId);
 
-            using var iterator = pagesContainer.GetItemQueryIterator<ContentItem>(queryDefinition);
+            using var iterator = pagesContainer.GetItemQueryIterator<Page>(queryDefinition, requestOptions: new QueryRequestOptions
+            {
+                PartitionKey = new PartitionKey(tenantId)
+            });
             
             if (iterator.HasMoreResults)
             {
                 var response = await iterator.ReadNextAsync();
-                var contentItem = response.FirstOrDefault();
+                var page = response.FirstOrDefault();
                 
-                if (contentItem != null)
+                if (page != null)
                 {
                     _logger.LogDebug("Page retrieved successfully - Slug: {Slug}, TenantId: {TenantId}, RU Cost: {RequestCharge}", 
                         pageSlug, tenantId, response.RequestCharge);
                     
-                    // Convert ContentItem to Page
-                    var page = System.Text.Json.JsonSerializer.Deserialize<Page>(contentItem.Content);
                     return page;
                 }
                 else

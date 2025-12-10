@@ -85,3 +85,21 @@ public class HtmlBlockJsonConverter : JsonConverter<IHtmlBlock>
         JsonSerializer.Serialize(writer, value, value.GetType(), options);
     }
 }
+
+/// <summary>
+/// Custom JSON converter for HtmlBlockBase abstract class
+/// </summary>
+public class HtmlBlockBaseJsonConverter : JsonConverter<HtmlBlockBase>
+{
+    public override HtmlBlockBase? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        var element = JsonDocument.ParseValue(ref reader).RootElement;
+        var block = HtmlBlockFactory.CreateBlock(element);
+        return block as HtmlBlockBase;
+    }
+
+    public override void Write(Utf8JsonWriter writer, HtmlBlockBase value, JsonSerializerOptions options)
+    {
+        JsonSerializer.Serialize(writer, value, value.GetType(), options);
+    }
+}

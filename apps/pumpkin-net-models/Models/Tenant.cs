@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace pumpkin_api.Models;
+namespace pumpkin_net_models.Models;
 
 public class Tenant
 {

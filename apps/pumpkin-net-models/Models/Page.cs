@@ -7,8 +7,8 @@ public class Page
     [JsonPropertyName("PageId")]
     public string PageId { get; set; } = string.Empty;
 
-    [JsonPropertyName("fullSlug")]
-    public string FullSlug { get; set; } = string.Empty;
+    [JsonPropertyName("pageSlug")]
+    public string PageSlug { get; set; } = string.Empty;
 
     [JsonPropertyName("PageVersion")]
     public int PageVersion { get; set; } = 1;
@@ -33,6 +33,9 @@ public class Page
 
     [JsonPropertyName("publishedAt")]
     public DateTime? PublishedAt { get; set; } = null;
+
+    [JsonPropertyName("includeInSitemap")]
+    public bool IncludeInSitemap { get; set; } = true;
 }
 
 public class PageMetaData
@@ -92,7 +95,7 @@ public class SearchData
 public class ContentData
 {
     [JsonPropertyName("ContentBlocks")]
-    public List<IHtmlBlock> ContentBlocks { get; set; } = new();
+    public List<HtmlBlockBase> ContentBlocks { get; set; } = new();
 }
 
 public class SeoData
