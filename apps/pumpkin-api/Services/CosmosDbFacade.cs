@@ -120,7 +120,7 @@ public class CosmosDbFacade : ICosmosDbFacade, IDisposable
                 throw new ArgumentException("PageId is required", nameof(page));
             }
 
-            var pagesContainer = _database.GetContainer("Pages");
+            var pagesContainer = _database.GetContainer("Page");
 
             // Set timestamps
             if (page.MetaData.CreatedAt == default)
@@ -166,7 +166,7 @@ public class CosmosDbFacade : ICosmosDbFacade, IDisposable
                 throw new UnauthorizedAccessException("Invalid API key or tenant ID");
             }
 
-            var pagesContainer = _database.GetContainer("Pages");
+            var pagesContainer = _database.GetContainer("Page");
 
             // Ensure PageId matches
             if (page.PageId != pageId)
