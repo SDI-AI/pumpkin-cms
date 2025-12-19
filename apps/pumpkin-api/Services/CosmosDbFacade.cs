@@ -154,7 +154,7 @@ public class CosmosDbFacade : ICosmosDbFacade, IDisposable
         }
     }
 
-    public async Task<Page> UpdatePageAsync(string apiKey, string tenantId, string pageId, Page page)
+    public async Task<Page> UpdatePageAsync(string apiKey, string tenantId, string pageSlug, Page page)
     {
         try
         {
@@ -168,11 +168,38 @@ public class CosmosDbFacade : ICosmosDbFacade, IDisposable
 
             var pagesContainer = _database.GetContainer("Page");
 
-            // Ensure PageId matches
-            if (page.PageId != pageId)
+            // First, query to find the page by slug to get the PageId
+            var query = "SELECT * FROM c WHERE c.tenantId = @tenantId AND c.pageSlug = @slug";
+            var queryDefinition = new QueryDefinition(query)
+                .WithParameter("@slug", pageSlug)
+                .WithParameter("@tenantId", tenantId);
+
+            using var iterator = pagesContainer.GetItemQueryIterator<Page>(queryDefinition, requestOptions: new QueryRequestOptions
             {
-                throw new ArgumentException("PageId in the URL must match the PageId in the request body");
+                PartitionKey = new PartitionKey(tenantId)
+            });
+
+            Page? existingPage = null;
+            if (iterator.HasMoreResults)
+            {
+                var response = await iterator.ReadNextAsync();
+                existingPage = response.FirstOrDefault();
             }
+
+            if (existingPage == null)
+            {
+                _logger.LogWarning("Page not found for update - Slug: {Slug}, TenantId: {TenantId}", pageSlug, tenantId);
+                throw new KeyNotFoundException($"Page with slug '{pageSlug}' not found");
+            }
+
+            // Ensure the pageSlug matches
+            if (page.PageSlug != pageSlug)
+            {
+                throw new ArgumentException("PageSlug in the URL must match the PageSlug in the request body");
+            }
+
+            // Preserve the PageId from the existing page
+            page.PageId = existingPage.PageId;
 
             // Update timestamp
             page.MetaData.UpdatedAt = DateTime.UtcNow;
@@ -181,26 +208,95 @@ public class CosmosDbFacade : ICosmosDbFacade, IDisposable
             page.PageVersion++;
 
             // Replace the page
-            var response = await pagesContainer.ReplaceItemAsync(page, pageId, new PartitionKey(tenantId));
+            var updateResponse = await pagesContainer.ReplaceItemAsync(page, existingPage.PageId, new PartitionKey(tenantId));
 
-            _logger.LogInformation("Page updated successfully - PageId: {PageId}, TenantId: {TenantId}, Version: {Version}, RU Cost: {RequestCharge}",
-                pageId, tenantId, page.PageVersion, response.RequestCharge);
+            _logger.LogInformation("Page updated successfully - Slug: {Slug}, PageId: {PageId}, TenantId: {TenantId}, Version: {Version}, RU Cost: {RequestCharge}",
+                pageSlug, existingPage.PageId, tenantId, page.PageVersion, updateResponse.RequestCharge);
 
-            return response.Resource;
+            return updateResponse.Resource;
         }
         catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
         {
-            _logger.LogWarning("Page not found for update - PageId: {PageId}, TenantId: {TenantId}", pageId, tenantId);
-            throw new KeyNotFoundException($"Page with ID {pageId} not found", ex);
+            _logger.LogWarning("Page not found for update - Slug: {Slug}, TenantId: {TenantId}", pageSlug, tenantId);
+            throw new KeyNotFoundException($"Page with slug '{pageSlug}' not found", ex);
         }
         catch (CosmosException ex)
         {
-            _logger.LogError(ex, "Error updating page - PageId: {PageId}, TenantId: {TenantId}", pageId, tenantId);
+            _logger.LogError(ex, "Error updating page - Slug: {Slug}, TenantId: {TenantId}", pageSlug, tenantId);
             throw;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error updating page - PageId: {PageId}, TenantId: {TenantId}", pageId, tenantId);
+            _logger.LogError(ex, "Unexpected error updating page - Slug: {Slug}, TenantId: {TenantId}", pageSlug, tenantId);
+            throw;
+        }
+    }
+
+    public async Task<bool> DeletePageAsync(string apiKey, string tenantId, string pageSlug)
+    {
+        try
+        {
+            // Validate the API key against the Tenant container
+            var isValidTenant = await ValidateTenantApiKeyAsync(apiKey, tenantId);
+            if (!isValidTenant)
+            {
+                _logger.LogWarning("Invalid API key for tenant - TenantId: {TenantId}", tenantId);
+                throw new UnauthorizedAccessException("Invalid API key or tenant ID");
+            }
+
+            // Ensure the pageSlug is provided
+            if (string.IsNullOrEmpty(pageSlug))
+            {
+                throw new ArgumentException("PageSlug is required", nameof(pageSlug));
+            }
+
+            var pagesContainer = _database.GetContainer("Page");
+
+            // First, query to find the page by slug to get the PageId
+            var query = "SELECT * FROM c WHERE c.tenantId = @tenantId AND c.pageSlug = @slug";
+            var queryDefinition = new QueryDefinition(query)
+                .WithParameter("@slug", pageSlug)
+                .WithParameter("@tenantId", tenantId);
+
+            using var iterator = pagesContainer.GetItemQueryIterator<Page>(queryDefinition, requestOptions: new QueryRequestOptions
+            {
+                PartitionKey = new PartitionKey(tenantId)
+            });
+
+            Page? existingPage = null;
+            if (iterator.HasMoreResults)
+            {
+                var response = await iterator.ReadNextAsync();
+                existingPage = response.FirstOrDefault();
+            }
+
+            if (existingPage == null)
+            {
+                _logger.LogWarning("Page not found for deletion - Slug: {Slug}, TenantId: {TenantId}", pageSlug, tenantId);
+                throw new KeyNotFoundException($"Page with slug '{pageSlug}' not found");
+            }
+
+            // Delete the page using the PageId
+            var deleteResponse = await pagesContainer.DeleteItemAsync<Page>(existingPage.PageId, new PartitionKey(tenantId));
+
+            _logger.LogInformation("Page deleted successfully - Slug: {Slug}, PageId: {PageId}, TenantId: {TenantId}, RU Cost: {RequestCharge}",
+                pageSlug, existingPage.PageId, tenantId, deleteResponse.RequestCharge);
+
+            return true;
+        }
+        catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+        {
+            _logger.LogWarning("Page not found for deletion - Slug: {Slug}, TenantId: {TenantId}", pageSlug, tenantId);
+            throw new KeyNotFoundException($"Page with slug '{pageSlug}' not found", ex);
+        }
+        catch (CosmosException ex)
+        {
+            _logger.LogError(ex, "Error deleting page - Slug: {Slug}, TenantId: {TenantId}", pageSlug, tenantId);
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error deleting page - Slug: {Slug}, TenantId: {TenantId}", pageSlug, tenantId);
             throw;
         }
     }

@@ -4,6 +4,7 @@ import { PrimaryCtaBlock, SecondaryCtaBlock } from './CtaBlocks';
 import { CardGridBlock, FaqBlock } from './ContentBlocks';
 import { BreadcrumbsBlock, TrustBarBlock, HowItWorksBlock, ServiceAreaMapBlock, LocalProTipsBlock } from './NavigationBlocks';
 import { GalleryBlock, TestimonialsBlock, ContactBlock } from './InteractionBlocks';
+import { BlogBlock } from './BlogBlocks';
 
 /**
  * Union type of all supported HTML blocks
@@ -21,7 +22,8 @@ export type HtmlBlock =
   | LocalProTipsBlock
   | GalleryBlock
   | TestimonialsBlock
-  | ContactBlock;
+  | ContactBlock
+  | BlogBlock;
 
 /**
  * Map of block types to their corresponding interfaces
@@ -39,7 +41,8 @@ export const BLOCK_TYPE_MAP = {
   'LocalProTips': 'LocalProTipsBlock',
   'Gallery': 'GalleryBlock',
   'Testimonials': 'TestimonialsBlock',
-  'Contact': 'ContactBlock'
+  'Contact': 'ContactBlock',
+  'Blog': 'BlogBlock'
 } as const;
 
 /**

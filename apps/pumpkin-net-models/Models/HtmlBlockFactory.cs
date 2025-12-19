@@ -22,7 +22,8 @@ public static class HtmlBlockFactory
         { "LocalProTips", typeof(LocalProTipsBlock) },
         { "Gallery", typeof(GalleryBlock) },
         { "Testimonials", typeof(TestimonialsBlock) },
-        { "Contact", typeof(ContactBlock) }
+        { "Contact", typeof(ContactBlock) },
+        { "Blog", typeof(BlogBlock) }
     };
 
     /// <summary>

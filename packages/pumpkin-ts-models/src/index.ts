@@ -80,6 +80,13 @@ export type {
   ContactBlock
 } from './models/InteractionBlocks';
 
+// Blog blocks
+export type {
+  RelatedPost,
+  BlogContent,
+  BlogBlock
+} from './models/BlogBlocks';
+
 // Block types and utilities
 export type {
   HtmlBlock

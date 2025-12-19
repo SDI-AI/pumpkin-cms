@@ -55,8 +55,8 @@ app.MapPost("/api/pages/{tenantId}",
     .WithDescription("Use Authorization: Bearer {apiKey} header for authentication");
 
 // Update an existing page
-app.MapPut("/api/pages/{tenantId}/{pageId}",
-    (ICosmosDbFacade cosmosDb, string tenantId, string pageId, pumpkin_net_models.Models.Page page, HttpContext context) =>
+app.MapPut("/api/pages/{tenantId}/{pageSlug}",
+    (ICosmosDbFacade cosmosDb, string tenantId, string pageSlug, pumpkin_net_models.Models.Page page, HttpContext context) =>
     {
         // Extract API key from Authorization header (Bearer token format)
         var authHeader = context.Request.Headers.Authorization.FirstOrDefault();
@@ -67,11 +67,29 @@ app.MapPut("/api/pages/{tenantId}/{pageId}",
             apiKey = authHeader.Substring("Bearer ".Length).Trim();
         }
         
-        return PumpkinManager.UpdatePageAsync(cosmosDb, apiKey, tenantId, pageId, page);
+        return PumpkinManager.UpdatePageAsync(cosmosDb, apiKey, tenantId, pageSlug, page);
     })
     .WithName("UpdatePage")
-    .WithSummary("Update an existing page with API key authentication via Authorization header")
+    .WithSummary("Update an existing page by slug with API key authentication via Authorization header")
     .WithDescription("Use Authorization: Bearer {apiKey} header for authentication");
 
+// Delete a page
+app.MapDelete("/api/pages/{tenantId}/{pageSlug}",
+    (ICosmosDbFacade cosmosDb, string tenantId, string pageSlug, HttpContext context) =>
+    {
+        // Extract API key from Authorization header (Bearer token format)
+        var authHeader = context.Request.Headers.Authorization.FirstOrDefault();
+        var apiKey = string.Empty;
+        
+        if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+        {
+            apiKey = authHeader.Substring("Bearer ".Length).Trim();
+        }
+        
+        return PumpkinManager.DeletePageAsync(cosmosDb, apiKey, tenantId, pageSlug);
+    })
+    .WithName("DeletePage")
+    .WithSummary("Delete a page by slug with API key authentication via Authorization header")
+    .WithDescription("Use Authorization: Bearer {apiKey} header for authentication");
 
 app.Run();
