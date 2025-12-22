@@ -25,84 +25,253 @@ if (!string.IsNullOrEmpty(apiKey))
     Console.WriteLine($"Loaded Tenant ID: {tenantId}\n");
 }
 
-// // API Key Generation Helper
-// Console.WriteLine("=== API Key Generator ===\n");
-// var plainApiKey = GenerateApiKey();
-// var hashedApiKey = HashApiKey(plainApiKey);
+// Run all tests
+await PumpkinApiTests.RunTest1();
+await PumpkinApiTests.RunTest2();
+await PumpkinApiTests.RunTest3And4(configuration, apiKey, tenantId);
 
-// Console.WriteLine($"Plain API Key:  {plainApiKey}");
-// Console.WriteLine($"Hashed API Key: {hashedApiKey}");
-// Console.WriteLine($"\nVerification Test: {VerifyApiKey(plainApiKey, hashedApiKey)}");
-// Console.WriteLine("\n" + new string('=', 50) + "\n");
+Console.WriteLine("\n🎉 All basic tests completed!");
+Console.WriteLine("\nNote: For full testing, mock ICosmosDbFacade or use integration tests with Cosmos DB Emulator");
 
-// Test 1: GetWelcomeMessage
-Console.WriteLine("Test 1: GetWelcomeMessage");
-var welcomeResult = PumpkinManager.GetWelcomeMessage();
-Console.WriteLine($"  ✅ GetWelcomeMessage returns result: {welcomeResult != null}");
-
-// Test 2: Validate parameter handling (simulate bad request)
-Console.WriteLine("\nTest 2: GetPageAsync with empty API key");
-var badRequestResult = await PumpkinManager.GetPageAsync(null!, "", "tenant", "home");
-Console.WriteLine($"  ✅ Returns BadRequest for empty API key: {badRequestResult != null}");
-
-// Test 3: Get page by ID with Cosmos DB
-if (!string.IsNullOrEmpty(apiKey) && !string.IsNullOrEmpty(tenantId))
+/// <summary>
+/// Test class for Pumpkin API operations
+/// </summary>
+public static class PumpkinApiTests
 {
-    Console.WriteLine("\nTest 3: GetPageAsync - Retrieve page by slug");
-    try
+    /// <summary>
+    /// Test 1: GetWelcomeMessage
+    /// </summary>
+    public static async Task RunTest1()
     {
-        // Initialize Cosmos DB settings
-        var cosmosSettings = configuration.GetSection(CosmosDbSettings.SectionName).Get<CosmosDbSettings>();
-        
-        if (cosmosSettings != null && !string.IsNullOrEmpty(cosmosSettings.ConnectionString))
+        Console.WriteLine("Test 1: GetWelcomeMessage");
+        var welcomeResult = PumpkinManager.GetWelcomeMessage();
+        Console.WriteLine($"  ✅ GetWelcomeMessage returns result: {welcomeResult != null}");
+        await Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// Test 2: Validate parameter handling (simulate bad request)
+    /// </summary>
+    public static async Task RunTest2()
+    {
+        Console.WriteLine("\nTest 2: GetPageAsync with empty API key");
+        var badRequestResult = await PumpkinManager.GetPageAsync(null!, "", "tenant", "home");
+        Console.WriteLine($"  ✅ Returns BadRequest for empty API key: {badRequestResult != null}");
+    }
+
+    /// <summary>
+    /// Test 3 & 4: Get page by slug and create a copy with Cosmos DB
+    /// </summary>
+    public static async Task RunTest3And4(IConfiguration configuration, string apiKey, string tenantId)
+    {
+        if (string.IsNullOrEmpty(apiKey) || string.IsNullOrEmpty(tenantId))
         {
-            var loggerFactory = LoggerFactory.Create(builder => { });
-            using var cosmosDb = new CosmosDbFacade(
-                Microsoft.Extensions.Options.Options.Create(cosmosSettings),
-                loggerFactory.CreateLogger<CosmosDbFacade>()
-            );
+            Console.WriteLine("\nTest 3: Skipped - API Key or Tenant ID not configured");
+            return;
+        }
 
-            var pageSlug = "pa/philadelphia/pumpkin-cms";
-            Console.WriteLine($"  Fetching page: {pageSlug}");
-            
-            var page = await cosmosDb.GetPageAsync(apiKey, tenantId, pageSlug);
+        Console.WriteLine("\nTest 3: GetPageAsync - Retrieve page by slug");
+        Page? retrievedPage = null;
+        ICosmosDbFacade? cosmosDb = null;
 
-            
-            if (page != null)
+        try
+        {
+            // Initialize Cosmos DB settings
+            var cosmosSettings = configuration.GetSection(CosmosDbSettings.SectionName).Get<CosmosDbSettings>();
+
+            if (cosmosSettings != null && !string.IsNullOrEmpty(cosmosSettings.ConnectionString))
             {
-                Console.WriteLine($"  ✅ Page retrieved successfully");
-                Console.WriteLine($"\n  Page JSON:");
-                Console.WriteLine($"  {new string('-', 80)}");
-                
-                var jsonOptions = new JsonSerializerOptions 
-                { 
-                    WriteIndented = true,
-                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-                };
-                var pageJson = JsonSerializer.Serialize(page, jsonOptions);
-                Console.WriteLine(pageJson);
-                Console.WriteLine($"  {new string('-', 80)}");
+                var loggerFactory = LoggerFactory.Create(builder => { });
+                cosmosDb = new CosmosDbFacade(
+                    Microsoft.Extensions.Options.Options.Create(cosmosSettings),
+                    loggerFactory.CreateLogger<CosmosDbFacade>()
+                );
+
+                var pageSlug = "pa/philadelphia/pumpkin-cms";
+                Console.WriteLine($"  Fetching page: {pageSlug}");
+
+                var page = await cosmosDb.GetPageAsync(apiKey, tenantId, pageSlug);
+
+                if (page != null)
+                {
+                    retrievedPage = page;
+                    Console.WriteLine($"  ✅ Page retrieved successfully");
+                    PrintPageJson(page);
+                }
+                else
+                {
+                    Console.WriteLine($"  ⚠️  Page not found or access denied");
+                }
             }
             else
             {
-                Console.WriteLine($"  ⚠️  Page not found or access denied");
+                Console.WriteLine("  ⚠️  Cosmos DB not configured - skipping test");
             }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"  ❌ Error: {ex.Message}");
+        }
+
+        // Test 4: Create new page from Test 3 data
+        if (retrievedPage != null && cosmosDb != null)
+        {
+            await RunTest4CreatePage(cosmosDb, apiKey, tenantId, retrievedPage);
+        }
+        else if (retrievedPage == null)
+        {
+            Console.WriteLine("\nTest 4: Skipped - No page retrieved in Test 3");
         }
         else
         {
-            Console.WriteLine("  ⚠️  Cosmos DB not configured - skipping test");
+            Console.WriteLine("\nTest 4: Skipped - Cosmos DB not initialized");
+        }
+
+        // Dispose of CosmosDbFacade if created
+        if (cosmosDb is IDisposable disposable)
+        {
+            disposable.Dispose();
         }
     }
-    catch (Exception ex)
+
+    /// <summary>
+    /// Test 4: Create new page from retrieved data
+    /// </summary>
+    private static async Task RunTest4CreatePage(ICosmosDbFacade cosmosDb, string apiKey, string tenantId, Page retrievedPage)
     {
-        Console.WriteLine($"  ❌ Error: {ex.Message}");
+        Console.WriteLine("\nTest 4: SavePageAsync - Create new page from retrieved data");
+        try
+        {
+            // Clone the page and modify the slug
+            var newSlug = $"pa/philadelphia/pumpkin-cms-test-{DateTime.UtcNow:yyyyMMdd-HHmmss}";
+            var newPageId = Guid.NewGuid().ToString();
+
+            var newPage = ClonePage(retrievedPage, newPageId, tenantId, newSlug);
+
+            Console.WriteLine($"  Creating new page with slug: {newSlug}");
+            Console.WriteLine($"  New Page ID: {newPageId}");
+
+            var savedPage = await cosmosDb.SavePageAsync(apiKey, tenantId, newPage);
+
+            if (savedPage != null)
+            {
+                Console.WriteLine($"  ✅ New page created successfully!");
+                Console.WriteLine($"  📄 New Page Slug: {savedPage.PageSlug}");
+                Console.WriteLine($"  🆔 New Page ID: {savedPage.PageId}");
+                Console.WriteLine($"  📝 Title: {savedPage.MetaData.Title}");
+                Console.WriteLine($"  🕒 Created At: {savedPage.MetaData.CreatedAt:yyyy-MM-dd HH:mm:ss} UTC");
+            }
+            else
+            {
+                Console.WriteLine($"  ⚠️  Page creation returned null");
+            }
+        }
+        catch (InvalidOperationException ex)
+        {
+            Console.WriteLine($"  ⚠️  Page already exists: {ex.Message}");
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            Console.WriteLine($"  ❌ Unauthorized: {ex.Message}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"  ❌ Error creating page: {ex.Message}");
+            if (ex.InnerException != null)
+            {
+                Console.WriteLine($"     Inner exception: {ex.InnerException.Message}");
+            }
+        }
+    }
+
+    /// <summary>
+    /// Clone a page with new ID, slug, and tenant ID
+    /// </summary>
+    private static Page ClonePage(Page source, string newPageId, string tenantId, string newSlug)
+    {
+        return new Page
+        {
+            PageId = newPageId,
+            TenantId = tenantId,
+            PageSlug = newSlug,
+            PageVersion = 1,
+            Layout = source.Layout,
+            MetaData = new PageMetaData
+            {
+                Category = source.MetaData.Category,
+                Product = source.MetaData.Product,
+                Keyword = source.MetaData.Keyword,
+                Title = source.MetaData.Title + " (Test Copy)",
+                Description = source.MetaData.Description,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+                Author = source.MetaData.Author,
+                Language = source.MetaData.Language,
+                Market = source.MetaData.Market
+            },
+            SearchData = new SearchData
+            {
+                State = source.SearchData.State,
+                City = source.SearchData.City,
+                Keyword = source.SearchData.Keyword,
+                Tags = new List<string>(source.SearchData.Tags),
+                ContentSummary = source.SearchData.ContentSummary,
+                BlockTypes = new List<string>(source.SearchData.BlockTypes)
+            },
+            ContentData = new ContentData
+            {
+                ContentBlocks = new List<HtmlBlockBase>(source.ContentData.ContentBlocks)
+            },
+            Seo = new SeoData
+            {
+                MetaTitle = source.Seo.MetaTitle,
+                MetaDescription = source.Seo.MetaDescription,
+                Keywords = new List<string>(source.Seo.Keywords),
+                Robots = source.Seo.Robots,
+                CanonicalUrl = source.Seo.CanonicalUrl,
+                AlternateUrls = new List<AlternateUrl>(source.Seo.AlternateUrls),
+                OpenGraph = new OpenGraphData
+                {
+                    Title = source.Seo.OpenGraph.Title,
+                    Description = source.Seo.OpenGraph.Description,
+                    Type = source.Seo.OpenGraph.Type,
+                    Url = source.Seo.OpenGraph.Url,
+                    Image = source.Seo.OpenGraph.Image,
+                    ImageAlt = source.Seo.OpenGraph.ImageAlt,
+                    SiteName = source.Seo.OpenGraph.SiteName,
+                    Locale = source.Seo.OpenGraph.Locale
+                },
+                TwitterCard = new TwitterCardData
+                {
+                    Card = source.Seo.TwitterCard.Card,
+                    Title = source.Seo.TwitterCard.Title,
+                    Description = source.Seo.TwitterCard.Description,
+                    Image = source.Seo.TwitterCard.Image,
+                    Site = source.Seo.TwitterCard.Site,
+                    Creator = source.Seo.TwitterCard.Creator
+                }
+            },
+            IsPublished = source.IsPublished,
+            PublishedAt = source.PublishedAt,
+            IncludeInSitemap = source.IncludeInSitemap
+        };
+    }
+
+    /// <summary>
+    /// Print page JSON to console
+    /// </summary>
+    private static void PrintPageJson(Page page)
+    {
+        Console.WriteLine($"\n  Page JSON:");
+        Console.WriteLine($"  {new string('-', 80)}");
+
+        var jsonOptions = new JsonSerializerOptions
+        {
+            WriteIndented = true,
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        };
+        var pageJson = JsonSerializer.Serialize(page, jsonOptions);
+        Console.WriteLine(pageJson);
+        Console.WriteLine($"  {new string('-', 80)}");
     }
 }
-else
-{
-    Console.WriteLine("\nTest 3: Skipped - API Key or Tenant ID not configured");
-}
-
-// Add more tests here as needed
-Console.WriteLine("\n🎉 All basic tests completed!");
-Console.WriteLine("\nNote: For full testing, mock ICosmosDbFacade or use integration tests with Cosmos DB Emulator");

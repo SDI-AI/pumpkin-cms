@@ -4,8 +4,18 @@ namespace pumpkin_net_models.Models;
 
 public class Page
 {
+    [JsonPropertyName("id")]
+    public string Id 
+    { 
+        get => PageId; 
+        set => PageId = value; 
+    }
+
     [JsonPropertyName("PageId")]
     public string PageId { get; set; } = string.Empty;
+
+    [JsonPropertyName("tenantId")]
+    public string TenantId { get; set; } = string.Empty;
 
     [JsonPropertyName("pageSlug")]
     public string PageSlug { get; set; } = string.Empty;
