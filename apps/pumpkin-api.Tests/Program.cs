@@ -1,9 +1,13 @@
-using pumpkin_api.Managers;
-using pumpkin_api.Services;
-using pumpkin_net_models.Models;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using pumpkin_api.Managers;
+using pumpkin_api.Services;
+using pumpkin_api.Tests;
+using pumpkin_net_models.Models;
 using System.Text.Json;
+
+//ApiKeyGenerator.PrintGeneratedKey();
+//Console.ReadLine();
 
 // Load configuration
 var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development";
@@ -73,6 +77,7 @@ public static class PumpkinApiTests
         Console.WriteLine("\nTest 3: GetPageAsync - Retrieve page by slug");
         Page? retrievedPage = null;
         ICosmosDbFacade? cosmosDb = null;
+        string? createdPageSlug = null;
 
         try
         {
@@ -116,7 +121,7 @@ public static class PumpkinApiTests
         // Test 4: Create new page from Test 3 data
         if (retrievedPage != null && cosmosDb != null)
         {
-            await RunTest4CreatePage(cosmosDb, apiKey, tenantId, retrievedPage);
+            createdPageSlug = await RunTest4CreatePage(cosmosDb, apiKey, tenantId, retrievedPage);
         }
         else if (retrievedPage == null)
         {
@@ -125,6 +130,20 @@ public static class PumpkinApiTests
         else
         {
             Console.WriteLine("\nTest 4: Skipped - Cosmos DB not initialized");
+        }
+
+        // Test 5: Delete the page created in Test 4
+        if (!string.IsNullOrEmpty(createdPageSlug) && cosmosDb != null)
+        {
+            await RunTest5DeletePage(cosmosDb, apiKey, tenantId, createdPageSlug);
+        }
+        else if (string.IsNullOrEmpty(createdPageSlug))
+        {
+            Console.WriteLine("\nTest 5: Skipped - No page created in Test 4");
+        }
+        else
+        {
+            Console.WriteLine("\nTest 5: Skipped - Cosmos DB not initialized");
         }
 
         // Dispose of CosmosDbFacade if created
@@ -137,7 +156,7 @@ public static class PumpkinApiTests
     /// <summary>
     /// Test 4: Create new page from retrieved data
     /// </summary>
-    private static async Task RunTest4CreatePage(ICosmosDbFacade cosmosDb, string apiKey, string tenantId, Page retrievedPage)
+    private static async Task<string?> RunTest4CreatePage(ICosmosDbFacade cosmosDb, string apiKey, string tenantId, Page retrievedPage)
     {
         Console.WriteLine("\nTest 4: SavePageAsync - Create new page from retrieved data");
         try
@@ -160,15 +179,56 @@ public static class PumpkinApiTests
                 Console.WriteLine($"  🆔 New Page ID: {savedPage.PageId}");
                 Console.WriteLine($"  📝 Title: {savedPage.MetaData.Title}");
                 Console.WriteLine($"  🕒 Created At: {savedPage.MetaData.CreatedAt:yyyy-MM-dd HH:mm:ss} UTC");
+                return savedPage.PageSlug;
             }
             else
             {
                 Console.WriteLine($"  ⚠️  Page creation returned null");
+                return null;
             }
         }
         catch (InvalidOperationException ex)
         {
             Console.WriteLine($"  ⚠️  Page already exists: {ex.Message}");
+            return null;
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            Console.WriteLine($"  ❌ Unauthorized: {ex.Message}");
+            return null;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"  ❌ Error creating page: {ex.Message}");
+            if (ex.InnerException != null)
+            {
+                Console.WriteLine($"     Inner exception: {ex.InnerException.Message}");
+            }
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Test 5: Delete the test page created in Test 4
+    /// </summary>
+    private static async Task RunTest5DeletePage(ICosmosDbFacade cosmosDb, string apiKey, string tenantId, string pageSlug)
+    {
+        Console.WriteLine("\nTest 5: DeletePageAsync - Delete the test page");
+        try
+        {
+            Console.WriteLine($"  Deleting page with slug: {pageSlug}");
+
+            var deleted = await cosmosDb.DeletePageAsync(apiKey, tenantId, pageSlug);
+
+            if (deleted)
+            {
+                Console.WriteLine($"  ✅ Page deleted successfully!");
+                Console.WriteLine($"  🗑️  Deleted Page Slug: {pageSlug}");
+            }
+            else
+            {
+                Console.WriteLine($"  ⚠️  Page deletion returned false - page may not exist");
+            }
         }
         catch (UnauthorizedAccessException ex)
         {
@@ -176,7 +236,7 @@ public static class PumpkinApiTests
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"  ❌ Error creating page: {ex.Message}");
+            Console.WriteLine($"  ❌ Error deleting page: {ex.Message}");
             if (ex.InnerException != null)
             {
                 Console.WriteLine($"     Inner exception: {ex.InnerException.Message}");
