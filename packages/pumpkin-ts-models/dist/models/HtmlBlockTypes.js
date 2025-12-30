@@ -20,7 +20,8 @@ exports.BLOCK_TYPE_MAP = {
     'LocalProTips': 'LocalProTipsBlock',
     'Gallery': 'GalleryBlock',
     'Testimonials': 'TestimonialsBlock',
-    'Contact': 'ContactBlock'
+    'Contact': 'ContactBlock',
+    'Blog': 'BlogBlock'
 };
 /**
  * Array of all supported block types

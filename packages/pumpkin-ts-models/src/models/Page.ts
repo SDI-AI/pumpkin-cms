@@ -4,7 +4,9 @@ import { IHtmlBlock } from './IHtmlBlock';
  * Main page model representing a complete page structure
  */
 export interface Page {
+  id: string;
   PageId: string;
+  tenantId: string;
   pageSlug: string;
   PageVersion: number;
   Layout: string;

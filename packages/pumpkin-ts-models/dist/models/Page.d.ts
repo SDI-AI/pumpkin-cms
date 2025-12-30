@@ -3,8 +3,10 @@ import { IHtmlBlock } from './IHtmlBlock';
  * Main page model representing a complete page structure
  */
 export interface Page {
+    id: string;
     PageId: string;
-    fullSlug: string;
+    tenantId: string;
+    pageSlug: string;
     PageVersion: number;
     Layout: string;
     MetaData: PageMetaData;
@@ -13,6 +15,7 @@ export interface Page {
     seo: SeoData;
     isPublished: boolean;
     publishedAt: string | null;
+    includeInSitemap: boolean;
 }
 /**
  * Page metadata containing basic page information
