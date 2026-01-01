@@ -7,6 +7,12 @@ const HtmlBlockTypes_1 = require("./models/HtmlBlockTypes");
  */
 class PageJsonConverter {
     /**
+     * Normalizes a page slug to lowercase
+     */
+    static normalizeSlug(slug) {
+        return slug?.toLowerCase() ?? '';
+    }
+    /**
      * Converts a JSON string to a Page object
      */
     static fromJson(json, options = {}) {
@@ -19,6 +25,10 @@ class PageJsonConverter {
             // Validate basic page structure
             if (!this.isValidPageObject(parsed)) {
                 return null;
+            }
+            // Ensure pageSlug is always lowercase
+            if (parsed.pageSlug) {
+                parsed.pageSlug = parsed.pageSlug.toLowerCase();
             }
             // Process HTML blocks
             if (parsed.ContentData?.ContentBlocks) {
@@ -112,22 +122,58 @@ class PageJsonConverter {
     static isValidPageObject(obj) {
         return obj &&
             typeof obj.PageId === 'string' &&
-            typeof obj.fullSlug === 'string' &&
+            typeof obj.pageSlug === 'string' &&
             typeof obj.PageVersion === 'number' &&
             obj.MetaData &&
             obj.ContentData &&
             Array.isArray(obj.ContentData.ContentBlocks);
     }
     /**
-     * Processes an HTML block, ensuring it has the correct structure
+     * Processes an HTML block, ensuring it has the correct structure and type
      */
     static processHtmlBlock(block) {
         if (!(0, HtmlBlockTypes_1.isHtmlBlock)(block)) {
             console.warn('Invalid block structure:', block);
             return (0, HtmlBlockTypes_1.createGenericBlock)('Unknown', {});
         }
-        // Block is already properly structured
-        return block;
+        // Type discrimination based on block type
+        switch (block.type) {
+            case 'Hero':
+            case 'PrimaryCTA':
+            case 'SecondaryCTA':
+            case 'CardGrid':
+            case 'FAQ':
+            case 'Breadcrumbs':
+            case 'TrustBar':
+            case 'HowItWorks':
+            case 'ServiceAreaMap':
+            case 'LocalProTips':
+            case 'Gallery':
+            case 'Testimonials':
+            case 'Contact':
+            case 'Blog':
+                // For known types, validate and return the block with proper structure
+                return this.validateBlockContent(block);
+            default:
+                // For unknown types, create a generic block
+                console.warn(`Unknown block type: ${block.type}`);
+                return (0, HtmlBlockTypes_1.createGenericBlock)(block.type, block.content);
+        }
+    }
+    /**
+     * Validates that a block's content structure matches its type
+     */
+    static validateBlockContent(block) {
+        // Ensure content is an object
+        if (!block.content || typeof block.content !== 'object') {
+            console.warn(`Invalid content for block type ${block.type}:`, block.content);
+            return (0, HtmlBlockTypes_1.createGenericBlock)(block.type, {});
+        }
+        // Return the block - TypeScript will use discriminated unions for type safety
+        return {
+            type: block.type,
+            content: block.content
+        };
     }
 }
 exports.PageJsonConverter = PageJsonConverter;

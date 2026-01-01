@@ -17,8 +17,14 @@ public class Page
     [JsonPropertyName("tenantId")]
     public string TenantId { get; set; } = string.Empty;
 
+    private string _pageSlug = string.Empty;
+    
     [JsonPropertyName("pageSlug")]
-    public string PageSlug { get; set; } = string.Empty;
+    public string PageSlug 
+    { 
+        get => _pageSlug;
+        set => _pageSlug = value?.ToLowerInvariant() ?? string.Empty;
+    }
 
     [JsonPropertyName("PageVersion")]
     public int PageVersion { get; set; } = 1;

@@ -16,6 +16,10 @@ export interface JsonConverterOptions {
 export declare class PageJsonConverter {
     private static defaultOptions;
     /**
+     * Normalizes a page slug to lowercase
+     */
+    static normalizeSlug(slug: string): string;
+    /**
      * Converts a JSON string to a Page object
      */
     static fromJson(json: string, options?: JsonConverterOptions): Page | null;
@@ -40,8 +44,12 @@ export declare class PageJsonConverter {
      */
     private static isValidPageObject;
     /**
-     * Processes an HTML block, ensuring it has the correct structure
+     * Processes an HTML block, ensuring it has the correct structure and type
      */
     private static processHtmlBlock;
+    /**
+     * Validates that a block's content structure matches its type
+     */
+    private static validateBlockContent;
 }
 //# sourceMappingURL=PageJsonConverter.d.ts.map

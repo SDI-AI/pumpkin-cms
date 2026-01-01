@@ -6,6 +6,9 @@ export interface Page {
     id: string;
     PageId: string;
     tenantId: string;
+    /**
+     * Page slug - always stored in lowercase
+     */
     pageSlug: string;
     PageVersion: number;
     Layout: string;

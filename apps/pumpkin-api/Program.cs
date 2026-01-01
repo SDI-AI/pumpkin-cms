@@ -1,8 +1,16 @@
 using pumpkin_api.Services;
 using pumpkin_api.Managers;
 using pumpkin_net_models.Models;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configure JSON serialization options for handling polymorphic HTML blocks
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.Converters.Add(new HtmlBlockBaseJsonConverter());
+    options.SerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+});
 
 // Configure Cosmos DB
 builder.Services.Configure<CosmosDbSettings>(
@@ -28,8 +36,11 @@ app.MapGet("/api/pages/{tenantId}/{pageSlug}",
         {
             apiKey = authHeader.Substring("Bearer ".Length).Trim();
         }
-        
-        return PumpkinManager.GetPageAsync(cosmosDb, apiKey, tenantId, pageSlug);
+
+        // Decode the pageSlug in case it's URL encoded
+        var decodedPageSlug = Uri.UnescapeDataString(pageSlug);
+
+        return PumpkinManager.GetPageAsync(cosmosDb, apiKey, tenantId, decodedPageSlug);
     })
     .WithName("GetPage")
     .WithSummary("Get a published page by slug with API key authentication via Authorization header")
@@ -66,8 +77,8 @@ app.MapPut("/api/pages/{tenantId}/{pageSlug}",
         {
             apiKey = authHeader.Substring("Bearer ".Length).Trim();
         }
-        
-        return PumpkinManager.UpdatePageAsync(cosmosDb, apiKey, tenantId, pageSlug, page);
+        var decodedPageSlug = Uri.UnescapeDataString(pageSlug);
+        return PumpkinManager.UpdatePageAsync(cosmosDb, apiKey, tenantId, decodedPageSlug, page);
     })
     .WithName("UpdatePage")
     .WithSummary("Update an existing page by slug with API key authentication via Authorization header")
@@ -85,8 +96,8 @@ app.MapDelete("/api/pages/{tenantId}/{pageSlug}",
         {
             apiKey = authHeader.Substring("Bearer ".Length).Trim();
         }
-        
-        return PumpkinManager.DeletePageAsync(cosmosDb, apiKey, tenantId, pageSlug);
+        var decodedPageSlug = Uri.UnescapeDataString(pageSlug);
+        return PumpkinManager.DeletePageAsync(cosmosDb, apiKey, tenantId, decodedPageSlug);
     })
     .WithName("DeletePage")
     .WithSummary("Delete a page by slug with API key authentication via Authorization header")
