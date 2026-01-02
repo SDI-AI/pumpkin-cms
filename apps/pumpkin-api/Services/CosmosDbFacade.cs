@@ -43,6 +43,8 @@ public class CosmosDbFacade : ICosmosDbFacade, IDisposable
     {
         try
         {
+            _logger.LogInformation("GetPageAsync called - TenantId: {TenantId}, PageSlug: '{PageSlug}'", tenantId, pageSlug);
+            
             // First, validate the API key against the Tenant container
             var isValidTenant = await ValidateTenantApiKeyAsync(apiKey, tenantId);
             if (!isValidTenant)
@@ -54,10 +56,14 @@ public class CosmosDbFacade : ICosmosDbFacade, IDisposable
             // If tenant is valid, proceed to get the page
             var pagesContainer = _database.GetContainer("Page");
             
-            // Query for page by fullSlug and tenantId (partition key)
+            // Normalize slug to lowercase to match stored value
+            var normalizedSlug = pageSlug.ToLowerInvariant();
+            _logger.LogInformation("Querying with normalized slug: '{NormalizedSlug}'", normalizedSlug);
+            
+            // Query for page by pageSlug and tenantId (partition key)
             var query = "SELECT * FROM c WHERE c.tenantId = @tenantId AND c.pageSlug = @slug AND c.isPublished = true";
             var queryDefinition = new QueryDefinition(query)
-                .WithParameter("@slug", pageSlug)
+                .WithParameter("@slug", normalizedSlug)
                 .WithParameter("@tenantId", tenantId);
 
             using var iterator = pagesContainer.GetItemQueryIterator<Page>(queryDefinition, requestOptions: new QueryRequestOptions
@@ -72,27 +78,30 @@ public class CosmosDbFacade : ICosmosDbFacade, IDisposable
                 
                 if (page != null)
                 {
-                    _logger.LogDebug("Page retrieved successfully - Slug: {Slug}, TenantId: {TenantId}, RU Cost: {RequestCharge}", 
-                        pageSlug, tenantId, response.RequestCharge);
+                    _logger.LogInformation("Page retrieved successfully - Slug: {Slug}, PageId: {PageId}, TenantId: {TenantId}, RU Cost: {RequestCharge}", 
+                        normalizedSlug, page.PageId, tenantId, response.RequestCharge);
                     
                     return page;
                 }
                 else
                 {
-                    _logger.LogDebug("Page not found - Slug: {Slug}, TenantId: {TenantId}", pageSlug, tenantId);
+                    _logger.LogInformation("Page not found in results - Slug: '{Slug}', TenantId: {TenantId}, Results count: {Count}", 
+                        normalizedSlug, tenantId, response.Count());
                 }
             }
             
+            _logger.LogInformation("No results from iterator - Slug: '{Slug}', TenantId: {TenantId}", normalizedSlug, tenantId);
             return null;
         }
         catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
         {
-            _logger.LogDebug("Page not found - Slug: {Slug}, TenantId: {TenantId}", pageSlug, tenantId);
+            _logger.LogInformation("Page not found (404) - Slug: {Slug}, TenantId: {TenantId}", pageSlug, tenantId);
             return null;
         }
         catch (CosmosException ex)
         {
-            _logger.LogError(ex, "Error retrieving page - Slug: {Slug}, TenantId: {TenantId}", pageSlug, tenantId);
+            _logger.LogError(ex, "Error retrieving page - Slug: {Slug}, TenantId: {TenantId}, StatusCode: {StatusCode}", 
+                pageSlug, tenantId, ex.StatusCode);
             throw;
         }
         catch (Exception ex)
@@ -168,10 +177,13 @@ public class CosmosDbFacade : ICosmosDbFacade, IDisposable
 
             var pagesContainer = _database.GetContainer("Page");
 
+            // Normalize slug to lowercase to match stored value
+            var normalizedSlug = pageSlug.ToLowerInvariant();
+
             // First, query to find the page by slug to get the PageId
             var query = "SELECT * FROM c WHERE c.tenantId = @tenantId AND c.pageSlug = @slug";
             var queryDefinition = new QueryDefinition(query)
-                .WithParameter("@slug", pageSlug)
+                .WithParameter("@slug", normalizedSlug)
                 .WithParameter("@tenantId", tenantId);
 
             using var iterator = pagesContainer.GetItemQueryIterator<Page>(queryDefinition, requestOptions: new QueryRequestOptions
@@ -188,12 +200,13 @@ public class CosmosDbFacade : ICosmosDbFacade, IDisposable
 
             if (existingPage == null)
             {
-                _logger.LogWarning("Page not found for update - Slug: {Slug}, TenantId: {TenantId}", pageSlug, tenantId);
+                _logger.LogWarning("Page not found for update - Slug: {Slug}, TenantId: {TenantId}", normalizedSlug, tenantId);
                 throw new KeyNotFoundException($"Page with slug '{pageSlug}' not found");
             }
 
-            // Ensure the pageSlug matches
-            if (page.PageSlug != pageSlug)
+            // Ensure the pageSlug matches (after normalization)
+            var normalizedInputSlug = page.PageSlug.ToLowerInvariant();
+            if (normalizedInputSlug != normalizedSlug)
             {
                 throw new ArgumentException("PageSlug in the URL must match the PageSlug in the request body");
             }
@@ -211,7 +224,7 @@ public class CosmosDbFacade : ICosmosDbFacade, IDisposable
             var updateResponse = await pagesContainer.ReplaceItemAsync(page, existingPage.PageId, new PartitionKey(tenantId));
 
             _logger.LogInformation("Page updated successfully - Slug: {Slug}, PageId: {PageId}, TenantId: {TenantId}, Version: {Version}, RU Cost: {RequestCharge}",
-                pageSlug, existingPage.PageId, tenantId, page.PageVersion, updateResponse.RequestCharge);
+                normalizedSlug, existingPage.PageId, tenantId, page.PageVersion, updateResponse.RequestCharge);
 
             return updateResponse.Resource;
         }
@@ -252,10 +265,13 @@ public class CosmosDbFacade : ICosmosDbFacade, IDisposable
 
             var pagesContainer = _database.GetContainer("Page");
 
+            // Normalize slug to lowercase to match stored value
+            var normalizedSlug = pageSlug.ToLowerInvariant();
+
             // First, query to find the page by slug to get the PageId
             var query = "SELECT * FROM c WHERE c.tenantId = @tenantId AND c.pageSlug = @slug";
             var queryDefinition = new QueryDefinition(query)
-                .WithParameter("@slug", pageSlug)
+                .WithParameter("@slug", normalizedSlug)
                 .WithParameter("@tenantId", tenantId);
 
             using var iterator = pagesContainer.GetItemQueryIterator<Page>(queryDefinition, requestOptions: new QueryRequestOptions
@@ -272,7 +288,7 @@ public class CosmosDbFacade : ICosmosDbFacade, IDisposable
 
             if (existingPage == null)
             {
-                _logger.LogWarning("Page not found for deletion - Slug: {Slug}, TenantId: {TenantId}", pageSlug, tenantId);
+                _logger.LogWarning("Page not found for deletion - Slug: {Slug}, TenantId: {TenantId}", normalizedSlug, tenantId);
                 throw new KeyNotFoundException($"Page with slug '{pageSlug}' not found");
             }
 
@@ -280,7 +296,7 @@ public class CosmosDbFacade : ICosmosDbFacade, IDisposable
             var deleteResponse = await pagesContainer.DeleteItemAsync<Page>(existingPage.PageId, new PartitionKey(tenantId));
 
             _logger.LogInformation("Page deleted successfully - Slug: {Slug}, PageId: {PageId}, TenantId: {TenantId}, RU Cost: {RequestCharge}",
-                pageSlug, existingPage.PageId, tenantId, deleteResponse.RequestCharge);
+                normalizedSlug, existingPage.PageId, tenantId, deleteResponse.RequestCharge);
 
             return true;
         }
@@ -326,7 +342,7 @@ public class CosmosDbFacade : ICosmosDbFacade, IDisposable
                     
                     if (isValidKey)
                     {
-                        _logger.LogDebug("Tenant validation successful - TenantId: {TenantId}, Name: {Name}, Plan: {Plan}, RU Cost: {RequestCharge}", 
+                        _logger.LogInformation("Tenant validation successful - TenantId: {TenantId}, Name: {Name}, Plan: {Plan}, RU Cost: {RequestCharge}", 
                             tenantId, tenant.Name, tenant.Plan, response.RequestCharge);
                         return true;
                     }

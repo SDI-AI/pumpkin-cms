@@ -10,20 +10,33 @@ public static class PumpkinManager
         return Results.Ok("🎃 Welcome to Pumpkin CMS v0.1 🎃");
     }
 
-    public static async Task<IResult> GetPageAsync(ICosmosDbFacade cosmosDb, string apiKey, string tenantId, string pageSlug)
+    public static async Task<IResult> GetPageAsync(ICosmosDbFacade cosmosDb, string apiKey, string tenantId, string pageSlug, ILogger? logger = null)
     {
         try
         {
+            logger?.LogInformation("GetPageAsync called - TenantId: {TenantId}, PageSlug: {PageSlug}", tenantId, pageSlug);
+            
             // Validate required parameters
             if (string.IsNullOrEmpty(apiKey))
+            {
+                logger?.LogWarning("GetPageAsync - Missing API key - TenantId: {TenantId}, PageSlug: {PageSlug}", tenantId, pageSlug);
                 return Results.BadRequest("API key is required");
+            }
             
             if (string.IsNullOrEmpty(tenantId))
+            {
+                logger?.LogWarning("GetPageAsync - Missing Tenant ID - PageSlug: {PageSlug}", pageSlug);
                 return Results.BadRequest("Tenant ID is required");
+            }
             
             if (string.IsNullOrEmpty(pageSlug))
+            {
+                logger?.LogWarning("GetPageAsync - Missing Page Slug - TenantId: {TenantId}", tenantId);
                 return Results.BadRequest("Page slug is required");
+            }
 
+            logger?.LogInformation("Fetching page from Cosmos DB - TenantId: {TenantId}, PageSlug: {PageSlug}", tenantId, pageSlug);
+            
             // For bcrypt validation, we need to pass the plain API key and let the facade handle verification
             // The apiKeyHash in the database is a bcrypt hash that needs to be verified against the plain key
             var page = await cosmosDb.GetPageAsync(apiKey, tenantId, pageSlug);
@@ -32,13 +45,18 @@ public static class PumpkinManager
             {
                 // Could be either invalid tenant/API key or page not found
                 // The facade handles tenant validation internally
+                logger?.LogWarning("GetPageAsync - Page not found or access denied - TenantId: {TenantId}, PageSlug: {PageSlug}", tenantId, pageSlug);
                 return Results.NotFound("Page not found or access denied");
             }
+            
+            logger?.LogInformation("GetPageAsync - Success - TenantId: {TenantId}, PageSlug: {PageSlug}, PageId: {PageId}, Title: {Title}", 
+                tenantId, pageSlug, page.PageId, page.MetaData.Title);
             
             return Results.Ok(page);
         }
         catch (Exception ex)
         {
+            logger?.LogError(ex, "GetPageAsync - Error retrieving page - TenantId: {TenantId}, PageSlug: {PageSlug}", tenantId, pageSlug);
             return Results.Problem($"Error retrieving page: {ex.Message}");
         }
     }

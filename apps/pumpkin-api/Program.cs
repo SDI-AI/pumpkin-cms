@@ -26,7 +26,7 @@ app.MapGet("/", PumpkinManager.GetWelcomeMessage);
 
 // Main API endpoint - Get page by slug with API key authentication via Authorization header
 app.MapGet("/api/pages/{tenantId}/{pageSlug}", 
-    (ICosmosDbFacade cosmosDb, string tenantId, string pageSlug, HttpContext context) =>
+    async (ICosmosDbFacade cosmosDb, string tenantId, string pageSlug, HttpContext context, ILogger<Program> logger) =>
     {
         // Extract API key from Authorization header (Bearer token format)
         var authHeader = context.Request.Headers.Authorization.FirstOrDefault();
@@ -40,7 +40,7 @@ app.MapGet("/api/pages/{tenantId}/{pageSlug}",
         // Decode the pageSlug in case it's URL encoded
         var decodedPageSlug = Uri.UnescapeDataString(pageSlug);
 
-        return PumpkinManager.GetPageAsync(cosmosDb, apiKey, tenantId, decodedPageSlug);
+        return await PumpkinManager.GetPageAsync(cosmosDb, apiKey, tenantId, decodedPageSlug, logger);
     })
     .WithName("GetPage")
     .WithSummary("Get a published page by slug with API key authentication via Authorization header")
@@ -48,7 +48,7 @@ app.MapGet("/api/pages/{tenantId}/{pageSlug}",
 
 // Save a new page
 app.MapPost("/api/pages/{tenantId}",
-    (ICosmosDbFacade cosmosDb, string tenantId, pumpkin_net_models.Models.Page page, HttpContext context) =>
+    async (ICosmosDbFacade cosmosDb, string tenantId, pumpkin_net_models.Models.Page page, HttpContext context) =>
     {
         // Extract API key from Authorization header (Bearer token format)
         var authHeader = context.Request.Headers.Authorization.FirstOrDefault();
@@ -59,7 +59,7 @@ app.MapPost("/api/pages/{tenantId}",
             apiKey = authHeader.Substring("Bearer ".Length).Trim();
         }
         
-        return PumpkinManager.SavePageAsync(cosmosDb, apiKey, tenantId, page);
+        return await PumpkinManager.SavePageAsync(cosmosDb, apiKey, tenantId, page);
     })
     .WithName("SavePage")
     .WithSummary("Create a new page with API key authentication via Authorization header")
@@ -67,7 +67,7 @@ app.MapPost("/api/pages/{tenantId}",
 
 // Update an existing page
 app.MapPut("/api/pages/{tenantId}/{pageSlug}",
-    (ICosmosDbFacade cosmosDb, string tenantId, string pageSlug, pumpkin_net_models.Models.Page page, HttpContext context) =>
+    async (ICosmosDbFacade cosmosDb, string tenantId, string pageSlug, pumpkin_net_models.Models.Page page, HttpContext context) =>
     {
         // Extract API key from Authorization header (Bearer token format)
         var authHeader = context.Request.Headers.Authorization.FirstOrDefault();
@@ -78,7 +78,7 @@ app.MapPut("/api/pages/{tenantId}/{pageSlug}",
             apiKey = authHeader.Substring("Bearer ".Length).Trim();
         }
         var decodedPageSlug = Uri.UnescapeDataString(pageSlug);
-        return PumpkinManager.UpdatePageAsync(cosmosDb, apiKey, tenantId, decodedPageSlug, page);
+        return await PumpkinManager.UpdatePageAsync(cosmosDb, apiKey, tenantId, decodedPageSlug, page);
     })
     .WithName("UpdatePage")
     .WithSummary("Update an existing page by slug with API key authentication via Authorization header")
@@ -86,7 +86,7 @@ app.MapPut("/api/pages/{tenantId}/{pageSlug}",
 
 // Delete a page
 app.MapDelete("/api/pages/{tenantId}/{pageSlug}",
-    (ICosmosDbFacade cosmosDb, string tenantId, string pageSlug, HttpContext context) =>
+    async (ICosmosDbFacade cosmosDb, string tenantId, string pageSlug, HttpContext context) =>
     {
         // Extract API key from Authorization header (Bearer token format)
         var authHeader = context.Request.Headers.Authorization.FirstOrDefault();
@@ -97,7 +97,7 @@ app.MapDelete("/api/pages/{tenantId}/{pageSlug}",
             apiKey = authHeader.Substring("Bearer ".Length).Trim();
         }
         var decodedPageSlug = Uri.UnescapeDataString(pageSlug);
-        return PumpkinManager.DeletePageAsync(cosmosDb, apiKey, tenantId, decodedPageSlug);
+        return await PumpkinManager.DeletePageAsync(cosmosDb, apiKey, tenantId, decodedPageSlug);
     })
     .WithName("DeletePage")
     .WithSummary("Delete a page by slug with API key authentication via Authorization header")
