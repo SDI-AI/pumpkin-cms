@@ -7,28 +7,33 @@ public static class PumpkinManager
 {
     public static IResult GetWelcomeMessage()
     {
-        return Results.Ok("🎃 Welcome to Pumpkin CMS v0.1 🎃");
+        return Results.Ok("🎃 Welcome to Pumpkin CMS v0.2 🎃");
     }
+
+    //public static async Task<IResult> GetPageAsync()//ICosmosDbFacade cosmosDb, string apiKey, string tenantId, string pageSlug, ILogger? logger = null)
+    //{
+    //    return Results.Ok("🎃 Welcome to Pumpkin CMS v0.1 - Hello from Get page 🎃");
+    //}
 
     public static async Task<IResult> GetPageAsync(ICosmosDbFacade cosmosDb, string apiKey, string tenantId, string pageSlug, ILogger? logger = null)
     {
         try
         {
             logger?.LogInformation("GetPageAsync called - TenantId: {TenantId}, PageSlug: {PageSlug}", tenantId, pageSlug);
-            
+
             // Validate required parameters
             if (string.IsNullOrEmpty(apiKey))
             {
                 logger?.LogWarning("GetPageAsync - Missing API key - TenantId: {TenantId}, PageSlug: {PageSlug}", tenantId, pageSlug);
                 return Results.BadRequest("API key is required");
             }
-            
+
             if (string.IsNullOrEmpty(tenantId))
             {
                 logger?.LogWarning("GetPageAsync - Missing Tenant ID - PageSlug: {PageSlug}", pageSlug);
                 return Results.BadRequest("Tenant ID is required");
             }
-            
+
             if (string.IsNullOrEmpty(pageSlug))
             {
                 logger?.LogWarning("GetPageAsync - Missing Page Slug - TenantId: {TenantId}", tenantId);
@@ -36,11 +41,11 @@ public static class PumpkinManager
             }
 
             logger?.LogInformation("Fetching page from Cosmos DB - TenantId: {TenantId}, PageSlug: {PageSlug}", tenantId, pageSlug);
-            
+
             // For bcrypt validation, we need to pass the plain API key and let the facade handle verification
             // The apiKeyHash in the database is a bcrypt hash that needs to be verified against the plain key
             var page = await cosmosDb.GetPageAsync(apiKey, tenantId, pageSlug);
-            
+
             if (page == null)
             {
                 // Could be either invalid tenant/API key or page not found
@@ -48,10 +53,10 @@ public static class PumpkinManager
                 logger?.LogWarning("GetPageAsync - Page not found or access denied - TenantId: {TenantId}, PageSlug: {PageSlug}", tenantId, pageSlug);
                 return Results.NotFound("Page not found or access denied");
             }
-            
-            logger?.LogInformation("GetPageAsync - Success - TenantId: {TenantId}, PageSlug: {PageSlug}, PageId: {PageId}, Title: {Title}", 
+
+            logger?.LogInformation("GetPageAsync - Success - TenantId: {TenantId}, PageSlug: {PageSlug}, PageId: {PageId}, Title: {Title}",
                 tenantId, pageSlug, page.PageId, page.MetaData.Title);
-            
+
             return Results.Ok(page);
         }
         catch (Exception ex)
