@@ -10,12 +10,7 @@ public static class PumpkinManager
         return Results.Ok("🎃 Welcome to Pumpkin CMS v0.2 🎃");
     }
 
-    //public static async Task<IResult> GetPageAsync()//ICosmosDbFacade cosmosDb, string apiKey, string tenantId, string pageSlug, ILogger? logger = null)
-    //{
-    //    return Results.Ok("🎃 Welcome to Pumpkin CMS v0.1 - Hello from Get page 🎃");
-    //}
-
-    public static async Task<IResult> GetPageAsync(ICosmosDbFacade cosmosDb, string apiKey, string tenantId, string pageSlug, ILogger? logger = null)
+    public static async Task<IResult> GetPageAsync(IDatabaseService databaseService, string apiKey, string tenantId, string pageSlug, ILogger? logger = null)
     {
         try
         {
@@ -40,16 +35,12 @@ public static class PumpkinManager
                 return Results.BadRequest("Page slug is required");
             }
 
-            logger?.LogInformation("Fetching page from Cosmos DB - TenantId: {TenantId}, PageSlug: {PageSlug}", tenantId, pageSlug);
+            logger?.LogInformation("Fetching page from database - TenantId: {TenantId}, PageSlug: {PageSlug}", tenantId, pageSlug);
 
-            // For bcrypt validation, we need to pass the plain API key and let the facade handle verification
-            // The apiKeyHash in the database is a bcrypt hash that needs to be verified against the plain key
-            var page = await cosmosDb.GetPageAsync(apiKey, tenantId, pageSlug);
+            var page = await databaseService.GetPageAsync(apiKey, tenantId, pageSlug);
 
             if (page == null)
             {
-                // Could be either invalid tenant/API key or page not found
-                // The facade handles tenant validation internally
                 logger?.LogWarning("GetPageAsync - Page not found or access denied - TenantId: {TenantId}, PageSlug: {PageSlug}", tenantId, pageSlug);
                 return Results.NotFound("Page not found or access denied");
             }
@@ -66,7 +57,7 @@ public static class PumpkinManager
         }
     }
 
-    public static async Task<IResult> SavePageAsync(ICosmosDbFacade cosmosDb, string apiKey, string tenantId, Page page)
+    public static async Task<IResult> SavePageAsync(IDatabaseService databaseService, string apiKey, string tenantId, Page page)
     {
         try
         {
@@ -83,7 +74,7 @@ public static class PumpkinManager
             if (string.IsNullOrEmpty(page.PageId))
                 return Results.BadRequest("Page ID is required");
 
-            var savedPage = await cosmosDb.SavePageAsync(apiKey, tenantId, page);
+            var savedPage = await databaseService.SavePageAsync(apiKey, tenantId, page);
             
             return Results.Created($"/api/pages/{tenantId}/{savedPage.PageId}", savedPage);
         }
@@ -101,7 +92,7 @@ public static class PumpkinManager
         }
     }
 
-    public static async Task<IResult> UpdatePageAsync(ICosmosDbFacade cosmosDb, string apiKey, string tenantId, string pageSlug, Page page)
+    public static async Task<IResult> UpdatePageAsync(IDatabaseService databaseService, string apiKey, string tenantId, string pageSlug, Page page)
     {
         try
         {
@@ -118,7 +109,7 @@ public static class PumpkinManager
             if (page == null)
                 return Results.BadRequest("Page data is required");
 
-            var updatedPage = await cosmosDb.UpdatePageAsync(apiKey, tenantId, pageSlug, page);
+            var updatedPage = await databaseService.UpdatePageAsync(apiKey, tenantId, pageSlug, page);
             
             return Results.Ok(updatedPage);
         }
@@ -140,7 +131,7 @@ public static class PumpkinManager
         }
     }
 
-    public static async Task<IResult> DeletePageAsync(ICosmosDbFacade cosmosDb, string apiKey, string tenantId, string pageSlug)
+    public static async Task<IResult> DeletePageAsync(IDatabaseService databaseService, string apiKey, string tenantId, string pageSlug)
     {
         try
         {
@@ -154,7 +145,7 @@ public static class PumpkinManager
             if (string.IsNullOrEmpty(pageSlug))
                 return Results.BadRequest("Page slug is required");
 
-            var deleted = await cosmosDb.DeletePageAsync(apiKey, tenantId, pageSlug);
+            var deleted = await databaseService.DeletePageAsync(apiKey, tenantId, pageSlug);
             
             return Results.NoContent();
         }

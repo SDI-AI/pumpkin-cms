@@ -2,7 +2,11 @@ using pumpkin_net_models.Models;
 
 namespace pumpkin_api.Services;
 
-public interface ICosmosDbFacade
+/// <summary>
+/// High-level database service interface.
+/// This is the main service interface used by the application.
+/// </summary>
+public interface IDatabaseService
 {
     Task<Page?> GetPageAsync(string apiKey, string tenantId, string pageSlug);
     Task<Page> SavePageAsync(string apiKey, string tenantId, Page page);

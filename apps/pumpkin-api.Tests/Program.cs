@@ -35,7 +35,7 @@ await PumpkinApiTests.RunTest2();
 await PumpkinApiTests.RunTest3And4(configuration, apiKey, tenantId);
 
 Console.WriteLine("\n🎉 All basic tests completed!");
-Console.WriteLine("\nNote: For full testing, mock ICosmosDbFacade or use integration tests with Cosmos DB Emulator");
+Console.WriteLine("\nNote: For full testing, mock IDatabaseService or use integration tests with database");
 
 /// <summary>
 /// Test class for Pumpkin API operations
@@ -64,7 +64,7 @@ public static class PumpkinApiTests
     }
 
     /// <summary>
-    /// Test 3 & 4: Get page by slug and create a copy with Cosmos DB
+    /// Test 3 & 4: Get page by slug and create a copy with database
     /// </summary>
     public static async Task RunTest3And4(IConfiguration configuration, string apiKey, string tenantId)
     {
@@ -76,41 +76,61 @@ public static class PumpkinApiTests
 
         Console.WriteLine("\nTest 3: GetPageAsync - Retrieve page by slug");
         Page? retrievedPage = null;
-        ICosmosDbFacade? cosmosDb = null;
+        IDatabaseService? databaseService = null;
         string? createdPageSlug = null;
 
         try
         {
-            // Initialize Cosmos DB settings
-            var cosmosSettings = configuration.GetSection(CosmosDbSettings.SectionName).Get<CosmosDbSettings>();
+            // Initialize Database settings
+            var databaseSettings = configuration.GetSection(DatabaseSettings.SectionName).Get<DatabaseSettings>();
 
-            if (cosmosSettings != null && !string.IsNullOrEmpty(cosmosSettings.ConnectionString))
+            if (databaseSettings != null)
             {
                 var loggerFactory = LoggerFactory.Create(builder => { });
-                cosmosDb = new CosmosDbFacade(
-                    Microsoft.Extensions.Options.Options.Create(cosmosSettings),
-                    loggerFactory.CreateLogger<CosmosDbFacade>()
-                );
-
-                var pageSlug = "pa/philadelphia/pumpkin-cms";
-                Console.WriteLine($"  Fetching page: {pageSlug}");
-
-                var page = await cosmosDb.GetPageAsync(apiKey, tenantId, pageSlug);
-
-                if (page != null)
+                
+                // Create the appropriate data connection based on provider
+                if (databaseSettings.Provider.Equals("CosmosDb", StringComparison.OrdinalIgnoreCase))
                 {
-                    retrievedPage = page;
-                    Console.WriteLine($"  ✅ Page retrieved successfully");
-                    PrintPageJson(page);
+                    var cosmosSettings = configuration.GetSection($"{DatabaseSettings.SectionName}:CosmosDb").Get<CosmosDbSettings>();
+                    if (cosmosSettings != null && !string.IsNullOrEmpty(cosmosSettings.ConnectionString))
+                    {
+                        var cosmosConnection = new CosmosDataConnection(
+                            Microsoft.Extensions.Options.Options.Create(cosmosSettings),
+                            loggerFactory.CreateLogger<CosmosDataConnection>()
+                        );
+                        
+                        // For testing, we'll use the connection directly instead of DatabaseService
+                        // In production, use DatabaseService through DI
+                        databaseService = cosmosConnection as IDatabaseService ?? new TestDatabaseService(cosmosConnection);
+                    }
+                }
+
+                if (databaseService != null)
+                {
+                    var pageSlug = "pa/philadelphia/pumpkin-cms";
+                    Console.WriteLine($"  Fetching page: {pageSlug}");
+
+                    var page = await databaseService.GetPageAsync(apiKey, tenantId, pageSlug);
+
+                    if (page != null)
+                    {
+                        retrievedPage = page;
+                        Console.WriteLine($"  ✅ Page retrieved successfully");
+                        PrintPageJson(page);
+                    }
+                    else
+                    {
+                        Console.WriteLine($"  ⚠️  Page not found or access denied");
+                    }
                 }
                 else
                 {
-                    Console.WriteLine($"  ⚠️  Page not found or access denied");
+                    Console.WriteLine("  ⚠️  Database not configured - skipping test");
                 }
             }
             else
             {
-                Console.WriteLine("  ⚠️  Cosmos DB not configured - skipping test");
+                Console.WriteLine("  ⚠️  Database settings not configured - skipping test");
             }
         }
         catch (Exception ex)
@@ -119,9 +139,9 @@ public static class PumpkinApiTests
         }
 
         // Test 4: Create new page from Test 3 data
-        if (retrievedPage != null && cosmosDb != null)
+        if (retrievedPage != null && databaseService != null)
         {
-            createdPageSlug = await RunTest4CreatePage(cosmosDb, apiKey, tenantId, retrievedPage);
+            createdPageSlug = await RunTest4CreatePage(databaseService, apiKey, tenantId, retrievedPage);
         }
         else if (retrievedPage == null)
         {
@@ -129,13 +149,13 @@ public static class PumpkinApiTests
         }
         else
         {
-            Console.WriteLine("\nTest 4: Skipped - Cosmos DB not initialized");
+            Console.WriteLine("\nTest 4: Skipped - Database not initialized");
         }
 
         // Test 5: Delete the page created in Test 4
-        if (!string.IsNullOrEmpty(createdPageSlug) && cosmosDb != null)
+        if (!string.IsNullOrEmpty(createdPageSlug) && databaseService != null)
         {
-            await RunTest5DeletePage(cosmosDb, apiKey, tenantId, createdPageSlug);
+            await RunTest5DeletePage(databaseService, apiKey, tenantId, createdPageSlug);
         }
         else if (string.IsNullOrEmpty(createdPageSlug))
         {
@@ -143,11 +163,11 @@ public static class PumpkinApiTests
         }
         else
         {
-            Console.WriteLine("\nTest 5: Skipped - Cosmos DB not initialized");
+            Console.WriteLine("\nTest 5: Skipped - Database not initialized");
         }
 
-        // Dispose of CosmosDbFacade if created
-        if (cosmosDb is IDisposable disposable)
+        // Dispose of database service if created
+        if (databaseService is IDisposable disposable)
         {
             disposable.Dispose();
         }
@@ -156,7 +176,7 @@ public static class PumpkinApiTests
     /// <summary>
     /// Test 4: Create new page from retrieved data
     /// </summary>
-    private static async Task<string?> RunTest4CreatePage(ICosmosDbFacade cosmosDb, string apiKey, string tenantId, Page retrievedPage)
+    private static async Task<string?> RunTest4CreatePage(IDatabaseService databaseService, string apiKey, string tenantId, Page retrievedPage)
     {
         Console.WriteLine("\nTest 4: SavePageAsync - Create new page from retrieved data");
         try
@@ -170,7 +190,7 @@ public static class PumpkinApiTests
             Console.WriteLine($"  Creating new page with slug: {newSlug}");
             Console.WriteLine($"  New Page ID: {newPageId}");
 
-            var savedPage = await cosmosDb.SavePageAsync(apiKey, tenantId, newPage);
+            var savedPage = await databaseService.SavePageAsync(apiKey, tenantId, newPage);
 
             if (savedPage != null)
             {
@@ -211,14 +231,14 @@ public static class PumpkinApiTests
     /// <summary>
     /// Test 5: Delete the test page created in Test 4
     /// </summary>
-    private static async Task RunTest5DeletePage(ICosmosDbFacade cosmosDb, string apiKey, string tenantId, string pageSlug)
+    private static async Task RunTest5DeletePage(IDatabaseService databaseService, string apiKey, string tenantId, string pageSlug)
     {
         Console.WriteLine("\nTest 5: DeletePageAsync - Delete the test page");
         try
         {
             Console.WriteLine($"  Deleting page with slug: {pageSlug}");
 
-            var deleted = await cosmosDb.DeletePageAsync(apiKey, tenantId, pageSlug);
+            var deleted = await databaseService.DeletePageAsync(apiKey, tenantId, pageSlug);
 
             if (deleted)
             {
@@ -333,5 +353,36 @@ public static class PumpkinApiTests
         var pageJson = JsonSerializer.Serialize(page, jsonOptions);
         Console.WriteLine(pageJson);
         Console.WriteLine($"  {new string('-', 80)}");
+    }
+}
+
+// Simple wrapper for testing that implements IDatabaseService
+internal class TestDatabaseService : IDatabaseService, IDisposable
+{
+    private readonly IDataConnection _connection;
+
+    public TestDatabaseService(IDataConnection connection)
+    {
+        _connection = connection;
+    }
+
+    public Task<Page?> GetPageAsync(string apiKey, string tenantId, string pageSlug)
+        => _connection.GetPageAsync(apiKey, tenantId, pageSlug);
+
+    public Task<Page> SavePageAsync(string apiKey, string tenantId, Page page)
+        => _connection.SavePageAsync(apiKey, tenantId, page);
+
+    public Task<Page> UpdatePageAsync(string apiKey, string tenantId, string pageSlug, Page page)
+        => _connection.UpdatePageAsync(apiKey, tenantId, pageSlug, page);
+
+    public Task<bool> DeletePageAsync(string apiKey, string tenantId, string pageSlug)
+        => _connection.DeletePageAsync(apiKey, tenantId, pageSlug);
+
+    public void Dispose()
+    {
+        if (_connection is IDisposable disposable)
+        {
+            disposable.Dispose();
+        }
     }
 }

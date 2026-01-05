@@ -5,14 +5,18 @@ using System.Net;
 
 namespace pumpkin_api.Services;
 
-public class CosmosDbFacade : ICosmosDbFacade, IDisposable
+/// <summary>
+/// Cosmos DB implementation of IDataConnection.
+/// Handles all Cosmos DB-specific operations.
+/// </summary>
+public class CosmosDataConnection : IDataConnection, IDisposable
 {
     private readonly CosmosClient _cosmosClient;
     private readonly Database _database;
-    private readonly ILogger<CosmosDbFacade> _logger;
+    private readonly ILogger<CosmosDataConnection> _logger;
     private bool _disposed = false;
 
-    public CosmosDbFacade(IOptions<CosmosDbSettings> settings, ILogger<CosmosDbFacade> logger)
+    public CosmosDataConnection(IOptions<CosmosDbSettings> settings, ILogger<CosmosDataConnection> logger)
     {
         _logger = logger;
         var cosmosSettings = settings.Value;
@@ -35,7 +39,7 @@ public class CosmosDbFacade : ICosmosDbFacade, IDisposable
         _cosmosClient = new CosmosClient(cosmosSettings.ConnectionString, clientOptions);
         _database = _cosmosClient.GetDatabase(cosmosSettings.DatabaseName);
 
-        _logger.LogInformation("Cosmos DB Facade initialized for database: {DatabaseName}",
+        _logger.LogInformation("Cosmos DB Data Connection initialized for database: {DatabaseName}",
             cosmosSettings.DatabaseName);
     }
 
