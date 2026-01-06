@@ -53,6 +53,11 @@ public class DatabaseService : IDatabaseService, IDisposable
         return _dataConnection.DeletePageAsync(apiKey, tenantId, pageSlug);
     }
 
+    public Task<FormEntry> SaveFormEntryAsync(string apiKey, string tenantId, FormEntry formEntry)
+    {
+        return _dataConnection.SaveFormEntryAsync(apiKey, tenantId, formEntry);
+    }
+
     public void Dispose()
     {
         if (_dataConnection is IDisposable disposable)

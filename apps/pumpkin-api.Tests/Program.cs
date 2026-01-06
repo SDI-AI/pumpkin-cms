@@ -378,6 +378,9 @@ internal class TestDatabaseService : IDatabaseService, IDisposable
     public Task<bool> DeletePageAsync(string apiKey, string tenantId, string pageSlug)
         => _connection.DeletePageAsync(apiKey, tenantId, pageSlug);
 
+    public Task<FormEntry> SaveFormEntryAsync(string apiKey, string tenantId, FormEntry formEntry)
+        => _connection.SaveFormEntryAsync(apiKey, tenantId, formEntry);
+
     public void Dispose()
     {
         if (_connection is IDisposable disposable)

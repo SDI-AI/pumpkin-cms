@@ -115,4 +115,23 @@ app.MapDelete("/api/pages/{tenantId}/{**pageSlug}",
     .WithSummary("Delete a page by slug with API key authentication via Authorization header")
     .WithDescription("Use Authorization: Bearer {apiKey} header for authentication");
 
+// Save a form entry
+app.MapPost("/api/forms/{tenantId}/entries",
+    async (IDatabaseService databaseService, string tenantId, FormEntry formEntry, HttpContext context) =>
+    {
+        // Extract API key from Authorization header (Bearer token format)
+        var authHeader = context.Request.Headers.Authorization.FirstOrDefault();
+        var apiKey = string.Empty;
+        
+        if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+        {
+            apiKey = authHeader.Substring("Bearer ".Length).Trim();
+        }
+        
+        return await PumpkinManager.SaveFormEntryAsync(databaseService, apiKey, tenantId, formEntry);
+    })
+    .WithName("SaveFormEntry")
+    .WithSummary("Submit a form entry with API key authentication via Authorization header")
+    .WithDescription("Use Authorization: Bearer {apiKey} header for authentication");
+
 app.Run();

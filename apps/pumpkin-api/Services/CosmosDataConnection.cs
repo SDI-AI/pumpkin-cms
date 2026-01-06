@@ -321,6 +321,63 @@ public class CosmosDataConnection : IDataConnection, IDisposable
         }
     }
 
+    public async Task<FormEntry> SaveFormEntryAsync(string apiKey, string tenantId, FormEntry formEntry)
+    {
+        try
+        {
+            // Validate the API key against the Tenant container
+            var isValidTenant = await ValidateTenantApiKeyAsync(apiKey, tenantId);
+            if (!isValidTenant)
+            {
+                _logger.LogWarning("Invalid API key for tenant - TenantId: {TenantId}", tenantId);
+                throw new UnauthorizedAccessException("Invalid API key or tenant ID");
+            }
+
+            // Ensure the form entry has required fields
+            if (string.IsNullOrEmpty(formEntry.Id))
+            {
+                formEntry.Id = Guid.NewGuid().ToString();
+            }
+
+            // Set tenant ID if not already set
+            if (string.IsNullOrEmpty(formEntry.TenantId))
+            {
+                formEntry.TenantId = tenantId;
+            }
+
+            var formEntryContainer = _database.GetContainer("FormEntry");
+
+            // Set timestamp
+            if (formEntry.SubmittedAt == default)
+            {
+                formEntry.SubmittedAt = DateTime.UtcNow;
+            }
+
+            // Create the form entry
+            var response = await formEntryContainer.CreateItemAsync(formEntry, new PartitionKey(tenantId));
+
+            _logger.LogInformation("Form entry created successfully - FormEntryId: {FormEntryId}, FormId: {FormId}, TenantId: {TenantId}, RU Cost: {RequestCharge}",
+                formEntry.Id, formEntry.FormId, tenantId, response.RequestCharge);
+
+            return response.Resource;
+        }
+        catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.Conflict)
+        {
+            _logger.LogWarning("Form entry already exists - FormEntryId: {FormEntryId}, TenantId: {TenantId}", formEntry.Id, tenantId);
+            throw new InvalidOperationException($"Form entry with ID {formEntry.Id} already exists", ex);
+        }
+        catch (CosmosException ex)
+        {
+            _logger.LogError(ex, "Error creating form entry - FormEntryId: {FormEntryId}, TenantId: {TenantId}", formEntry.Id, tenantId);
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error creating form entry - FormEntryId: {FormEntryId}, TenantId: {TenantId}", formEntry.Id, tenantId);
+            throw;
+        }
+    }
+
     private async Task<bool> ValidateTenantApiKeyAsync(string apiKey, string tenantId)
     {
         try
