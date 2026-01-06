@@ -11,6 +11,12 @@ export type {
   Billing
 } from './models/Tenant';
 
+// Form Entry models
+export type {
+  FormEntry,
+  FormEntryMetadata
+} from './models/FormEntry';
+
 // Page models
 export type {
   Page,
