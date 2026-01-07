@@ -65,6 +65,9 @@ public class PageMetaData
     [JsonPropertyName("keyword")]
     public string Keyword { get; set; } = string.Empty;
 
+    [JsonPropertyName("pageType")]
+    public string PageType { get; set; } = "Keyword";
+
     [JsonPropertyName("title")]
     public string Title { get; set; } = string.Empty;
 
@@ -94,6 +97,9 @@ public class SearchData
 
     [JsonPropertyName("city")]
     public string City { get; set; } = string.Empty;
+
+    [JsonPropertyName("metro")]
+    public string Metro { get; set; } = string.Empty;
 
     [JsonPropertyName("keyword")]
     public string Keyword { get; set; } = string.Empty;

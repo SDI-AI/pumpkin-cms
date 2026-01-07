@@ -29,6 +29,7 @@ export interface PageMetaData {
   category: string;
   product: string;
   keyword: string;
+  pageType: string;
   title: string;
   description: string;
   createdAt: string;
@@ -44,6 +45,7 @@ export interface PageMetaData {
 export interface SearchData {
   state: string;
   city: string;
+  metro: string;
   keyword: string;
   tags: string[];
   contentSummary: string;
