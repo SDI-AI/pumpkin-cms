@@ -101,6 +101,9 @@ public class SearchData
     [JsonPropertyName("metro")]
     public string Metro { get; set; } = string.Empty;
 
+    [JsonPropertyName("county")]
+    public string County { get; set; } = string.Empty;
+
     [JsonPropertyName("keyword")]
     public string Keyword { get; set; } = string.Empty;
 
