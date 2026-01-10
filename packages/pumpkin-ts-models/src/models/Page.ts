@@ -46,6 +46,7 @@ export interface SearchData {
   state: string;
   city: string;
   metro: string;
+  county: string;
   keyword: string;
   tags: string[];
   contentSummary: string;
@@ -69,6 +70,7 @@ export interface SeoData {
   robots: string;
   canonicalUrl: string;
   alternateUrls: AlternateUrl[];
+  structuredData: string;
   openGraph: OpenGraphData;
   twitterCard: TwitterCardData;
 }

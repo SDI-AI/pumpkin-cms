@@ -143,6 +143,9 @@ public class SeoData
     [JsonPropertyName("alternateUrls")]
     public List<AlternateUrl> AlternateUrls { get; set; } = new();
 
+    [JsonPropertyName("structuredData")]
+    public string StructuredData { get; set; } = string.Empty;
+
     [JsonPropertyName("openGraph")]
     public OpenGraphData OpenGraph { get; set; } = new();
 
