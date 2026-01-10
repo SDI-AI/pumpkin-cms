@@ -381,6 +381,9 @@ internal class TestDatabaseService : IDatabaseService, IDisposable
     public Task<FormEntry> SaveFormEntryAsync(string apiKey, string tenantId, FormEntry formEntry)
         => _connection.SaveFormEntryAsync(apiKey, tenantId, formEntry);
 
+    public Task<List<string>> GetSitemapPagesAsync(string apiKey, string tenantId)
+        => _connection.GetSitemapPagesAsync(apiKey, tenantId);
+
     public void Dispose()
     {
         if (_connection is IDisposable disposable)

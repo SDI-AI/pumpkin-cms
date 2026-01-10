@@ -134,4 +134,23 @@ app.MapPost("/api/forms/{tenantId}/entries",
     .WithSummary("Submit a form entry with API key authentication via Authorization header")
     .WithDescription("Use Authorization: Bearer {apiKey} header for authentication");
 
+// Get sitemap pages
+app.MapGet("/api/pages/{tenantId}/sitemap",
+    async (IDatabaseService databaseService, string tenantId, HttpContext context) =>
+    {
+        // Extract API key from Authorization header (Bearer token format)
+        var authHeader = context.Request.Headers.Authorization.FirstOrDefault();
+        var apiKey = string.Empty;
+        
+        if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+        {
+            apiKey = authHeader.Substring("Bearer ".Length).Trim();
+        }
+        
+        return await PumpkinManager.GetSitemapPagesAsync(databaseService, apiKey, tenantId);
+    })
+    .WithName("GetSitemapPages")
+    .WithSummary("Get all published page slugs for sitemap generation with API key authentication via Authorization header")
+    .WithDescription("Returns a list of page slugs where isPublished=true and includeInSitemap=true. Use Authorization: Bearer {apiKey} header for authentication");
+
 app.Run();

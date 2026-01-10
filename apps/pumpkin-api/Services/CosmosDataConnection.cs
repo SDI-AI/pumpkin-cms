@@ -378,6 +378,68 @@ public class CosmosDataConnection : IDataConnection, IDisposable
         }
     }
 
+    public async Task<List<string>> GetSitemapPagesAsync(string apiKey, string tenantId)
+    {
+        try
+        {
+            _logger.LogInformation("GetSitemapPagesAsync called - TenantId: {TenantId}", tenantId);
+            
+            // Validate the API key against the Tenant container
+            var isValidTenant = await ValidateTenantApiKeyAsync(apiKey, tenantId);
+            if (!isValidTenant)
+            {
+                _logger.LogWarning("Invalid API key for tenant - TenantId: {TenantId}", tenantId);
+                return new List<string>();
+            }
+
+            var pagesContainer = _database.GetContainer("Page");
+            
+            // Query for published pages with includeInSitemap = true
+            var query = "SELECT c.pageSlug FROM c WHERE c.tenantId = @tenantId AND c.isPublished = true AND c.includeInSitemap = true";
+            var queryDefinition = new QueryDefinition(query)
+                .WithParameter("@tenantId", tenantId);
+
+            var pageSlugs = new List<string>();
+            using var iterator = pagesContainer.GetItemQueryIterator<System.Text.Json.JsonElement>(queryDefinition, requestOptions: new QueryRequestOptions
+            {
+                PartitionKey = new PartitionKey(tenantId)
+            });
+            
+            while (iterator.HasMoreResults)
+            {
+                var response = await iterator.ReadNextAsync();
+                foreach (var item in response)
+                {
+                    if (item.TryGetProperty("pageSlug", out var pageSlugProperty))
+                    {
+                        var pageSlug = pageSlugProperty.GetString();
+                        if (!string.IsNullOrEmpty(pageSlug))
+                        {
+                            pageSlugs.Add(pageSlug);
+                        }
+                    }
+                }
+                
+                _logger.LogInformation("Retrieved {Count} sitemap pages for tenant - TenantId: {TenantId}, RU Cost: {RequestCharge}", 
+                    response.Count(), tenantId, response.RequestCharge);
+            }
+            
+            _logger.LogInformation("Total sitemap pages retrieved: {Count} - TenantId: {TenantId}", pageSlugs.Count, tenantId);
+            return pageSlugs;
+        }
+        catch (CosmosException ex)
+        {
+            _logger.LogError(ex, "Error retrieving sitemap pages - TenantId: {TenantId}, StatusCode: {StatusCode}", 
+                tenantId, ex.StatusCode);
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error retrieving sitemap pages - TenantId: {TenantId}", tenantId);
+            throw;
+        }
+    }
+
     private async Task<bool> ValidateTenantApiKeyAsync(string apiKey, string tenantId)
     {
         try

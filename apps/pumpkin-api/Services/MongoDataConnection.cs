@@ -342,6 +342,49 @@ public class MongoDataConnection : IDataConnection, IDisposable
         }
     }
 
+    public async Task<List<string>> GetSitemapPagesAsync(string apiKey, string tenantId)
+    {
+        try
+        {
+            _logger.LogInformation("GetSitemapPagesAsync called - TenantId: {TenantId}", tenantId);
+            
+            // Validate the API key against the Tenant collection
+            var isValidTenant = await ValidateTenantApiKeyAsync(apiKey, tenantId);
+            if (!isValidTenant)
+            {
+                _logger.LogWarning("Invalid API key for tenant - TenantId: {TenantId}", tenantId);
+                return new List<string>();
+            }
+
+            var pagesCollection = _database.GetCollection<Page>("Page");
+            
+            // Query for published pages with includeInSitemap = true
+            var filter = Builders<Page>.Filter.And(
+                Builders<Page>.Filter.Eq(p => p.TenantId, tenantId),
+                Builders<Page>.Filter.Eq(p => p.IsPublished, true),
+                Builders<Page>.Filter.Eq(p => p.IncludeInSitemap, true)
+            );
+
+            var projection = Builders<Page>.Projection.Include(p => p.PageSlug);
+            var pages = await pagesCollection.Find(filter).Project<Page>(projection).ToListAsync();
+            
+            var pageSlugs = pages.Select(p => p.PageSlug).ToList();
+            
+            _logger.LogInformation("Retrieved {Count} sitemap pages for tenant - TenantId: {TenantId}", pageSlugs.Count, tenantId);
+            return pageSlugs;
+        }
+        catch (MongoException ex)
+        {
+            _logger.LogError(ex, "Error retrieving sitemap pages - TenantId: {TenantId}", tenantId);
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error retrieving sitemap pages - TenantId: {TenantId}", tenantId);
+            throw;
+        }
+    }
+
     private async Task<bool> ValidateTenantApiKeyAsync(string apiKey, string tenantId)
     {
         try
@@ -427,6 +470,11 @@ public class MongoDataConnection : IDataConnection, IDisposable
     }
 
     public Task<FormEntry> SaveFormEntryAsync(string apiKey, string tenantId, FormEntry formEntry)
+    {
+        throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
+    }
+
+    public Task<List<string>> GetSitemapPagesAsync(string apiKey, string tenantId)
     {
         throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
     }

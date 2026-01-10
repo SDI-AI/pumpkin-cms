@@ -201,4 +201,29 @@ public static class PumpkinManager
             return Results.Problem($"Error saving form entry: {ex.Message}");
         }
     }
+
+    public static async Task<IResult> GetSitemapPagesAsync(IDatabaseService databaseService, string apiKey, string tenantId)
+    {
+        try
+        {
+            // Validate required parameters
+            if (string.IsNullOrEmpty(apiKey))
+                return Results.BadRequest("API key is required");
+            
+            if (string.IsNullOrEmpty(tenantId))
+                return Results.BadRequest("Tenant ID is required");
+
+            var pageSlugs = await databaseService.GetSitemapPagesAsync(apiKey, tenantId);
+            
+            return Results.Ok(new { tenantId, pages = pageSlugs, count = pageSlugs.Count });
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Results.Unauthorized();
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Error retrieving sitemap pages: {ex.Message}");
+        }
+    }
 }

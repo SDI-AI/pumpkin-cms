@@ -58,6 +58,11 @@ public class DatabaseService : IDatabaseService, IDisposable
         return _dataConnection.SaveFormEntryAsync(apiKey, tenantId, formEntry);
     }
 
+    public Task<List<string>> GetSitemapPagesAsync(string apiKey, string tenantId)
+    {
+        return _dataConnection.GetSitemapPagesAsync(apiKey, tenantId);
+    }
+
     public void Dispose()
     {
         if (_dataConnection is IDisposable disposable)
