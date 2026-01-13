@@ -1,0 +1,613 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Pumpkin CMS API",
+    "description": "A flexible, headless CMS API for managing pages, forms, and content with multi-tenant support",
+    "contact": {
+      "name": "Pumpkin CMS",
+      "url": "https://github.com/sdi-ai/pumpkin-cms"
+    },
+    "version": "v0.2"
+  },
+  "paths": {
+    "/api/forms/{tenantId}/entries": {
+      "post": {
+        "tags": [
+          "Forms"
+        ],
+        "summary": "Submit a form entry",
+        "description": "Submits a new form entry for a specific tenant. Requires API key authentication via Authorization header (Bearer {apiKey})",
+        "operationId": "SaveFormEntry",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FormEntry"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/": {
+      "get": {
+        "tags": [
+          "General"
+        ],
+        "summary": "Welcome message",
+        "description": "Returns a welcome message for the Pumpkin CMS API",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/pages/{tenantId}/{pageSlug}": {
+      "get": {
+        "tags": [
+          "Pages"
+        ],
+        "summary": "Get a published page by slug",
+        "description": "Retrieves a published page by its slug for a specific tenant. Requires API key authentication via Authorization header (Bearer {apiKey})",
+        "operationId": "GetPage",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pageSlug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Pages"
+        ],
+        "summary": "Update an existing page by slug",
+        "description": "Updates an existing page by its slug for a specific tenant. Requires API key authentication via Authorization header (Bearer {apiKey})",
+        "operationId": "UpdatePage",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pageSlug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Page"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Pages"
+        ],
+        "summary": "Delete a page by slug",
+        "description": "Deletes a page by its slug for a specific tenant. Requires API key authentication via Authorization header (Bearer {apiKey})",
+        "operationId": "DeletePage",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pageSlug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/pages/{tenantId}": {
+      "post": {
+        "tags": [
+          "Pages"
+        ],
+        "summary": "Create a new page",
+        "description": "Creates a new page for a specific tenant. Requires API key authentication via Authorization header (Bearer {apiKey})",
+        "operationId": "SavePage",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Page"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/tenant/{tenantId}/sitemap": {
+      "get": {
+        "tags": [
+          "Sitemap"
+        ],
+        "summary": "Get all published page slugs for sitemap generation",
+        "description": "Returns a list of all published page slugs where isPublished=true and includeInSitemap=true. Useful for generating XML sitemaps. Requires API key authentication via Authorization header (Bearer {apiKey})",
+        "operationId": "GetSitemapPages",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AlternateUrl": {
+        "type": "object",
+        "properties": {
+          "hrefLang": {
+            "type": "string",
+            "nullable": true
+          },
+          "href": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ContentData": {
+        "type": "object",
+        "properties": {
+          "ContentBlocks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HtmlBlockBase"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "FormEntry": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "nullable": true
+          },
+          "tenantId": {
+            "type": "string",
+            "nullable": true
+          },
+          "formId": {
+            "type": "string",
+            "nullable": true
+          },
+          "pageSlug": {
+            "type": "string",
+            "nullable": true
+          },
+          "formData": {
+            "type": "object",
+            "additionalProperties": {},
+            "nullable": true
+          },
+          "submittedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "ipAddress": {
+            "type": "string",
+            "nullable": true
+          },
+          "userAgent": {
+            "type": "string",
+            "nullable": true
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/FormEntryMetadata"
+          }
+        },
+        "additionalProperties": false
+      },
+      "FormEntryMetadata": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "type": "string",
+            "nullable": true
+          },
+          "referrer": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "nullable": true
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "HtmlBlockBase": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "nullable": true
+          },
+          "content": {
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "OpenGraphData": {
+        "type": "object",
+        "properties": {
+          "og:title": {
+            "type": "string",
+            "nullable": true
+          },
+          "og:description": {
+            "type": "string",
+            "nullable": true
+          },
+          "og:type": {
+            "type": "string",
+            "nullable": true
+          },
+          "og:url": {
+            "type": "string",
+            "nullable": true
+          },
+          "og:image": {
+            "type": "string",
+            "nullable": true
+          },
+          "og:image:alt": {
+            "type": "string",
+            "nullable": true
+          },
+          "og:site_name": {
+            "type": "string",
+            "nullable": true
+          },
+          "og:locale": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Page": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "nullable": true
+          },
+          "PageId": {
+            "type": "string",
+            "nullable": true
+          },
+          "tenantId": {
+            "type": "string",
+            "nullable": true
+          },
+          "pageSlug": {
+            "type": "string",
+            "nullable": true
+          },
+          "PageVersion": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "Layout": {
+            "type": "string",
+            "nullable": true
+          },
+          "MetaData": {
+            "$ref": "#/components/schemas/PageMetaData"
+          },
+          "searchData": {
+            "$ref": "#/components/schemas/SearchData"
+          },
+          "ContentData": {
+            "$ref": "#/components/schemas/ContentData"
+          },
+          "seo": {
+            "$ref": "#/components/schemas/SeoData"
+          },
+          "isPublished": {
+            "type": "boolean"
+          },
+          "publishedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "includeInSitemap": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "PageMetaData": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "string",
+            "nullable": true
+          },
+          "product": {
+            "type": "string",
+            "nullable": true
+          },
+          "keyword": {
+            "type": "string",
+            "nullable": true
+          },
+          "pageType": {
+            "type": "string",
+            "nullable": true
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "author": {
+            "type": "string",
+            "nullable": true
+          },
+          "language": {
+            "type": "string",
+            "nullable": true
+          },
+          "market": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "SearchData": {
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "string",
+            "nullable": true
+          },
+          "city": {
+            "type": "string",
+            "nullable": true
+          },
+          "metro": {
+            "type": "string",
+            "nullable": true
+          },
+          "county": {
+            "type": "string",
+            "nullable": true
+          },
+          "keyword": {
+            "type": "string",
+            "nullable": true
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "contentSummary": {
+            "type": "string",
+            "nullable": true
+          },
+          "blockTypes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "SeoData": {
+        "type": "object",
+        "properties": {
+          "metaTitle": {
+            "type": "string",
+            "nullable": true
+          },
+          "metaDescription": {
+            "type": "string",
+            "nullable": true
+          },
+          "keywords": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "robots": {
+            "type": "string",
+            "nullable": true
+          },
+          "canonicalUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "alternateUrls": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AlternateUrl"
+            },
+            "nullable": true
+          },
+          "structuredData": {
+            "type": "string",
+            "nullable": true
+          },
+          "openGraph": {
+            "$ref": "#/components/schemas/OpenGraphData"
+          },
+          "twitterCard": {
+            "$ref": "#/components/schemas/TwitterCardData"
+          }
+        },
+        "additionalProperties": false
+      },
+      "TwitterCardData": {
+        "type": "object",
+        "properties": {
+          "twitter:card": {
+            "type": "string",
+            "nullable": true
+          },
+          "twitter:title": {
+            "type": "string",
+            "nullable": true
+          },
+          "twitter:description": {
+            "type": "string",
+            "nullable": true
+          },
+          "twitter:image": {
+            "type": "string",
+            "nullable": true
+          },
+          "twitter:site": {
+            "type": "string",
+            "nullable": true
+          },
+          "twitter:creator": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "securitySchemes": {
+      "Bearer": {
+        "type": "apiKey",
+        "description": "API Key authorization using the Bearer scheme. Enter your API key in the text input below.",
+        "name": "Authorization",
+        "in": "header"
+      }
+    }
+  },
+  "security": [
+    {
+      "Bearer": []
+    }
+  ]
+}

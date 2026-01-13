@@ -6,9 +6,54 @@ using pumpkin_api.Tests;
 using pumpkin_net_models.Models;
 using System.Text.Json;
 
-//ApiKeyGenerator.PrintGeneratedKey();
-//Console.ReadLine();
+// Generate API Key and Hash for Admin Tenant
+Console.WriteLine("🎃 Pumpkin CMS - API Key Generator\n");
+Console.WriteLine("Generating new API key for admin tenant...\n");
 
+var apiKey = ApiKeyGenerator.GenerateApiKey();
+var apiKeyHash = ApiKeyGenerator.HashApiKey(apiKey);
+
+Console.WriteLine("================================================");
+Console.WriteLine("ADMIN TENANT CREDENTIALS");
+Console.WriteLine("================================================");
+Console.WriteLine($"Tenant ID:  admin");
+Console.WriteLine($"API Key:    {apiKey}");
+Console.WriteLine($"API Hash:   {apiKeyHash}");
+Console.WriteLine("================================================");
+Console.WriteLine("\n⚠️  IMPORTANT: Save the API Key securely!");
+Console.WriteLine("   The plain API key cannot be retrieved later.");
+Console.WriteLine("   Store the hash in your Tenant document.\n");
+
+Console.WriteLine("Example Tenant Document:");
+Console.WriteLine("------------------------");
+var exampleTenant = new
+{
+    id = "admin-tenant-id",
+    tenantId = "admin",
+    name = "Admin Tenant",
+    plan = "enterprise",
+    status = "active",
+    apiKey = "", // Never store the plain key
+    apiKeyHash = apiKeyHash,
+    apiKeyMeta = new
+    {
+        createdAt = DateTime.UtcNow,
+        isActive = true
+    },
+    createdAt = DateTime.UtcNow,
+    updatedAt = DateTime.UtcNow
+};
+
+var jsonOptions = new JsonSerializerOptions
+{
+    WriteIndented = true,
+    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+};
+Console.WriteLine(JsonSerializer.Serialize(exampleTenant, jsonOptions));
+Console.WriteLine();
+
+// Commented out: Run all tests
+/*
 // Load configuration
 var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development";
 var configuration = new ConfigurationBuilder()
@@ -36,6 +81,7 @@ await PumpkinApiTests.RunTest3And4(configuration, apiKey, tenantId);
 
 Console.WriteLine("\n🎉 All basic tests completed!");
 Console.WriteLine("\nNote: For full testing, mock IDatabaseService or use integration tests with database");
+*/
 
 /// <summary>
 /// Test class for Pumpkin API operations
