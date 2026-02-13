@@ -226,4 +226,43 @@ public static class PumpkinManager
             return Results.Problem($"Error retrieving sitemap pages: {ex.Message}");
         }
     }
+
+    public static async Task<(bool IsValid, Tenant? Tenant, bool IsAdmin)> ValidateTenantAsync(
+        IDatabaseService databaseService,
+        string tenantId, 
+        string apiKey)
+    {
+        try
+        {
+            // For now, we'll validate by trying to get a page (which validates the API key)
+            // This is a temporary workaround until we add a dedicated ValidateTenantApiKeyAsync method
+            
+            // If we can access data with this tenant/key combo, it's valid
+            // We'll need to add a proper ValidateTenantApiKeyAsync method to IDatabaseService later
+            
+            // For now, just return basic validation
+            // TODO: Add proper tenant validation method to IDatabaseService
+            return (false, null, false);
+        }
+        catch
+        {
+            return (false, null, false);
+        }
+    }
+
+    // Check specific admin permissions using existing Features
+    public static bool HasPermission(Tenant? tenant, string permission)
+    {
+        if (tenant == null || tenant.Plan != "SuperAdmin")
+            return false;
+
+        return permission switch
+        {
+            "CreateTenant" => tenant.Settings.Features.CanCreateTenants,
+            "DeleteTenant" => tenant.Settings.Features.CanDeleteTenants,
+            "ManageAllContent" => tenant.Settings.Features.CanManageAllContent,
+            "ViewAllTenants" => tenant.Settings.Features.CanViewAllTenants,
+            _ => false
+        };
+    }
 }

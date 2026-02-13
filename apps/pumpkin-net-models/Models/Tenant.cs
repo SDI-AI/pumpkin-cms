@@ -81,6 +81,19 @@ public class Features
 
     [JsonPropertyName("analytics")]
     public bool Analytics { get; set; } = false;
+
+    // Add admin permissions to existing Features
+    [JsonPropertyName("canCreateTenants")]
+    public bool CanCreateTenants { get; set; } = false;
+
+    [JsonPropertyName("canDeleteTenants")]
+    public bool CanDeleteTenants { get; set; } = false;
+
+    [JsonPropertyName("canManageAllContent")]
+    public bool CanManageAllContent { get; set; } = false;
+
+    [JsonPropertyName("canViewAllTenants")]
+    public bool CanViewAllTenants { get; set; } = false;
 }
 
 public class Contact
