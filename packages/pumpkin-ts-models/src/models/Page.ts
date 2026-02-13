@@ -16,6 +16,7 @@ export interface Page {
   MetaData: PageMetaData;
   searchData: SearchData;
   ContentData: ContentData;
+  contentRelationships: ContentRelationships;
   seo: SeoData;
   isPublished: boolean;
   publishedAt: string | null;
@@ -107,4 +108,17 @@ export interface TwitterCardData {
   'twitter:image': string;
   'twitter:site': string;
   'twitter:creator': string;
+}
+
+/**
+ * Content relationships for hub-spoke model and topic clustering
+ */
+export interface ContentRelationships {
+  isHub: boolean;
+  hubPageSlug: string;
+  spokePageSlugs: string[];
+  topicCluster: string;
+  relatedHubs: string[];
+  siblingSpokes: string[];
+  spokePriority: number;
 }

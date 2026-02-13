@@ -41,6 +41,9 @@ public class Page
     [JsonPropertyName("ContentData")]
     public ContentData ContentData { get; set; } = new();
 
+    [JsonPropertyName("contentRelationships")]
+    public ContentRelationships ContentRelationships { get; set; } = new();
+
     [JsonPropertyName("seo")]
     public SeoData Seo { get; set; } = new();
 
@@ -208,4 +211,28 @@ public class TwitterCardData
 
     [JsonPropertyName("twitter:creator")]
     public string Creator { get; set; } = string.Empty;
+}
+
+public class ContentRelationships
+{
+    [JsonPropertyName("isHub")]
+    public bool IsHub { get; set; } = false;
+
+    [JsonPropertyName("hubPageSlug")]
+    public string HubPageSlug { get; set; } = string.Empty;
+
+    [JsonPropertyName("spokePageSlugs")]
+    public List<string> SpokePageSlugs { get; set; } = new();
+
+    [JsonPropertyName("topicCluster")]
+    public string TopicCluster { get; set; } = string.Empty;
+
+    [JsonPropertyName("relatedHubs")]
+    public List<string> RelatedHubs { get; set; } = new();
+
+    [JsonPropertyName("siblingSpokes")]
+    public List<string> SiblingSpokes { get; set; } = new();
+
+    [JsonPropertyName("spokePriority")]
+    public int SpokePriority { get; set; } = 0;
 }
