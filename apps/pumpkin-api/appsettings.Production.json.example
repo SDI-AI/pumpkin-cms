@@ -1,0 +1,26 @@
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Warning",
+      "Microsoft.AspNetCore": "Warning",
+      "Microsoft.Hosting.Lifetime": "Information"
+    }
+  },
+  "AllowedHosts": "*",
+  "Jwt": {
+    "Issuer": "pumpkin-cms-api",
+    "Audience": "pumpkin-cms-admin",
+    "SecretKey": "USE-ENVIRONMENT-VARIABLE-OR-AZURE-KEY-VAULT-MIN-32-CHARS",
+    "ExpirationMinutes": 240
+  },
+  "Database": {
+    "Provider": "CosmosDb",
+    "CosmosDb": {
+      "ConnectionString": "USE-ENVIRONMENT-VARIABLE-OR-AZURE-KEY-VAULT",
+      "DatabaseName": "PumpkinCMS",
+      "MaxRetryAttemptsOnRateLimitedRequests": 9,
+      "MaxRetryWaitTimeOnRateLimitedRequests": 30,
+      "PreferredRegions": ""
+    }
+  }
+}
