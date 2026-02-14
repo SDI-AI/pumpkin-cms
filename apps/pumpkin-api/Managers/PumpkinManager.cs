@@ -265,4 +265,207 @@ public static class PumpkinManager
             _ => false
         };
     }
+
+    // Admin: Get specific tenant
+    public static async Task<IResult> GetTenantAsync(IDatabaseService databaseService, string apiKey, string adminTenantId, string tenantId)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(apiKey))
+                return Results.BadRequest("API key is required");
+            
+            if (string.IsNullOrEmpty(adminTenantId))
+                return Results.BadRequest("Admin tenant ID is required");
+            
+            if (string.IsNullOrEmpty(tenantId))
+                return Results.BadRequest("Tenant ID is required");
+
+            var tenant = await databaseService.GetTenantAsync(apiKey, adminTenantId, tenantId);
+            
+            if (tenant == null)
+                return Results.NotFound("Tenant not found or access denied");
+            
+            return Results.Ok(tenant);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Results.Unauthorized();
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Error retrieving tenant: {ex.Message}");
+        }
+    }
+
+    // Admin: Create new tenant
+    public static async Task<IResult> CreateTenantAsync(IDatabaseService databaseService, string apiKey, string adminTenantId, Tenant tenant)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(apiKey))
+                return Results.BadRequest("API key is required");
+            
+            if (string.IsNullOrEmpty(adminTenantId))
+                return Results.BadRequest("Admin tenant ID is required");
+            
+            if (tenant == null)
+                return Results.BadRequest("Tenant data is required");
+            
+            if (string.IsNullOrEmpty(tenant.TenantId))
+                return Results.BadRequest("Tenant ID is required");
+
+            var createdTenant = await databaseService.CreateTenantAsync(apiKey, adminTenantId, tenant);
+            
+            return Results.Created($"/api/admin/tenants/{createdTenant.TenantId}", createdTenant);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Results.Unauthorized();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Results.Conflict(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Error creating tenant: {ex.Message}");
+        }
+    }
+
+    // Admin: Get all tenants
+    public static async Task<IResult> GetAllTenantsAsync(IDatabaseService databaseService, string apiKey, string adminTenantId)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(apiKey))
+                return Results.BadRequest("API key is required");
+            
+            if (string.IsNullOrEmpty(adminTenantId))
+                return Results.BadRequest("Admin tenant ID is required");
+
+            var tenants = await databaseService.GetAllTenantsAsync(apiKey, adminTenantId);
+            
+            return Results.Ok(new { tenants, count = tenants.Count });
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Results.Unauthorized();
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Error retrieving tenants: {ex.Message}");
+        }
+    }
+
+    // Admin: Get all pages (optionally filtered by tenant)
+    public static async Task<IResult> GetAllPagesAsync(IDatabaseService databaseService, string apiKey, string adminTenantId, string? tenantId = null)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(apiKey))
+                return Results.BadRequest("API key is required");
+            
+            if (string.IsNullOrEmpty(adminTenantId))
+                return Results.BadRequest("Admin tenant ID is required");
+
+            var pages = await databaseService.GetAllPagesAsync(apiKey, adminTenantId, tenantId);
+            
+            return Results.Ok(new { pages, count = pages.Count, tenantId = tenantId ?? "all" });
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Results.Unauthorized();
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Error retrieving pages: {ex.Message}");
+        }
+    }
+
+    // Admin: Get hub pages for a tenant
+    public static async Task<IResult> GetHubPagesAsync(IDatabaseService databaseService, string apiKey, string adminTenantId, string tenantId)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(apiKey))
+                return Results.BadRequest("API key is required");
+            
+            if (string.IsNullOrEmpty(adminTenantId))
+                return Results.BadRequest("Admin tenant ID is required");
+            
+            if (string.IsNullOrEmpty(tenantId))
+                return Results.BadRequest("Tenant ID is required");
+
+            var hubPages = await databaseService.GetHubPagesAsync(apiKey, adminTenantId, tenantId);
+            
+            return Results.Ok(new { tenantId, hubPages, count = hubPages.Count });
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Results.Unauthorized();
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Error retrieving hub pages: {ex.Message}");
+        }
+    }
+
+    // Admin: Get spoke pages for a hub
+    public static async Task<IResult> GetSpokePagesAsync(IDatabaseService databaseService, string apiKey, string adminTenantId, string tenantId, string hubPageSlug)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(apiKey))
+                return Results.BadRequest("API key is required");
+            
+            if (string.IsNullOrEmpty(adminTenantId))
+                return Results.BadRequest("Admin tenant ID is required");
+            
+            if (string.IsNullOrEmpty(tenantId))
+                return Results.BadRequest("Tenant ID is required");
+            
+            if (string.IsNullOrEmpty(hubPageSlug))
+                return Results.BadRequest("Hub page slug is required");
+
+            var spokePages = await databaseService.GetSpokePagesAsync(apiKey, adminTenantId, tenantId, hubPageSlug);
+            
+            return Results.Ok(new { tenantId, hubPageSlug, spokePages, count = spokePages.Count });
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Results.Unauthorized();
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Error retrieving spoke pages: {ex.Message}");
+        }
+    }
+
+    // Admin: Get complete content hierarchy visualization
+    public static async Task<IResult> GetContentHierarchyAsync(IDatabaseService databaseService, string apiKey, string adminTenantId, string tenantId)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(apiKey))
+                return Results.BadRequest("API key is required");
+            
+            if (string.IsNullOrEmpty(adminTenantId))
+                return Results.BadRequest("Admin tenant ID is required");
+            
+            if (string.IsNullOrEmpty(tenantId))
+                return Results.BadRequest("Tenant ID is required");
+
+            var hierarchy = await databaseService.GetContentHierarchyAsync(apiKey, adminTenantId, tenantId);
+            
+            return Results.Ok(hierarchy);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Results.Unauthorized();
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Error retrieving content hierarchy: {ex.Message}");
+        }
+    }
 }

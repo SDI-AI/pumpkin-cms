@@ -432,6 +432,158 @@ public class MongoDataConnection : IDataConnection, IDisposable
         }
     }
 
+    // Admin methods
+    public async Task<Tenant?> GetTenantAsync(string apiKey, string adminTenantId, string tenantId)
+    {
+        if (!await ValidateTenantApiKeyAsync(apiKey, adminTenantId))
+        {
+            throw new UnauthorizedAccessException("Invalid admin credentials");
+        }
+
+        var tenantCollection = _database.GetCollection<Tenant>("Tenant");
+        var filter = Builders<Tenant>.Filter.Eq(t => t.TenantId, tenantId);
+        return await tenantCollection.Find(filter).FirstOrDefaultAsync();
+    }
+
+    public async Task<Tenant> CreateTenantAsync(string apiKey, string adminTenantId, Tenant tenant)
+    {
+        if (!await ValidateTenantApiKeyAsync(apiKey, adminTenantId))
+        {
+            throw new UnauthorizedAccessException("Invalid admin credentials");
+        }
+
+        var tenantCollection = _database.GetCollection<Tenant>("Tenant");
+        
+        // Check if tenant exists
+        var existing = await GetTenantAsync(apiKey, adminTenantId, tenant.TenantId);
+        if (existing != null)
+        {
+            throw new InvalidOperationException($"Tenant with ID '{tenant.TenantId}' already exists");
+        }
+
+        tenant.CreatedAt = DateTime.UtcNow;
+        tenant.UpdatedAt = DateTime.UtcNow;
+        tenant.ApiKeyMeta.CreatedAt = DateTime.UtcNow;
+        tenant.Id = tenant.TenantId;
+
+        await tenantCollection.InsertOneAsync(tenant);
+        _logger.LogInformation("Tenant created - TenantId: {TenantId}", tenant.TenantId);
+        
+        return tenant;
+    }
+
+    public async Task<List<Tenant>> GetAllTenantsAsync(string apiKey, string adminTenantId)
+    {
+        if (!await ValidateTenantApiKeyAsync(apiKey, adminTenantId))
+        {
+            throw new UnauthorizedAccessException("Invalid admin credentials");
+        }
+
+        var tenantCollection = _database.GetCollection<Tenant>("Tenant");
+        var sort = Builders<Tenant>.Sort.Descending(t => t.CreatedAt);
+        return await tenantCollection.Find(_ => true).Sort(sort).ToListAsync();
+    }
+
+    public async Task<List<Page>> GetAllPagesAsync(string apiKey, string adminTenantId, string? tenantId = null)
+    {
+        if (!await ValidateTenantApiKeyAsync(apiKey, adminTenantId))
+        {
+            throw new UnauthorizedAccessException("Invalid admin credentials");
+        }
+
+        var pageCollection = _database.GetCollection<Page>("Page");
+        var filter = string.IsNullOrEmpty(tenantId) 
+            ? Builders<Page>.Filter.Empty
+            : Builders<Page>.Filter.Eq(p => p.TenantId, tenantId);
+        
+        var sort = Builders<Page>.Sort.Descending("MetaData.updatedAt");
+        return await pageCollection.Find(filter).Sort(sort).ToListAsync();
+    }
+
+    public async Task<List<Page>> GetHubPagesAsync(string apiKey, string adminTenantId, string tenantId)
+    {
+        if (!await ValidateTenantApiKeyAsync(apiKey, adminTenantId))
+        {
+            throw new UnauthorizedAccessException("Invalid admin credentials");
+        }
+
+        var pageCollection = _database.GetCollection<Page>("Page");
+        var filter = Builders<Page>.Filter.And(
+            Builders<Page>.Filter.Eq(p => p.TenantId, tenantId),
+            Builders<Page>.Filter.Eq("contentRelationships.isHub", true)
+        );
+        
+        var sort = Builders<Page>.Sort.Descending("MetaData.updatedAt");
+        return await pageCollection.Find(filter).Sort(sort).ToListAsync();
+    }
+
+    public async Task<List<Page>> GetSpokePagesAsync(string apiKey, string adminTenantId, string tenantId, string hubPageSlug)
+    {
+        if (!await ValidateTenantApiKeyAsync(apiKey, adminTenantId))
+        {
+            throw new UnauthorizedAccessException("Invalid admin credentials");
+        }
+
+        var pageCollection = _database.GetCollection<Page>("Page");
+        var filter = Builders<Page>.Filter.And(
+            Builders<Page>.Filter.Eq(p => p.TenantId, tenantId),
+            Builders<Page>.Filter.Eq("contentRelationships.hubPageSlug", hubPageSlug)
+        );
+        
+        var sort = Builders<Page>.Sort
+            .Descending("contentRelationships.spokePriority")
+            .Descending("MetaData.updatedAt");
+        
+        return await pageCollection.Find(filter).Sort(sort).ToListAsync();
+    }
+
+    public async Task<object> GetContentHierarchyAsync(string apiKey, string adminTenantId, string tenantId)
+    {
+        if (!await ValidateTenantApiKeyAsync(apiKey, adminTenantId))
+        {
+            throw new UnauthorizedAccessException("Invalid admin credentials");
+        }
+
+        var pageCollection = _database.GetCollection<Page>("Page");
+        var filter = Builders<Page>.Filter.Eq(p => p.TenantId, tenantId);
+        var allPages = await pageCollection.Find(filter).ToListAsync();
+
+        // Build hierarchy (same logic as Cosmos)
+        var hubs = allPages.Where(p => p.ContentRelationships.IsHub).ToList();
+        var orphanPages = allPages.Where(p => !p.ContentRelationships.IsHub && 
+                                               string.IsNullOrEmpty(p.ContentRelationships.HubPageSlug)).ToList();
+        
+        return new
+        {
+            tenantId,
+            totalPages = allPages.Count,
+            hubs = hubs.Select(hub => new
+            {
+                pageSlug = hub.PageSlug,
+                title = hub.MetaData.Title,
+                pageType = hub.MetaData.PageType,
+                topicCluster = hub.ContentRelationships.TopicCluster,
+                isPublished = hub.IsPublished,
+                spokes = allPages
+                    .Where(p => p.ContentRelationships.HubPageSlug == hub.PageSlug)
+                    .OrderByDescending(p => p.ContentRelationships.SpokePriority)
+                    .Select(spoke => new
+                    {
+                        pageSlug = spoke.PageSlug,
+                        title = spoke.MetaData.Title,
+                        spokePriority = spoke.ContentRelationships.SpokePriority,
+                        isPublished = spoke.IsPublished
+                    }).ToList()
+            }).ToList(),
+            orphanPages = orphanPages.Select(p => new
+            {
+                pageSlug = p.PageSlug,
+                title = p.MetaData.Title,
+                isPublished = p.IsPublished
+            }).ToList()
+        };
+    }
+
     public void Dispose()
     {
         if (!_disposed)
@@ -475,6 +627,41 @@ public class MongoDataConnection : IDataConnection, IDisposable
     }
 
     public Task<List<string>> GetSitemapPagesAsync(string apiKey, string tenantId)
+    {
+        throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
+    }
+
+    public Task<Tenant?> GetTenantAsync(string apiKey, string adminTenantId, string tenantId)
+    {
+        throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
+    }
+
+    public Task<Tenant> CreateTenantAsync(string apiKey, string adminTenantId, Tenant tenant)
+    {
+        throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
+    }
+
+    public Task<List<Tenant>> GetAllTenantsAsync(string apiKey, string adminTenantId)
+    {
+        throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
+    }
+
+    public Task<List<Page>> GetAllPagesAsync(string apiKey, string adminTenantId, string? tenantId = null)
+    {
+        throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
+    }
+
+    public Task<List<Page>> GetHubPagesAsync(string apiKey, string adminTenantId, string tenantId)
+    {
+        throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
+    }
+
+    public Task<List<Page>> GetSpokePagesAsync(string apiKey, string adminTenantId, string tenantId, string hubPageSlug)
+    {
+        throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
+    }
+
+    public Task<object> GetContentHierarchyAsync(string apiKey, string adminTenantId, string tenantId)
     {
         throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
     }

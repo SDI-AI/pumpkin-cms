@@ -220,4 +220,181 @@ app.MapGet("/api/tenant/{tenantId}/sitemap",
     .WithSummary("Get all published page slugs for sitemap generation")
     .WithDescription("Returns a list of all published page slugs where isPublished=true and includeInSitemap=true. Useful for generating XML sitemaps. Requires API key authentication via Authorization header (Bearer {apiKey})");
 
+// ===== ADMIN ENDPOINTS =====
+
+// Admin: Get specific tenant
+app.MapGet("/api/admin/tenants/{tenantId}",
+    async (IDatabaseService databaseService, string tenantId, HttpContext context) =>
+    {
+        var authHeader = context.Request.Headers.Authorization.FirstOrDefault();
+        var adminTenantId = context.Request.Headers["X-Admin-Tenant-Id"].FirstOrDefault();
+        var apiKey = string.Empty;
+        
+        if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+        {
+            apiKey = authHeader.Substring("Bearer ".Length).Trim();
+        }
+        
+        if (string.IsNullOrEmpty(adminTenantId))
+        {
+            return Results.BadRequest("X-Admin-Tenant-Id header is required");
+        }
+        
+        return await PumpkinManager.GetTenantAsync(databaseService, apiKey, adminTenantId, tenantId);
+    })
+    .WithTags("Admin")
+    .WithName("GetTenant")
+    .WithSummary("Get tenant by ID (SuperAdmin only)")
+    .WithDescription("Retrieves a specific tenant by ID. Requires SuperAdmin API key via Authorization header and X-Admin-Tenant-Id header.");
+
+// Admin: Create new tenant
+app.MapPost("/api/admin/tenants",
+    async (IDatabaseService databaseService, Tenant tenant, HttpContext context) =>
+    {
+        var authHeader = context.Request.Headers.Authorization.FirstOrDefault();
+        var adminTenantId = context.Request.Headers["X-Admin-Tenant-Id"].FirstOrDefault();
+        var apiKey = string.Empty;
+        
+        if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+        {
+            apiKey = authHeader.Substring("Bearer ".Length).Trim();
+        }
+        
+        if (string.IsNullOrEmpty(adminTenantId))
+        {
+            return Results.BadRequest("X-Admin-Tenant-Id header is required");
+        }
+        
+        return await PumpkinManager.CreateTenantAsync(databaseService, apiKey, adminTenantId, tenant);
+    })
+    .WithTags("Admin")
+    .WithName("CreateTenant")
+    .WithSummary("Create new tenant (SuperAdmin only)")
+    .WithDescription("Creates a new tenant. Requires SuperAdmin API key via Authorization header and X-Admin-Tenant-Id header.");
+
+// Admin: Get all tenants
+app.MapGet("/api/admin/tenants",
+    async (IDatabaseService databaseService, HttpContext context) =>
+    {
+        var authHeader = context.Request.Headers.Authorization.FirstOrDefault();
+        var adminTenantId = context.Request.Headers["X-Admin-Tenant-Id"].FirstOrDefault();
+        var apiKey = string.Empty;
+        
+        if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+        {
+            apiKey = authHeader.Substring("Bearer ".Length).Trim();
+        }
+        
+        if (string.IsNullOrEmpty(adminTenantId))
+        {
+            return Results.BadRequest("X-Admin-Tenant-Id header is required");
+        }
+        
+        return await PumpkinManager.GetAllTenantsAsync(databaseService, apiKey, adminTenantId);
+    })
+    .WithTags("Admin")
+    .WithName("GetAllTenants")
+    .WithSummary("Get all tenants (SuperAdmin only)")
+    .WithDescription("Retrieves all tenants in the system. Requires SuperAdmin API key via Authorization header and X-Admin-Tenant-Id header.");
+
+// Admin: Get all pages (optionally filtered by tenant)
+app.MapGet("/api/admin/pages",
+    async (IDatabaseService databaseService, HttpContext context, string? tenantId = null) =>
+    {
+        var authHeader = context.Request.Headers.Authorization.FirstOrDefault();
+        var adminTenantId = context.Request.Headers["X-Admin-Tenant-Id"].FirstOrDefault();
+        var apiKey = string.Empty;
+        
+        if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+        {
+            apiKey = authHeader.Substring("Bearer ".Length).Trim();
+        }
+        
+        if (string.IsNullOrEmpty(adminTenantId))
+        {
+            return Results.BadRequest("X-Admin-Tenant-Id header is required");
+        }
+        
+        return await PumpkinManager.GetAllPagesAsync(databaseService, apiKey, adminTenantId, tenantId);
+    })
+    .WithTags("Admin")
+    .WithName("GetAllPages")
+    .WithSummary("Get all pages across tenants (SuperAdmin only)")
+    .WithDescription("Retrieves all pages, optionally filtered by tenantId query parameter. Requires SuperAdmin API key via Authorization header and X-Admin-Tenant-Id header.");
+
+// Admin: Get hub pages for a tenant
+app.MapGet("/api/admin/tenants/{tenantId}/hubs",
+    async (IDatabaseService databaseService, string tenantId, HttpContext context) =>
+    {
+        var authHeader = context.Request.Headers.Authorization.FirstOrDefault();
+        var adminTenantId = context.Request.Headers["X-Admin-Tenant-Id"].FirstOrDefault();
+        var apiKey = string.Empty;
+        
+        if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+        {
+            apiKey = authHeader.Substring("Bearer ".Length).Trim();
+        }
+        
+        if (string.IsNullOrEmpty(adminTenantId))
+        {
+            return Results.BadRequest("X-Admin-Tenant-Id header is required");
+        }
+        
+        return await PumpkinManager.GetHubPagesAsync(databaseService, apiKey, adminTenantId, tenantId);
+    })
+    .WithTags("Admin")
+    .WithName("GetHubPages")
+    .WithSummary("Get all hub/pillar pages for a tenant (SuperAdmin only)")
+    .WithDescription("Retrieves all pages marked as hubs (contentRelationships.isHub = true) for a specific tenant. Requires SuperAdmin API key via Authorization header and X-Admin-Tenant-Id header.");
+
+// Admin: Get spoke pages for a hub
+app.MapGet("/api/admin/tenants/{tenantId}/hubs/{hubPageSlug}/spokes",
+    async (IDatabaseService databaseService, string tenantId, string hubPageSlug, HttpContext context) =>
+    {
+        var authHeader = context.Request.Headers.Authorization.FirstOrDefault();
+        var adminTenantId = context.Request.Headers["X-Admin-Tenant-Id"].FirstOrDefault();
+        var apiKey = string.Empty;
+        
+        if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+        {
+            apiKey = authHeader.Substring("Bearer ".Length).Trim();
+        }
+        
+        if (string.IsNullOrEmpty(adminTenantId))
+        {
+            return Results.BadRequest("X-Admin-Tenant-Id header is required");
+        }
+        
+        return await PumpkinManager.GetSpokePagesAsync(databaseService, apiKey, adminTenantId, tenantId, hubPageSlug);
+    })
+    .WithTags("Admin")
+    .WithName("GetSpokePages")
+    .WithSummary("Get all spoke pages for a hub (SuperAdmin only)")
+    .WithDescription("Retrieves all spoke/cluster pages linked to a specific hub page, ordered by spokePriority. Requires SuperAdmin API key via Authorization header and X-Admin-Tenant-Id header.");
+
+// Admin: Get complete content hierarchy visualization
+app.MapGet("/api/admin/tenants/{tenantId}/content-hierarchy",
+    async (IDatabaseService databaseService, string tenantId, HttpContext context) =>
+    {
+        var authHeader = context.Request.Headers.Authorization.FirstOrDefault();
+        var adminTenantId = context.Request.Headers["X-Admin-Tenant-Id"].FirstOrDefault();
+        var apiKey = string.Empty;
+        
+        if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+        {
+            apiKey = authHeader.Substring("Bearer ".Length).Trim();
+        }
+        
+        if (string.IsNullOrEmpty(adminTenantId))
+        {
+            return Results.BadRequest("X-Admin-Tenant-Id header is required");
+        }
+        
+        return await PumpkinManager.GetContentHierarchyAsync(databaseService, apiKey, adminTenantId, tenantId);
+    })
+    .WithTags("Admin")
+    .WithName("GetContentHierarchy")
+    .WithSummary("Get complete content hierarchy visualization (SuperAdmin only)")
+    .WithDescription("Retrieves a comprehensive view of the content architecture including hubs, spokes, clusters, and orphan pages. Perfect for visualizing internal linking structure. Requires SuperAdmin API key via Authorization header and X-Admin-Tenant-Id header.");
+
 app.Run();

@@ -430,6 +430,28 @@ internal class TestDatabaseService : IDatabaseService, IDisposable
     public Task<List<string>> GetSitemapPagesAsync(string apiKey, string tenantId)
         => _connection.GetSitemapPagesAsync(apiKey, tenantId);
 
+    // Admin methods
+    public Task<Tenant?> GetTenantAsync(string apiKey, string adminTenantId, string tenantId)
+        => _connection.GetTenantAsync(apiKey, adminTenantId, tenantId);
+
+    public Task<Tenant> CreateTenantAsync(string apiKey, string adminTenantId, Tenant tenant)
+        => _connection.CreateTenantAsync(apiKey, adminTenantId, tenant);
+
+    public Task<List<Tenant>> GetAllTenantsAsync(string apiKey, string adminTenantId)
+        => _connection.GetAllTenantsAsync(apiKey, adminTenantId);
+
+    public Task<List<Page>> GetAllPagesAsync(string apiKey, string adminTenantId, string? tenantId = null)
+        => _connection.GetAllPagesAsync(apiKey, adminTenantId, tenantId);
+
+    public Task<List<Page>> GetHubPagesAsync(string apiKey, string adminTenantId, string tenantId)
+        => _connection.GetHubPagesAsync(apiKey, adminTenantId, tenantId);
+
+    public Task<List<Page>> GetSpokePagesAsync(string apiKey, string adminTenantId, string tenantId, string hubPageSlug)
+        => _connection.GetSpokePagesAsync(apiKey, adminTenantId, tenantId, hubPageSlug);
+
+    public Task<object> GetContentHierarchyAsync(string apiKey, string adminTenantId, string tenantId)
+        => _connection.GetContentHierarchyAsync(apiKey, adminTenantId, tenantId);
+
     public void Dispose()
     {
         if (_connection is IDisposable disposable)

@@ -496,6 +496,330 @@ public class CosmosDataConnection : IDataConnection, IDisposable
         }
     }
 
+    // Admin: Get tenant by ID
+    public async Task<Tenant?> GetTenantAsync(string apiKey, string adminTenantId, string tenantId)
+    {
+        try
+        {
+            // Validate admin permissions
+            if (!await ValidateTenantApiKeyAsync(apiKey, adminTenantId))
+            {
+                throw new UnauthorizedAccessException("Invalid admin credentials");
+            }
+
+            var tenantContainer = _database.GetContainer("Tenant");
+            var query = "SELECT * FROM c WHERE c.tenantId = @tenantId";
+            var queryDefinition = new QueryDefinition(query).WithParameter("@tenantId", tenantId);
+
+            using var iterator = tenantContainer.GetItemQueryIterator<Tenant>(queryDefinition);
+            
+            if (iterator.HasMoreResults)
+            {
+                var response = await iterator.ReadNextAsync();
+                _logger.LogInformation("GetTenant - TenantId: {TenantId}, RU Cost: {RequestCharge}", 
+                    tenantId, response.RequestCharge);
+                return response.FirstOrDefault();
+            }
+            
+            return null;
+        }
+        catch (CosmosException ex)
+        {
+            _logger.LogError(ex, "Error retrieving tenant - TenantId: {TenantId}", tenantId);
+            throw;
+        }
+    }
+
+    // Admin: Create new tenant
+    public async Task<Tenant> CreateTenantAsync(string apiKey, string adminTenantId, Tenant tenant)
+    {
+        try
+        {
+            // Validate admin permissions
+            if (!await ValidateTenantApiKeyAsync(apiKey, adminTenantId))
+            {
+                throw new UnauthorizedAccessException("Invalid admin credentials");
+            }
+
+            var tenantContainer = _database.GetContainer("Tenant");
+            
+            // Check if tenant already exists
+            var existing = await GetTenantAsync(apiKey, adminTenantId, tenant.TenantId);
+            if (existing != null)
+            {
+                throw new InvalidOperationException($"Tenant with ID '{tenant.TenantId}' already exists");
+            }
+
+            // Set timestamps
+            tenant.CreatedAt = DateTime.UtcNow;
+            tenant.UpdatedAt = DateTime.UtcNow;
+            tenant.ApiKeyMeta.CreatedAt = DateTime.UtcNow;
+            
+            // Ensure id matches tenantId for Cosmos DB
+            tenant.Id = tenant.TenantId;
+
+            var response = await tenantContainer.CreateItemAsync(tenant, new PartitionKey(tenant.TenantId));
+            
+            _logger.LogInformation("Tenant created - TenantId: {TenantId}, Name: {Name}, Plan: {Plan}, RU Cost: {RequestCharge}",
+                tenant.TenantId, tenant.Name, tenant.Plan, response.RequestCharge);
+            
+            return response.Resource;
+        }
+        catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.Conflict)
+        {
+            throw new InvalidOperationException($"Tenant with ID '{tenant.TenantId}' already exists");
+        }
+        catch (CosmosException ex)
+        {
+            _logger.LogError(ex, "Error creating tenant - TenantId: {TenantId}", tenant.TenantId);
+            throw;
+        }
+    }
+
+    // Admin: Get all tenants
+    public async Task<List<Tenant>> GetAllTenantsAsync(string apiKey, string adminTenantId)
+    {
+        try
+        {
+            // Validate admin permissions
+            if (!await ValidateTenantApiKeyAsync(apiKey, adminTenantId))
+            {
+                throw new UnauthorizedAccessException("Invalid admin credentials");
+            }
+
+            var tenantContainer = _database.GetContainer("Tenant");
+            var query = "SELECT * FROM c ORDER BY c.createdAt DESC";
+            var queryDefinition = new QueryDefinition(query);
+
+            var tenants = new List<Tenant>();
+            using var iterator = tenantContainer.GetItemQueryIterator<Tenant>(queryDefinition);
+            
+            while (iterator.HasMoreResults)
+            {
+                var response = await iterator.ReadNextAsync();
+                tenants.AddRange(response);
+                _logger.LogInformation("GetAllTenants - Retrieved {Count} tenants, RU Cost: {RequestCharge}", 
+                    response.Count, response.RequestCharge);
+            }
+            
+            _logger.LogInformation("GetAllTenants - Total tenants: {TotalCount}", tenants.Count);
+            return tenants;
+        }
+        catch (CosmosException ex)
+        {
+            _logger.LogError(ex, "Error retrieving all tenants");
+            throw;
+        }
+    }
+
+    // Admin: Get all pages (optionally filtered by tenant)
+    public async Task<List<Page>> GetAllPagesAsync(string apiKey, string adminTenantId, string? tenantId = null)
+    {
+        try
+        {
+            // Validate admin permissions
+            if (!await ValidateTenantApiKeyAsync(apiKey, adminTenantId))
+            {
+                throw new UnauthorizedAccessException("Invalid admin credentials");
+            }
+
+            var pageContainer = _database.GetContainer("Page");
+            var query = string.IsNullOrEmpty(tenantId) 
+                ? "SELECT * FROM c ORDER BY c.MetaData.updatedAt DESC"
+                : "SELECT * FROM c WHERE c.tenantId = @tenantId ORDER BY c.MetaData.updatedAt DESC";
+            
+            var queryDefinition = new QueryDefinition(query);
+            if (!string.IsNullOrEmpty(tenantId))
+            {
+                queryDefinition = queryDefinition.WithParameter("@tenantId", tenantId);
+            }
+
+            var pages = new List<Page>();
+            using var iterator = pageContainer.GetItemQueryIterator<Page>(queryDefinition);
+            
+            while (iterator.HasMoreResults)
+            {
+                var response = await iterator.ReadNextAsync();
+                pages.AddRange(response);
+                _logger.LogInformation("GetAllPages - Retrieved {Count} pages, RU Cost: {RequestCharge}", 
+                    response.Count, response.RequestCharge);
+            }
+            
+            _logger.LogInformation("GetAllPages - Total pages: {TotalCount}, TenantFilter: {TenantId}", 
+                pages.Count, tenantId ?? "all");
+            return pages;
+        }
+        catch (CosmosException ex)
+        {
+            _logger.LogError(ex, "Error retrieving all pages");
+            throw;
+        }
+    }
+
+    // Admin: Get hub pages for a tenant
+    public async Task<List<Page>> GetHubPagesAsync(string apiKey, string adminTenantId, string tenantId)
+    {
+        try
+        {
+            // Validate admin permissions
+            if (!await ValidateTenantApiKeyAsync(apiKey, adminTenantId))
+            {
+                throw new UnauthorizedAccessException("Invalid admin credentials");
+            }
+
+            var pageContainer = _database.GetContainer("Page");
+            var query = "SELECT * FROM c WHERE c.tenantId = @tenantId AND c.contentRelationships.isHub = true ORDER BY c.MetaData.updatedAt DESC";
+            var queryDefinition = new QueryDefinition(query).WithParameter("@tenantId", tenantId);
+
+            var hubPages = new List<Page>();
+            using var iterator = pageContainer.GetItemQueryIterator<Page>(queryDefinition);
+            
+            while (iterator.HasMoreResults)
+            {
+                var response = await iterator.ReadNextAsync();
+                hubPages.AddRange(response);
+                _logger.LogInformation("GetHubPages - Retrieved {Count} hub pages, RU Cost: {RequestCharge}", 
+                    response.Count, response.RequestCharge);
+            }
+            
+            _logger.LogInformation("GetHubPages - TenantId: {TenantId}, Total hubs: {TotalCount}", 
+                tenantId, hubPages.Count);
+            return hubPages;
+        }
+        catch (CosmosException ex)
+        {
+            _logger.LogError(ex, "Error retrieving hub pages - TenantId: {TenantId}", tenantId);
+            throw;
+        }
+    }
+
+    // Admin: Get spoke pages for a specific hub
+    public async Task<List<Page>> GetSpokePagesAsync(string apiKey, string adminTenantId, string tenantId, string hubPageSlug)
+    {
+        try
+        {
+            // Validate admin permissions
+            if (!await ValidateTenantApiKeyAsync(apiKey, adminTenantId))
+            {
+                throw new UnauthorizedAccessException("Invalid admin credentials");
+            }
+
+            var pageContainer = _database.GetContainer("Page");
+            var query = "SELECT * FROM c WHERE c.tenantId = @tenantId AND c.contentRelationships.hubPageSlug = @hubPageSlug ORDER BY c.contentRelationships.spokePriority DESC, c.MetaData.updatedAt DESC";
+            var queryDefinition = new QueryDefinition(query)
+                .WithParameter("@tenantId", tenantId)
+                .WithParameter("@hubPageSlug", hubPageSlug);
+
+            var spokePages = new List<Page>();
+            using var iterator = pageContainer.GetItemQueryIterator<Page>(queryDefinition);
+            
+            while (iterator.HasMoreResults)
+            {
+                var response = await iterator.ReadNextAsync();
+                spokePages.AddRange(response);
+                _logger.LogInformation("GetSpokePages - Retrieved {Count} spoke pages, RU Cost: {RequestCharge}", 
+                    response.Count, response.RequestCharge);
+            }
+            
+            _logger.LogInformation("GetSpokePages - TenantId: {TenantId}, Hub: {HubSlug}, Total spokes: {TotalCount}", 
+                tenantId, hubPageSlug, spokePages.Count);
+            return spokePages;
+        }
+        catch (CosmosException ex)
+        {
+            _logger.LogError(ex, "Error retrieving spoke pages - TenantId: {TenantId}, Hub: {HubSlug}", tenantId, hubPageSlug);
+            throw;
+        }
+    }
+
+    // Admin: Get complete content hierarchy visualization
+    public async Task<object> GetContentHierarchyAsync(string apiKey, string adminTenantId, string tenantId)
+    {
+        try
+        {
+            // Validate admin permissions
+            if (!await ValidateTenantApiKeyAsync(apiKey, adminTenantId))
+            {
+                throw new UnauthorizedAccessException("Invalid admin credentials");
+            }
+
+            var pageContainer = _database.GetContainer("Page");
+            var query = "SELECT * FROM c WHERE c.tenantId = @tenantId";
+            var queryDefinition = new QueryDefinition(query).WithParameter("@tenantId", tenantId);
+
+            var allPages = new List<Page>();
+            using var iterator = pageContainer.GetItemQueryIterator<Page>(queryDefinition);
+            
+            while (iterator.HasMoreResults)
+            {
+                var response = await iterator.ReadNextAsync();
+                allPages.AddRange(response);
+            }
+
+            // Build hierarchy structure
+            var hubs = allPages.Where(p => p.ContentRelationships.IsHub).ToList();
+            var orphanPages = allPages.Where(p => !p.ContentRelationships.IsHub && 
+                                                   string.IsNullOrEmpty(p.ContentRelationships.HubPageSlug)).ToList();
+            
+            var hierarchy = new
+            {
+                tenantId,
+                totalPages = allPages.Count,
+                hubs = hubs.Select(hub => new
+                {
+                    pageSlug = hub.PageSlug,
+                    title = hub.MetaData.Title,
+                    pageType = hub.MetaData.PageType,
+                    topicCluster = hub.ContentRelationships.TopicCluster,
+                    isPublished = hub.IsPublished,
+                    publishedAt = hub.PublishedAt,
+                    spokes = allPages
+                        .Where(p => p.ContentRelationships.HubPageSlug == hub.PageSlug)
+                        .OrderByDescending(p => p.ContentRelationships.SpokePriority)
+                        .ThenByDescending(p => p.MetaData.UpdatedAt)
+                        .Select(spoke => new
+                        {
+                            pageSlug = spoke.PageSlug,
+                            title = spoke.MetaData.Title,
+                            pageType = spoke.MetaData.PageType,
+                            spokePriority = spoke.ContentRelationships.SpokePriority,
+                            isPublished = spoke.IsPublished,
+                            publishedAt = spoke.PublishedAt,
+                            city = spoke.SearchData.City,
+                            metro = spoke.SearchData.Metro
+                        }).ToList()
+                }).ToList(),
+                orphanPages = orphanPages.Select(p => new
+                {
+                    pageSlug = p.PageSlug,
+                    title = p.MetaData.Title,
+                    pageType = p.MetaData.PageType,
+                    isPublished = p.IsPublished
+                }).ToList(),
+                clusters = allPages
+                    .Where(p => !string.IsNullOrEmpty(p.ContentRelationships.TopicCluster))
+                    .GroupBy(p => p.ContentRelationships.TopicCluster)
+                    .Select(g => new
+                    {
+                        clusterName = g.Key,
+                        pageCount = g.Count(),
+                        hubCount = g.Count(p => p.ContentRelationships.IsHub),
+                        spokeCount = g.Count(p => !p.ContentRelationships.IsHub)
+                    }).ToList()
+            };
+
+            _logger.LogInformation("GetContentHierarchy - TenantId: {TenantId}, Hubs: {HubCount}, Orphans: {OrphanCount}, Clusters: {ClusterCount}",
+                tenantId, hierarchy.hubs.Count, hierarchy.orphanPages.Count, hierarchy.clusters.Count);
+
+            return hierarchy;
+        }
+        catch (CosmosException ex)
+        {
+            _logger.LogError(ex, "Error retrieving content hierarchy - TenantId: {TenantId}", tenantId);
+            throw;
+        }
+    }
+
     public void Dispose()
     {
         if (!_disposed)

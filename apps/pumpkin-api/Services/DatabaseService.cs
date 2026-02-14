@@ -63,6 +63,42 @@ public class DatabaseService : IDatabaseService, IDisposable
         return _dataConnection.GetSitemapPagesAsync(apiKey, tenantId);
     }
 
+    // Admin methods
+    public Task<Tenant?> GetTenantAsync(string apiKey, string adminTenantId, string tenantId)
+    {
+        return _dataConnection.GetTenantAsync(apiKey, adminTenantId, tenantId);
+    }
+
+    public Task<Tenant> CreateTenantAsync(string apiKey, string adminTenantId, Tenant tenant)
+    {
+        return _dataConnection.CreateTenantAsync(apiKey, adminTenantId, tenant);
+    }
+
+    public Task<List<Tenant>> GetAllTenantsAsync(string apiKey, string adminTenantId)
+    {
+        return _dataConnection.GetAllTenantsAsync(apiKey, adminTenantId);
+    }
+
+    public Task<List<Page>> GetAllPagesAsync(string apiKey, string adminTenantId, string? tenantId = null)
+    {
+        return _dataConnection.GetAllPagesAsync(apiKey, adminTenantId, tenantId);
+    }
+
+    public Task<List<Page>> GetHubPagesAsync(string apiKey, string adminTenantId, string tenantId)
+    {
+        return _dataConnection.GetHubPagesAsync(apiKey, adminTenantId, tenantId);
+    }
+
+    public Task<List<Page>> GetSpokePagesAsync(string apiKey, string adminTenantId, string tenantId, string hubPageSlug)
+    {
+        return _dataConnection.GetSpokePagesAsync(apiKey, adminTenantId, tenantId, hubPageSlug);
+    }
+
+    public Task<object> GetContentHierarchyAsync(string apiKey, string adminTenantId, string tenantId)
+    {
+        return _dataConnection.GetContentHierarchyAsync(apiKey, adminTenantId, tenantId);
+    }
+
     public void Dispose()
     {
         if (_dataConnection is IDisposable disposable)
