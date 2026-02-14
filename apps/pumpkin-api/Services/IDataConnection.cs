@@ -23,4 +23,8 @@ public interface IDataConnection
     Task<List<Page>> GetHubPagesAsync(string apiKey, string adminTenantId, string tenantId);
     Task<List<Page>> GetSpokePagesAsync(string apiKey, string adminTenantId, string tenantId, string hubPageSlug);
     Task<object> GetContentHierarchyAsync(string apiKey, string adminTenantId, string tenantId);
+    
+    // User authentication methods
+    Task<User?> GetUserByEmailAsync(string email);
+    Task UpdateUserLastLoginAsync(string userId, string tenantId);
 }

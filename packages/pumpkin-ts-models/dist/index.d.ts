@@ -1,4 +1,6 @@
 export type { IHtmlBlock, GenericHtmlBlock } from './models/IHtmlBlock';
+export type { User, LoginRequest, LoginResponse, UserInfo } from './models/User';
+export { UserRole, userRoleToString, stringToUserRole, isUserRole, userToUserInfo } from './models/User';
 export type { Tenant, ApiKeyMeta, TenantSettings, Features, Contact, Billing } from './models/Tenant';
 export type { FormEntry, FormEntryMetadata } from './models/FormEntry';
 export type { Page, PageMetaData, SearchData, ContentData, SeoData, AlternateUrl, OpenGraphData, TwitterCardData } from './models/Page';

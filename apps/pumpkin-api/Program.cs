@@ -3,6 +3,10 @@ using pumpkin_api.Managers;
 using pumpkin_net_models.Models;
 using System.Text.Json.Serialization;
 using Microsoft.OpenApi.Models;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -68,6 +72,26 @@ builder.Services.Configure<CosmosDbSettings>(
 builder.Services.Configure<MongoDbSettings>(
     builder.Configuration.GetSection($"{DatabaseSettings.SectionName}:MongoDb"));
 
+// Configure JWT authentication
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        var jwtSettings = builder.Configuration.GetSection("Jwt");
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = jwtSettings["Issuer"],
+            ValidAudience = jwtSettings["Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(
+                System.Text.Encoding.UTF8.GetBytes(jwtSettings["SecretKey"]!))
+        };
+    });
+
+builder.Services.AddAuthorization();
+
 // Register data connection implementations
 builder.Services.AddSingleton<CosmosDataConnection>();
 builder.Services.AddSingleton<MongoDataConnection>();
@@ -76,6 +100,10 @@ builder.Services.AddSingleton<MongoDataConnection>();
 builder.Services.AddSingleton<IDatabaseService, DatabaseService>();
 
 var app = builder.Build();
+
+// Configure authentication and authorization
+app.UseAuthentication();
+app.UseAuthorization();
 
 // Configure Swagger UI
 if (app.Environment.IsDevelopment())
@@ -219,6 +247,79 @@ app.MapGet("/api/tenant/{tenantId}/sitemap",
     .WithName("GetSitemapPages")
     .WithSummary("Get all published page slugs for sitemap generation")
     .WithDescription("Returns a list of all published page slugs where isPublished=true and includeInSitemap=true. Useful for generating XML sitemaps. Requires API key authentication via Authorization header (Bearer {apiKey})");
+
+// ===== AUTHENTICATION ENDPOINTS =====
+
+// Login endpoint
+app.MapPost("/api/auth/login",
+    async (IDatabaseService databaseService, LoginRequest request, IConfiguration configuration) =>
+    {
+        var user = await databaseService.GetUserByEmailAsync(request.Email);
+        
+        if (user == null || !user.IsActive)
+        {
+            return Results.Unauthorized();
+        }
+        
+        // Verify password with BCrypt
+        if (!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+        {
+            return Results.Unauthorized();
+        }
+        
+        // Generate JWT token
+        var jwtSettings = configuration.GetSection("Jwt");
+        var secretKey = new SymmetricSecurityKey(
+            System.Text.Encoding.UTF8.GetBytes(jwtSettings["SecretKey"]!));
+        
+        var credentials = new SigningCredentials(secretKey, SecurityAlgorithms.HmacSha256);
+        
+        var claims = new[]
+        {
+            new Claim(ClaimTypes.NameIdentifier, user.Id),
+            new Claim(ClaimTypes.Email, user.Email),
+            new Claim(ClaimTypes.Name, user.Username),
+            new Claim(ClaimTypes.Role, user.Role.ToString()),
+            new Claim("tenantId", user.TenantId)
+        };
+        
+        var expirationMinutes = int.Parse(jwtSettings["ExpirationMinutes"]!);
+        var expiresAt = DateTime.UtcNow.AddMinutes(expirationMinutes);
+        
+        var token = new JwtSecurityToken(
+            issuer: jwtSettings["Issuer"],
+            audience: jwtSettings["Audience"],
+            claims: claims,
+            expires: expiresAt,
+            signingCredentials: credentials
+        );
+        
+        var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
+        
+        // Update last login
+        await databaseService.UpdateUserLastLoginAsync(user.Id, user.TenantId);
+        
+        return Results.Ok(new LoginResponse
+        {
+            Token = tokenString,
+            ExpiresAt = expiresAt,
+            User = new UserInfo
+            {
+                Id = user.Id,
+                Email = user.Email,
+                Username = user.Username,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                Role = user.Role.ToString(),
+                Permissions = user.Permissions
+            }
+        });
+    })
+    .WithTags("Authentication")
+    .WithName("Login")
+    .WithSummary("User login")
+    .WithDescription("Authenticates a user with email and password, returns JWT token for subsequent requests")
+    .AllowAnonymous();
 
 // ===== ADMIN ENDPOINTS =====
 

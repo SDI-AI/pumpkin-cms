@@ -99,6 +99,17 @@ public class DatabaseService : IDatabaseService, IDisposable
         return _dataConnection.GetContentHierarchyAsync(apiKey, adminTenantId, tenantId);
     }
 
+    // User authentication methods
+    public Task<User?> GetUserByEmailAsync(string email)
+    {
+        return _dataConnection.GetUserByEmailAsync(email);
+    }
+
+    public Task UpdateUserLastLoginAsync(string userId, string tenantId)
+    {
+        return _dataConnection.UpdateUserLastLoginAsync(userId, tenantId);
+    }
+
     public void Dispose()
     {
         if (_dataConnection is IDisposable disposable)

@@ -1,6 +1,22 @@
 // Core interfaces and types
 export type { IHtmlBlock, GenericHtmlBlock } from './models/IHtmlBlock';
 
+// User models
+export type {
+  User,
+  LoginRequest,
+  LoginResponse,
+  UserInfo
+} from './models/User';
+
+export {
+  UserRole,
+  userRoleToString,
+  stringToUserRole,
+  isUserRole,
+  userToUserInfo
+} from './models/User';
+
 // Tenant models
 export type {
   Tenant,

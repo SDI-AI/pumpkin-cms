@@ -820,6 +820,87 @@ public class CosmosDataConnection : IDataConnection, IDisposable
         }
     }
 
+    /// <summary>
+    /// Get user by email address for authentication
+    /// </summary>
+    public async Task<pumpkin_net_models.Models.User?> GetUserByEmailAsync(string email)
+    {
+        try
+        {
+            var userContainer = _database.GetContainer("User");
+            
+            var query = new QueryDefinition(
+                "SELECT * FROM c WHERE c.email = @email")
+                .WithParameter("@email", email);
+
+            var iterator = userContainer.GetItemQueryIterator<pumpkin_net_models.Models.User>(query);
+            var users = new List<pumpkin_net_models.Models.User>();
+
+            while (iterator.HasMoreResults)
+            {
+                var response = await iterator.ReadNextAsync();
+                users.AddRange(response);
+            }
+
+            var user = users.FirstOrDefault();
+            
+            _logger.LogInformation("GetUserByEmail - Email: {Email}, Found: {Found}", 
+                email, user != null);
+            
+            return user;
+        }
+        catch (CosmosException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            _logger.LogWarning("User not found - Email: {Email}", email);
+            return null;
+        }
+        catch (CosmosException ex)
+        {
+            _logger.LogError(ex, "Error retrieving user - Email: {Email}", email);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Update user's last login timestamp
+    /// </summary>
+    public async Task UpdateUserLastLoginAsync(string userId, string tenantId)
+    {
+        try
+        {
+            var userContainer = _database.GetContainer("User");
+            
+            // Read the user first
+            var user = await userContainer.ReadItemAsync<pumpkin_net_models.Models.User>(
+                userId,
+                new PartitionKey(tenantId));
+
+            // Update last login
+            user.Resource.LastLogin = DateTime.UtcNow;
+
+            // Save back to database
+            await userContainer.ReplaceItemAsync(
+                user.Resource,
+                userId,
+                new PartitionKey(tenantId));
+
+            _logger.LogInformation("UpdateUserLastLogin - UserId: {UserId}, TenantId: {TenantId}", 
+                userId, tenantId);
+        }
+        catch (CosmosException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            _logger.LogWarning("User not found for last login update - UserId: {UserId}, TenantId: {TenantId}", 
+                userId, tenantId);
+            throw;
+        }
+        catch (CosmosException ex)
+        {
+            _logger.LogError(ex, "Error updating user last login - UserId: {UserId}, TenantId: {TenantId}", 
+                userId, tenantId);
+            throw;
+        }
+    }
+
     public void Dispose()
     {
         if (!_disposed)

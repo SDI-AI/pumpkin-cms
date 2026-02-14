@@ -6,6 +6,17 @@ using pumpkin_api.Tests;
 using pumpkin_net_models.Models;
 using System.Text.Json;
 
+// ============================================================================
+// 🔐 PUMPKIN CMS - API KEY & USER GENERATOR (TEST UTILITY)
+// ============================================================================
+// ⚠️  SECURITY NOTICE:
+//    - This tool generates random API keys and passwords each time it runs
+//    - No secrets are stored in this file
+//    - Default password is a placeholder - CHANGE IT before using
+//    - Never commit actual connection strings or secrets to version control
+//    - Use appsettings.Development.json for local secrets (gitignored)
+// ============================================================================
+
 // Generate API Key and Hash for Admin Tenant
 Console.WriteLine("🎃 Pumpkin CMS - API Key Generator\n");
 Console.WriteLine("Generating new API key for admin tenant...\n");
@@ -50,6 +61,39 @@ var jsonOptions = new JsonSerializerOptions
     PropertyNamingPolicy = JsonNamingPolicy.CamelCase
 };
 Console.WriteLine(JsonSerializer.Serialize(exampleTenant, jsonOptions));
+Console.WriteLine();
+
+// Generate User Document
+Console.WriteLine("\n🔐 Pumpkin CMS - User Generator\n");
+
+// ⚠️ IMPORTANT: Change this password before deploying to production!
+// This is a placeholder for testing only.
+var (userDoc, userPassword) = UserGenerator.GenerateUser(
+    email: "admin@pumpkincms.io",
+    username: "superadmin",
+    password: "CHANGE-ME-BEFORE-PRODUCTION",  // ⚠️ REPLACE WITH YOUR SECURE PASSWORD
+    tenantId: "admin",
+    firstName: "Super",
+    lastName: "Admin",
+    role: 0  // SuperAdmin
+);
+
+Console.WriteLine("================================================");
+Console.WriteLine("ADMIN USER CREDENTIALS");
+Console.WriteLine("================================================");
+Console.WriteLine($"Email:      {userDoc.email}");
+Console.WriteLine($"Username:   {userDoc.username}");
+Console.WriteLine($"Password:   {userPassword}");
+Console.WriteLine($"Hash:       {userDoc.passwordHash}");
+Console.WriteLine("================================================");
+Console.WriteLine("\n⚠️  IMPORTANT: Save these credentials securely!");
+Console.WriteLine("   Use this hash in your User document.");
+Console.WriteLine("   The password shown above is for testing only.\n");
+
+Console.WriteLine("Example User Document:");
+Console.WriteLine("----------------------");
+Console.WriteLine(JsonSerializer.Serialize(userDoc, jsonOptions));
+Console.WriteLine($"\n💡 User GUID: {userDoc.id}");
 Console.WriteLine();
 
 // Commented out: Run all tests
@@ -452,6 +496,13 @@ internal class TestDatabaseService : IDatabaseService, IDisposable
     public Task<object> GetContentHierarchyAsync(string apiKey, string adminTenantId, string tenantId)
         => _connection.GetContentHierarchyAsync(apiKey, adminTenantId, tenantId);
 
+    // User authentication methods
+    public Task<pumpkin_net_models.Models.User?> GetUserByEmailAsync(string email)
+        => _connection.GetUserByEmailAsync(email);
+
+    public Task UpdateUserLastLoginAsync(string userId, string tenantId)
+        => _connection.UpdateUserLastLoginAsync(userId, tenantId);
+
     public void Dispose()
     {
         if (_connection is IDisposable disposable)
@@ -460,3 +511,99 @@ internal class TestDatabaseService : IDatabaseService, IDisposable
         }
     }
 }
+
+/// <summary>
+/// Helper class for generating user documents with BCrypt password hashing
+/// </summary>
+public static class UserGenerator
+{
+    /// <summary>
+    /// Generate a user document with hashed password
+    /// </summary>
+    /// <param name="email">User email address</param>
+    /// <param name="username">Username</param>
+    /// <param name="password">Plain text password (will be hashed)</param>
+    /// <param name="tenantId">Tenant ID for the user</param>
+    /// <param name="firstName">First name</param>
+    /// <param name="lastName">Last name</param>
+    /// <param name="role">User role (0=SuperAdmin, 1=TenantAdmin, 2=Editor, 3=Viewer)</param>
+    /// <param name="permissions">Optional custom permissions list</param>
+    /// <returns>Tuple containing the user document and the plain password</returns>
+    public static (dynamic userDoc, string password) GenerateUser(
+        string email,
+        string username,
+        string password,
+        string tenantId,
+        string? firstName = null,
+        string? lastName = null,
+        int role = 3, // Default to Viewer
+        string[]? permissions = null)
+    {
+        var userId = Guid.NewGuid().ToString();
+        var passwordHash = BCrypt.Net.BCrypt.HashPassword(password);
+
+        // Default permissions based on role if not specified
+        var defaultPermissions = role switch
+        {
+            0 => new[] // SuperAdmin
+            {
+                "tenants:create", "tenants:read", "tenants:update", "tenants:delete",
+                "pages:create", "pages:read", "pages:update", "pages:delete",
+                "users:create", "users:read", "users:update", "users:delete",
+                "forms:read"
+            },
+            1 => new[] // TenantAdmin
+            {
+                "pages:create", "pages:read", "pages:update", "pages:delete",
+                "users:create", "users:read", "users:update",
+                "forms:read"
+            },
+            2 => new[] // Editor
+            {
+                "pages:create", "pages:read", "pages:update",
+                "forms:read"
+            },
+            3 => new[] // Viewer
+            {
+                "pages:read",
+                "forms:read"
+            },
+            _ => new[] { "pages:read" }
+        };
+
+        var userDoc = new
+        {
+            id = userId,
+            tenantId = tenantId,
+            email = email,
+            username = username,
+            passwordHash = passwordHash,
+            firstName = firstName,
+            lastName = lastName,
+            role = role,
+            isActive = true,
+            createdDate = DateTime.UtcNow,
+            lastLogin = (DateTime?)null,
+            permissions = permissions ?? defaultPermissions
+        };
+
+        return (userDoc, password);
+    }
+
+    /// <summary>
+    /// Generate multiple users at once
+    /// </summary>
+    public static List<(dynamic userDoc, string password)> GenerateMultipleUsers(
+        params (string email, string username, string password, string tenantId, string? firstName, string? lastName, int role)[] users)
+    {
+        var results = new List<(dynamic userDoc, string password)>();
+        
+        foreach (var (email, username, password, tenantId, firstName, lastName, role) in users)
+        {
+            results.Add(GenerateUser(email, username, password, tenantId, firstName, lastName, role));
+        }
+        
+        return results;
+    }
+}
+

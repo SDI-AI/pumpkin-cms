@@ -1,0 +1,38 @@
+# ============================================================================
+# ?? PUMPKIN CMS - Environment Variables Template
+# ============================================================================
+# Copy this file to appsettings.Development.json and fill in your secrets
+# NEVER commit appsettings.Development.json to version control!
+# ============================================================================
+
+{
+  "Database": {
+    "Provider": "CosmosDb",
+    "CosmosDb": {
+      "ConnectionString": "YOUR_COSMOS_DB_CONNECTION_STRING_HERE",
+      "DatabaseName": "PumpkinCMS",
+      "MaxRetryAttemptsOnRateLimitedRequests": 9,
+      "MaxRetryWaitTimeOnRateLimitedRequests": 30,
+      "PreferredRegions": ""
+    }
+  },
+  "Jwt": {
+    "Issuer": "pumpkin-cms-api",
+    "Audience": "pumpkin-cms-admin",
+    "SecretKey": "YOUR_JWT_SECRET_KEY_MINIMUM_32_CHARACTERS_LONG",
+    "ExpirationMinutes": 480
+  }
+}
+
+# ============================================================================
+# Where to find these values:
+# ============================================================================
+# 
+# Cosmos DB Connection String:
+#   Azure Portal > Cosmos DB Account > Keys > Primary Connection String
+#
+# JWT Secret Key:
+#   Generate a random string (min 32 chars)
+#   Example: openssl rand -base64 32
+#
+# ============================================================================

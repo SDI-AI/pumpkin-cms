@@ -45,6 +45,42 @@ const page: Page = {
 };
 ```
 
+### User Management
+
+```typescript
+import { User, UserRole, LoginRequest, LoginResponse, userToUserInfo } from 'pumpkin-ts-models';
+
+// Create a user
+const user: User = {
+  id: '123e4567-e89b-12d3-a456-426614174000',
+  tenantId: 'tenant-abc',
+  email: 'john.doe@example.com',
+  username: 'johndoe',
+  passwordHash: '$2b$10$...',
+  firstName: 'John',
+  lastName: 'Doe',
+  role: UserRole.Editor,
+  isActive: true,
+  createdDate: new Date().toISOString(),
+  permissions: ['pages:read', 'pages:write'],
+  partitionKey: 'tenant-abc'
+};
+
+// Convert to sanitized UserInfo (removes passwordHash)
+const userInfo = userToUserInfo(user);
+
+// Handle login
+const loginRequest: LoginRequest = {
+  email: 'john.doe@example.com',
+  password: 'SecurePassword123!'
+};
+
+// Role-based access control
+if (user.role === UserRole.Editor || user.role === UserRole.TenantAdmin) {
+  // User can edit pages
+}
+```
+
 ### JSON Conversion
 
 ```typescript

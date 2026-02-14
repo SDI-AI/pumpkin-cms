@@ -592,6 +592,32 @@ public class MongoDataConnection : IDataConnection, IDisposable
             _disposed = true;
         }
     }
+
+    public async Task<User?> GetUserByEmailAsync(string email)
+    {
+        var collection = _database.GetCollection<User>("User");
+        var filter = Builders<User>.Filter.Eq(u => u.Email, email);
+        var user = await collection.Find(filter).FirstOrDefaultAsync();
+        
+        _logger.LogInformation("GetUserByEmail - Email: {Email}, Found: {Found}", 
+            email, user != null);
+        
+        return user;
+    }
+
+    public async Task UpdateUserLastLoginAsync(string userId, string tenantId)
+    {
+        var collection = _database.GetCollection<User>("User");
+        var filter = Builders<User>.Filter.And(
+            Builders<User>.Filter.Eq(u => u.Id, userId),
+            Builders<User>.Filter.Eq(u => u.TenantId, tenantId));
+        
+        var update = Builders<User>.Update.Set(u => u.LastLogin, DateTime.UtcNow);
+        await collection.UpdateOneAsync(filter, update);
+        
+        _logger.LogInformation("UpdateUserLastLogin - UserId: {UserId}, TenantId: {TenantId}", 
+            userId, tenantId);
+    }
 #else
     private readonly ILogger<MongoDataConnection> _logger;
 
@@ -662,6 +688,16 @@ public class MongoDataConnection : IDataConnection, IDisposable
     }
 
     public Task<object> GetContentHierarchyAsync(string apiKey, string adminTenantId, string tenantId)
+    {
+        throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
+    }
+
+    public Task<User?> GetUserByEmailAsync(string email)
+    {
+        throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
+    }
+
+    public Task UpdateUserLastLoginAsync(string userId, string tenantId)
     {
         throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
     }
