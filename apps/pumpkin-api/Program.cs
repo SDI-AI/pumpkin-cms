@@ -365,7 +365,10 @@ app.MapGet("/api/admin/tenants/{tenantId}/hubs/{hubPageSlug}/spokes",
             return Results.BadRequest("X-Admin-Tenant-Id header is required");
         }
         
-        return await PumpkinManager.GetSpokePagesAsync(databaseService, apiKey, adminTenantId, tenantId, hubPageSlug);
+        // Decode hubPageSlug in case it's URL encoded
+        var decodedHubPageSlug = Uri.UnescapeDataString(hubPageSlug);
+        
+        return await PumpkinManager.GetSpokePagesAsync(databaseService, apiKey, adminTenantId, tenantId, decodedHubPageSlug);
     })
     .WithTags("Admin")
     .WithName("GetSpokePages")

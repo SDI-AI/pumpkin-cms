@@ -1,5 +1,6 @@
 export type { IHtmlBlock, GenericHtmlBlock } from './models/IHtmlBlock';
 export type { Tenant, ApiKeyMeta, TenantSettings, Features, Contact, Billing } from './models/Tenant';
+export type { FormEntry, FormEntryMetadata } from './models/FormEntry';
 export type { Page, PageMetaData, SearchData, ContentData, SeoData, AlternateUrl, OpenGraphData, TwitterCardData } from './models/Page';
 export type { HeroType, HeroContent, HeroBlock } from './models/HeroBlocks';
 export type { PrimaryCtaContent, PrimaryCtaBlock, SecondaryCtaContent, SecondaryCtaBlock } from './models/CtaBlocks';

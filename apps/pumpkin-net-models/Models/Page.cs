@@ -23,7 +23,31 @@ public class Page
     public string PageSlug 
     { 
         get => _pageSlug;
-        set => _pageSlug = value?.ToLowerInvariant() ?? string.Empty;
+        set 
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                _pageSlug = string.Empty;
+                return;
+            }
+
+            // Convert to lowercase
+            var slug = value.ToLowerInvariant();
+            
+            // Replace spaces, slashes, and backslashes with hyphens
+            slug = slug.Replace(' ', '-')
+                       .Replace('/', '-')
+                       .Replace('\\', '-');
+            
+            // Remove consecutive hyphens
+            while (slug.Contains("--"))
+            {
+                slug = slug.Replace("--", "-");
+            }
+            
+            // Remove leading/trailing hyphens
+            _pageSlug = slug.Trim('-');
+        }
     }
 
     [JsonPropertyName("PageVersion")]

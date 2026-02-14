@@ -64,6 +64,36 @@ const page = await PageJsonConverter.fromJsonFile('page.json');
 await PageJsonConverter.toJsonFile(page, 'output.json');
 ```
 
+### Page Slug Normalization
+
+The `pageSlug` field is automatically normalized to ensure proper hyphenation. All slugs are:
+- Converted to lowercase
+- Spaces, slashes, and backslashes replaced with hyphens
+- Consecutive hyphens removed
+- Leading/trailing hyphens removed
+
+```typescript
+import { PageJsonConverter } from 'pumpkin-ts-models';
+
+// Normalize a slug manually
+const slug = PageJsonConverter.normalizeSlug('My Page Title');
+// Result: "my-page-title"
+
+// Validate if a slug is properly formatted
+const isValid = PageJsonConverter.isValidSlug('my-page-title');
+// Result: true
+
+// Slugs are automatically normalized when parsing JSON
+const page = PageJsonConverter.fromJson(jsonString);
+// page.pageSlug will be properly hyphenated
+```
+
+Examples of slug transformations:
+- `"My Page Title"` → `"my-page-title"`
+- `"about/company/team"` → `"about-company-team"`
+- `"contact--us"` → `"contact-us"`
+- `"-leading-trailing-"` → `"leading-trailing"`
+
 ### Block Type Guards
 
 ```typescript

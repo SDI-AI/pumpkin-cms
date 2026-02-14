@@ -23,10 +23,65 @@ export class PageJsonConverter {
   };
 
   /**
-   * Normalizes a page slug to lowercase
+   * Normalizes a page slug to lowercase with hyphenation
+   * - Converts to lowercase
+   * - Replaces spaces, slashes, and backslashes with hyphens
+   * - Removes consecutive hyphens
+   * - Removes leading/trailing hyphens
    */
   static normalizeSlug(slug: string): string {
-    return slug?.toLowerCase() ?? '';
+    if (!slug || typeof slug !== 'string') {
+      return '';
+    }
+
+    // Convert to lowercase
+    let normalized = slug.toLowerCase();
+
+    // Replace spaces, slashes, and backslashes with hyphens
+    normalized = normalized.replace(/[\s\/\\]+/g, '-');
+
+    // Remove consecutive hyphens
+    normalized = normalized.replace(/-{2,}/g, '-');
+
+    // Remove leading/trailing hyphens
+    normalized = normalized.replace(/^-+|-+$/g, '');
+
+    return normalized;
+  }
+
+  /**
+   * Validates if a slug is properly hyphenated
+   * - Must be lowercase
+   * - Must not contain spaces, slashes, or backslashes
+   * - Must not have consecutive hyphens
+   * - Must not start or end with hyphen
+   */
+  static isValidSlug(slug: string): boolean {
+    if (!slug || typeof slug !== 'string') {
+      return false;
+    }
+
+    // Check if slug is lowercase
+    if (slug !== slug.toLowerCase()) {
+      return false;
+    }
+
+    // Check for invalid characters (spaces, slashes, backslashes)
+    if (/[\s\/\\]/.test(slug)) {
+      return false;
+    }
+
+    // Check for consecutive hyphens
+    if (/--/.test(slug)) {
+      return false;
+    }
+
+    // Check for leading or trailing hyphens
+    if (/^-|-$/.test(slug)) {
+      return false;
+    }
+
+    return true;
   }
 
   /**
@@ -46,9 +101,9 @@ export class PageJsonConverter {
         return null;
       }
 
-      // Ensure pageSlug is always lowercase
+      // Normalize pageSlug to ensure proper hyphenation
       if (parsed.pageSlug) {
-        parsed.pageSlug = parsed.pageSlug.toLowerCase();
+        parsed.pageSlug = this.normalizeSlug(parsed.pageSlug);
       }
 
       // Process HTML blocks

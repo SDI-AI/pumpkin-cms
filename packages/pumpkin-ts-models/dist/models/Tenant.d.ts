@@ -40,6 +40,10 @@ export interface Features {
     forms: boolean;
     pages: boolean;
     analytics: boolean;
+    canCreateTenants: boolean;
+    canDeleteTenants: boolean;
+    canManageAllContent: boolean;
+    canViewAllTenants: boolean;
 }
 /**
  * Tenant contact information

@@ -15,6 +15,7 @@ export interface Page {
     MetaData: PageMetaData;
     searchData: SearchData;
     ContentData: ContentData;
+    contentRelationships: ContentRelationships;
     seo: SeoData;
     isPublished: boolean;
     publishedAt: string | null;
@@ -27,6 +28,7 @@ export interface PageMetaData {
     category: string;
     product: string;
     keyword: string;
+    pageType: string;
     title: string;
     description: string;
     createdAt: string;
@@ -41,6 +43,8 @@ export interface PageMetaData {
 export interface SearchData {
     state: string;
     city: string;
+    metro: string;
+    county: string;
     keyword: string;
     tags: string[];
     contentSummary: string;
@@ -62,6 +66,7 @@ export interface SeoData {
     robots: string;
     canonicalUrl: string;
     alternateUrls: AlternateUrl[];
+    structuredData: string;
     openGraph: OpenGraphData;
     twitterCard: TwitterCardData;
 }
@@ -95,5 +100,17 @@ export interface TwitterCardData {
     'twitter:image': string;
     'twitter:site': string;
     'twitter:creator': string;
+}
+/**
+ * Content relationships for hub-spoke model and topic clustering
+ */
+export interface ContentRelationships {
+    isHub: boolean;
+    hubPageSlug: string;
+    spokePageSlugs: string[];
+    topicCluster: string;
+    relatedHubs: string[];
+    siblingSpokes: string[];
+    spokePriority: number;
 }
 //# sourceMappingURL=Page.d.ts.map
