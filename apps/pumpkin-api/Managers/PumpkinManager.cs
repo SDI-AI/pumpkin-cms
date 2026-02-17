@@ -266,30 +266,20 @@ public static class PumpkinManager
         };
     }
 
-    // Admin: Get specific tenant
-    public static async Task<IResult> GetTenantAsync(IDatabaseService databaseService, string apiKey, string adminTenantId, string tenantId)
+    // Admin: Get specific tenant (JWT authentication at endpoint level)
+    public static async Task<IResult> GetTenantAsync(IDatabaseService databaseService, string tenantId)
     {
         try
         {
-            if (string.IsNullOrEmpty(apiKey))
-                return Results.BadRequest("API key is required");
-            
-            if (string.IsNullOrEmpty(adminTenantId))
-                return Results.BadRequest("Admin tenant ID is required");
-            
             if (string.IsNullOrEmpty(tenantId))
                 return Results.BadRequest("Tenant ID is required");
 
-            var tenant = await databaseService.GetTenantAsync(apiKey, adminTenantId, tenantId);
+            var tenant = await databaseService.GetTenantAsync(tenantId);
             
             if (tenant == null)
-                return Results.NotFound("Tenant not found or access denied");
+                return Results.NotFound("Tenant not found");
             
             return Results.Ok(tenant);
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Results.Unauthorized();
         }
         catch (Exception ex)
         {
@@ -297,30 +287,20 @@ public static class PumpkinManager
         }
     }
 
-    // Admin: Create new tenant
-    public static async Task<IResult> CreateTenantAsync(IDatabaseService databaseService, string apiKey, string adminTenantId, Tenant tenant)
+    // Admin: Create new tenant (JWT authentication at endpoint level)
+    public static async Task<IResult> CreateTenantAsync(IDatabaseService databaseService, Tenant tenant)
     {
         try
         {
-            if (string.IsNullOrEmpty(apiKey))
-                return Results.BadRequest("API key is required");
-            
-            if (string.IsNullOrEmpty(adminTenantId))
-                return Results.BadRequest("Admin tenant ID is required");
-            
             if (tenant == null)
                 return Results.BadRequest("Tenant data is required");
             
             if (string.IsNullOrEmpty(tenant.TenantId))
                 return Results.BadRequest("Tenant ID is required");
 
-            var createdTenant = await databaseService.CreateTenantAsync(apiKey, adminTenantId, tenant);
+            var createdTenant = await databaseService.CreateTenantAsync(tenant);
             
             return Results.Created($"/api/admin/tenants/{createdTenant.TenantId}", createdTenant);
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Results.Unauthorized();
         }
         catch (InvalidOperationException ex)
         {
@@ -332,24 +312,14 @@ public static class PumpkinManager
         }
     }
 
-    // Admin: Get all tenants
-    public static async Task<IResult> GetAllTenantsAsync(IDatabaseService databaseService, string apiKey, string adminTenantId)
+    // Admin: Get all tenants (JWT authentication at endpoint level)
+    public static async Task<IResult> GetAllTenantsAsync(IDatabaseService databaseService)
     {
         try
         {
-            if (string.IsNullOrEmpty(apiKey))
-                return Results.BadRequest("API key is required");
-            
-            if (string.IsNullOrEmpty(adminTenantId))
-                return Results.BadRequest("Admin tenant ID is required");
-
-            var tenants = await databaseService.GetAllTenantsAsync(apiKey, adminTenantId);
+            var tenants = await databaseService.GetAllTenantsAsync();
             
             return Results.Ok(new { tenants, count = tenants.Count });
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Results.Unauthorized();
         }
         catch (Exception ex)
         {
@@ -357,24 +327,14 @@ public static class PumpkinManager
         }
     }
 
-    // Admin: Get all pages (optionally filtered by tenant)
-    public static async Task<IResult> GetAllPagesAsync(IDatabaseService databaseService, string apiKey, string adminTenantId, string? tenantId = null)
+    // Admin: Get all pages (optionally filtered by tenant) (JWT authentication at endpoint level)
+    public static async Task<IResult> GetAllPagesAsync(IDatabaseService databaseService, string? tenantId = null)
     {
         try
         {
-            if (string.IsNullOrEmpty(apiKey))
-                return Results.BadRequest("API key is required");
-            
-            if (string.IsNullOrEmpty(adminTenantId))
-                return Results.BadRequest("Admin tenant ID is required");
-
-            var pages = await databaseService.GetAllPagesAsync(apiKey, adminTenantId, tenantId);
+            var pages = await databaseService.GetAllPagesAsync(tenantId);
             
             return Results.Ok(new { pages, count = pages.Count, tenantId = tenantId ?? "all" });
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Results.Unauthorized();
         }
         catch (Exception ex)
         {
@@ -382,27 +342,17 @@ public static class PumpkinManager
         }
     }
 
-    // Admin: Get hub pages for a tenant
-    public static async Task<IResult> GetHubPagesAsync(IDatabaseService databaseService, string apiKey, string adminTenantId, string tenantId)
+    // Admin: Get hub pages for a tenant (JWT authentication at endpoint level)
+    public static async Task<IResult> GetHubPagesAsync(IDatabaseService databaseService, string tenantId)
     {
         try
         {
-            if (string.IsNullOrEmpty(apiKey))
-                return Results.BadRequest("API key is required");
-            
-            if (string.IsNullOrEmpty(adminTenantId))
-                return Results.BadRequest("Admin tenant ID is required");
-            
             if (string.IsNullOrEmpty(tenantId))
                 return Results.BadRequest("Tenant ID is required");
 
-            var hubPages = await databaseService.GetHubPagesAsync(apiKey, adminTenantId, tenantId);
+            var hubPages = await databaseService.GetHubPagesAsync(tenantId);
             
             return Results.Ok(new { tenantId, hubPages, count = hubPages.Count });
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Results.Unauthorized();
         }
         catch (Exception ex)
         {
@@ -410,30 +360,20 @@ public static class PumpkinManager
         }
     }
 
-    // Admin: Get spoke pages for a hub
-    public static async Task<IResult> GetSpokePagesAsync(IDatabaseService databaseService, string apiKey, string adminTenantId, string tenantId, string hubPageSlug)
+    // Admin: Get spoke pages for a hub (JWT authentication at endpoint level)
+    public static async Task<IResult> GetSpokePagesAsync(IDatabaseService databaseService, string tenantId, string hubPageSlug)
     {
         try
         {
-            if (string.IsNullOrEmpty(apiKey))
-                return Results.BadRequest("API key is required");
-            
-            if (string.IsNullOrEmpty(adminTenantId))
-                return Results.BadRequest("Admin tenant ID is required");
-            
             if (string.IsNullOrEmpty(tenantId))
                 return Results.BadRequest("Tenant ID is required");
             
             if (string.IsNullOrEmpty(hubPageSlug))
                 return Results.BadRequest("Hub page slug is required");
 
-            var spokePages = await databaseService.GetSpokePagesAsync(apiKey, adminTenantId, tenantId, hubPageSlug);
+            var spokePages = await databaseService.GetSpokePagesAsync(tenantId, hubPageSlug);
             
             return Results.Ok(new { tenantId, hubPageSlug, spokePages, count = spokePages.Count });
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Results.Unauthorized();
         }
         catch (Exception ex)
         {
@@ -441,27 +381,17 @@ public static class PumpkinManager
         }
     }
 
-    // Admin: Get complete content hierarchy visualization
-    public static async Task<IResult> GetContentHierarchyAsync(IDatabaseService databaseService, string apiKey, string adminTenantId, string tenantId)
+    // Admin: Get complete content hierarchy visualization (JWT authentication at endpoint level)
+    public static async Task<IResult> GetContentHierarchyAsync(IDatabaseService databaseService, string tenantId)
     {
         try
         {
-            if (string.IsNullOrEmpty(apiKey))
-                return Results.BadRequest("API key is required");
-            
-            if (string.IsNullOrEmpty(adminTenantId))
-                return Results.BadRequest("Admin tenant ID is required");
-            
             if (string.IsNullOrEmpty(tenantId))
                 return Results.BadRequest("Tenant ID is required");
 
-            var hierarchy = await databaseService.GetContentHierarchyAsync(apiKey, adminTenantId, tenantId);
+            var hierarchy = await databaseService.GetContentHierarchyAsync(tenantId);
             
             return Results.Ok(hierarchy);
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Results.Unauthorized();
         }
         catch (Exception ex)
         {

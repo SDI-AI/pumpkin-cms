@@ -43,6 +43,7 @@ public class LoginResponse
 public class UserInfo
 {
     public required string Id { get; set; }
+    public required string TenantId { get; set; }
     public required string Email { get; set; }
     public required string Username { get; set; }
     public string? FirstName { get; set; }

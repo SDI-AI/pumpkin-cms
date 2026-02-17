@@ -62,5 +62,27 @@ export interface Contact {
  */
 export interface Billing {
   cycle: string;
-  nextInvoice: string;
+  nextInvoice: string | null;
+}
+
+/**
+ * Simplified tenant info for dropdown and display
+ */
+export interface TenantInfo {
+  id: string;
+  tenantId: string;
+  name: string;
+  status: string;
+}
+
+/**
+ * Convert full Tenant to simplified TenantInfo
+ */
+export function tenantToTenantInfo(tenant: Tenant): TenantInfo {
+  return {
+    id: tenant.id,
+    tenantId: tenant.tenantId,
+    name: tenant.name,
+    status: tenant.status,
+  };
 }

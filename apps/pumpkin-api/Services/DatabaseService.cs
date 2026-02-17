@@ -63,40 +63,61 @@ public class DatabaseService : IDatabaseService, IDisposable
         return _dataConnection.GetSitemapPagesAsync(apiKey, tenantId);
     }
 
-    // Admin methods
-    public Task<Tenant?> GetTenantAsync(string apiKey, string adminTenantId, string tenantId)
+    // Admin methods (JWT authentication required at endpoint level)
+    public Task<Tenant?> GetTenantAsync(string tenantId)
     {
-        return _dataConnection.GetTenantAsync(apiKey, adminTenantId, tenantId);
+        return _dataConnection.GetTenantAsync(tenantId);
     }
 
-    public Task<Tenant> CreateTenantAsync(string apiKey, string adminTenantId, Tenant tenant)
+    public Task<Tenant> CreateTenantAsync(Tenant tenant)
     {
-        return _dataConnection.CreateTenantAsync(apiKey, adminTenantId, tenant);
+        return _dataConnection.CreateTenantAsync(tenant);
     }
 
-    public Task<List<Tenant>> GetAllTenantsAsync(string apiKey, string adminTenantId)
+    public Task<Tenant> UpdateTenantAsync(string tenantId, Tenant tenant)
     {
-        return _dataConnection.GetAllTenantsAsync(apiKey, adminTenantId);
+        return _dataConnection.UpdateTenantAsync(tenantId, tenant);
     }
 
-    public Task<List<Page>> GetAllPagesAsync(string apiKey, string adminTenantId, string? tenantId = null)
+    public Task<bool> DeleteTenantAsync(string tenantId)
     {
-        return _dataConnection.GetAllPagesAsync(apiKey, adminTenantId, tenantId);
+        return _dataConnection.DeleteTenantAsync(tenantId);
     }
 
-    public Task<List<Page>> GetHubPagesAsync(string apiKey, string adminTenantId, string tenantId)
+    public Task<List<Tenant>> GetAllTenantsAsync()
     {
-        return _dataConnection.GetHubPagesAsync(apiKey, adminTenantId, tenantId);
+        return _dataConnection.GetAllTenantsAsync();
     }
 
-    public Task<List<Page>> GetSpokePagesAsync(string apiKey, string adminTenantId, string tenantId, string hubPageSlug)
+    public Task<List<Page>> GetAllPagesAsync(string? tenantId = null)
     {
-        return _dataConnection.GetSpokePagesAsync(apiKey, adminTenantId, tenantId, hubPageSlug);
+        return _dataConnection.GetAllPagesAsync(tenantId);
     }
 
-    public Task<object> GetContentHierarchyAsync(string apiKey, string adminTenantId, string tenantId)
+    public Task<List<Page>> GetHubPagesAsync(string tenantId)
     {
-        return _dataConnection.GetContentHierarchyAsync(apiKey, adminTenantId, tenantId);
+        return _dataConnection.GetHubPagesAsync(tenantId);
+    }
+
+    public Task<List<Page>> GetSpokePagesAsync(string tenantId, string hubPageSlug)
+    {
+        return _dataConnection.GetSpokePagesAsync(tenantId, hubPageSlug);
+    }
+
+    public Task<object> GetContentHierarchyAsync(string tenantId)
+    {
+        return _dataConnection.GetContentHierarchyAsync(tenantId);
+    }
+
+    // JWT-authenticated admin methods (no API key required)
+    public Task<List<Page>> GetPagesByTenantAsync(string tenantId)
+    {
+        return _dataConnection.GetPagesByTenantAsync(tenantId);
+    }
+
+    public Task<List<Tenant>> GetTenantsForUserAsync(string userTenantId, bool isSuperAdmin)
+    {
+        return _dataConnection.GetTenantsForUserAsync(userTenantId, isSuperAdmin);
     }
 
     // User authentication methods

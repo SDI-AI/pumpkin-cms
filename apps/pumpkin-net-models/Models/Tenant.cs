@@ -111,5 +111,5 @@ public class Billing
     public string Cycle { get; set; } = string.Empty;
 
     [JsonPropertyName("nextInvoice")]
-    public DateTime NextInvoice { get; set; } = DateTime.UtcNow;
+    public DateTime? NextInvoice { get; set; }
 }

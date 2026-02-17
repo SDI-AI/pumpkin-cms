@@ -59,4 +59,17 @@ export interface Billing {
     cycle: string;
     nextInvoice: string;
 }
+/**
+ * Simplified tenant info for dropdown and display
+ */
+export interface TenantInfo {
+    id: string;
+    tenantId: string;
+    name: string;
+    status: string;
+}
+/**
+ * Convert full Tenant to simplified TenantInfo
+ */
+export declare function tenantToTenantInfo(tenant: Tenant): TenantInfo;
 //# sourceMappingURL=Tenant.d.ts.map

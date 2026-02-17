@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Options;
 using pumpkin_net_models.Models;
+using System.Security.Cryptography;
 
 namespace pumpkin_api.Services;
 
@@ -432,33 +433,36 @@ public class MongoDataConnection : IDataConnection, IDisposable
         }
     }
 
-    // Admin methods
-    public async Task<Tenant?> GetTenantAsync(string apiKey, string adminTenantId, string tenantId)
+    // Admin methods (JWT authentication required at endpoint level)
+    public async Task<Tenant?> GetTenantAsync(string tenantId)
     {
-        if (!await ValidateTenantApiKeyAsync(apiKey, adminTenantId))
-        {
-            throw new UnauthorizedAccessException("Invalid admin credentials");
-        }
-
         var tenantCollection = _database.GetCollection<Tenant>("Tenant");
         var filter = Builders<Tenant>.Filter.Eq(t => t.TenantId, tenantId);
         return await tenantCollection.Find(filter).FirstOrDefaultAsync();
     }
 
-    public async Task<Tenant> CreateTenantAsync(string apiKey, string adminTenantId, Tenant tenant)
+    public async Task<Tenant> CreateTenantAsync(Tenant tenant)
     {
-        if (!await ValidateTenantApiKeyAsync(apiKey, adminTenantId))
-        {
-            throw new UnauthorizedAccessException("Invalid admin credentials");
-        }
-
         var tenantCollection = _database.GetCollection<Tenant>("Tenant");
         
         // Check if tenant exists
-        var existing = await GetTenantAsync(apiKey, adminTenantId, tenant.TenantId);
+        var existing = await GetTenantAsync(tenant.TenantId);
         if (existing != null)
         {
             throw new InvalidOperationException($"Tenant with ID '{tenant.TenantId}' already exists");
+        }
+
+        // Generate API key and hash if not provided
+        if (string.IsNullOrEmpty(tenant.ApiKey) || string.IsNullOrEmpty(tenant.ApiKeyHash))
+        {
+            // Generate a new random API key (32 bytes = 44 base64 characters)
+            var keyBytes = RandomNumberGenerator.GetBytes(32);
+            tenant.ApiKey = Convert.ToBase64String(keyBytes);
+            
+            // Hash the API key using BCrypt
+            tenant.ApiKeyHash = BCrypt.Net.BCrypt.HashPassword(tenant.ApiKey, 12);
+            
+            _logger.LogInformation("Generated new API key for tenant - TenantId: {TenantId}", tenant.TenantId);
         }
 
         tenant.CreatedAt = DateTime.UtcNow;
@@ -472,25 +476,63 @@ public class MongoDataConnection : IDataConnection, IDisposable
         return tenant;
     }
 
-    public async Task<List<Tenant>> GetAllTenantsAsync(string apiKey, string adminTenantId)
+    public async Task<Tenant> UpdateTenantAsync(string tenantId, Tenant tenant)
     {
-        if (!await ValidateTenantApiKeyAsync(apiKey, adminTenantId))
+        var tenantCollection = _database.GetCollection<Tenant>("Tenant");
+        
+        // Check if tenant exists
+        var filter = Builders<Tenant>.Filter.Eq(t => t.TenantId, tenantId);
+        var existing = await tenantCollection.Find(filter).FirstOrDefaultAsync();
+        
+        if (existing == null)
         {
-            throw new UnauthorizedAccessException("Invalid admin credentials");
+            throw new InvalidOperationException($"Tenant with ID '{tenantId}' not found");
         }
 
+        tenant.CreatedAt = existing.CreatedAt;
+        tenant.UpdatedAt = DateTime.UtcNow;
+        tenant.Id = tenantId;
+        tenant.TenantId = tenantId;
+        
+        if (string.IsNullOrEmpty(tenant.ApiKey))
+        {
+            tenant.ApiKey = existing.ApiKey;
+            tenant.ApiKeyHash = existing.ApiKeyHash;
+            tenant.ApiKeyMeta = existing.ApiKeyMeta;
+        }
+
+        await tenantCollection.ReplaceOneAsync(filter, tenant);
+        _logger.LogInformation("Tenant updated - TenantId: {TenantId}", tenantId);
+        
+        return tenant;
+    }
+
+    public async Task<bool> DeleteTenantAsync(string tenantId)
+    {
+        var tenantCollection = _database.GetCollection<Tenant>("Tenant");
+        
+        var filter = Builders<Tenant>.Filter.Eq(t => t.TenantId, tenantId);
+        var result = await tenantCollection.DeleteOneAsync(filter);
+        
+        if (result.DeletedCount > 0)
+        {
+            _logger.LogInformation("Tenant deleted - TenantId: {TenantId}", tenantId);
+            return true;
+        }
+        
+        _logger.LogWarning("Attempted to delete non-existent tenant - TenantId: {TenantId}", tenantId);
+        return false;
+    }
+
+    public async Task<List<Tenant>> GetAllTenantsAsync()
+    {
         var tenantCollection = _database.GetCollection<Tenant>("Tenant");
         var sort = Builders<Tenant>.Sort.Descending(t => t.CreatedAt);
         return await tenantCollection.Find(_ => true).Sort(sort).ToListAsync();
     }
 
-    public async Task<List<Page>> GetAllPagesAsync(string apiKey, string adminTenantId, string? tenantId = null)
+    public async Task<List<Page>> GetAllPagesAsync(string? tenantId = null)
     {
-        if (!await ValidateTenantApiKeyAsync(apiKey, adminTenantId))
-        {
-            throw new UnauthorizedAccessException("Invalid admin credentials");
-        }
-
         var pageCollection = _database.GetCollection<Page>("Page");
         var filter = string.IsNullOrEmpty(tenantId) 
             ? Builders<Page>.Filter.Empty
@@ -500,13 +542,56 @@ public class MongoDataConnection : IDataConnection, IDisposable
         return await pageCollection.Find(filter).Sort(sort).ToListAsync();
     }
 
-    public async Task<List<Page>> GetHubPagesAsync(string apiKey, string adminTenantId, string tenantId)
+    // JWT-authenticated admin method: Get pages by tenant (no API key validation)
+    public async Task<List<Page>> GetPagesByTenantAsync(string tenantId)
     {
-        if (!await ValidateTenantApiKeyAsync(apiKey, adminTenantId))
-        {
-            throw new UnauthorizedAccessException("Invalid admin credentials");
-        }
+        var pageCollection = _database.GetCollection<Page>("Page");
+        var filter = Builders<Page>.Filter.Eq(p => p.TenantId, tenantId);
+        var sort = Builders<Page>.Sort.Descending("MetaData.updatedAt");
+        return await pageCollection.Find(filter).Sort(sort).ToListAsync();
+    }
 
+    // JWT-authenticated: Get tenants for user (SuperAdmin sees all, others see only their own)
+    public async Task<List<Tenant>> GetTenantsForUserAsync(string userTenantId, bool isSuperAdmin)
+    {
+        var tenantCollection = _database.GetCollection<Tenant>("Tenant");
+        
+        FilterDefinition<Tenant> filter;
+        if (isSuperAdmin)
+        {
+            filter = Builders<Tenant>.Filter.Eq(t => t.Status, "active");
+        }
+        else
+        {
+            // Regular users see only their own tenant (no status filter)
+            filter = Builders<Tenant>.Filter.Eq(t => t.TenantId, userTenantId);
+        }
+        
+        var sort = Builders<Tenant>.Sort.Ascending(t => t.Name);
+        var tenants = await tenantCollection.Find(filter).Sort(sort).ToListAsync();
+        
+        // If no tenant found for regular user, create a minimal one for display
+        if (!isSuperAdmin && tenants.Count == 0)
+        {
+            tenants.Add(new Tenant
+            {
+                Id = userTenantId,
+                TenantId = userTenantId,
+                Name = $"Tenant {userTenantId}",
+                Status = "active",
+                Plan = "basic",
+                ApiKeyMeta = new ApiKeyMeta { IsActive = true, CreatedAt = DateTime.UtcNow },
+                Settings = new TenantSettings(),
+                Contact = new Contact(),
+                Billing = new Billing()
+            });
+        }
+        
+        return tenants;
+    }
+
+    public async Task<List<Page>> GetHubPagesAsync(string tenantId)
+    {
         var pageCollection = _database.GetCollection<Page>("Page");
         var filter = Builders<Page>.Filter.And(
             Builders<Page>.Filter.Eq(p => p.TenantId, tenantId),
@@ -517,13 +602,8 @@ public class MongoDataConnection : IDataConnection, IDisposable
         return await pageCollection.Find(filter).Sort(sort).ToListAsync();
     }
 
-    public async Task<List<Page>> GetSpokePagesAsync(string apiKey, string adminTenantId, string tenantId, string hubPageSlug)
+    public async Task<List<Page>> GetSpokePagesAsync(string tenantId, string hubPageSlug)
     {
-        if (!await ValidateTenantApiKeyAsync(apiKey, adminTenantId))
-        {
-            throw new UnauthorizedAccessException("Invalid admin credentials");
-        }
-
         var pageCollection = _database.GetCollection<Page>("Page");
         var filter = Builders<Page>.Filter.And(
             Builders<Page>.Filter.Eq(p => p.TenantId, tenantId),
@@ -537,13 +617,8 @@ public class MongoDataConnection : IDataConnection, IDisposable
         return await pageCollection.Find(filter).Sort(sort).ToListAsync();
     }
 
-    public async Task<object> GetContentHierarchyAsync(string apiKey, string adminTenantId, string tenantId)
+    public async Task<object> GetContentHierarchyAsync(string tenantId)
     {
-        if (!await ValidateTenantApiKeyAsync(apiKey, adminTenantId))
-        {
-            throw new UnauthorizedAccessException("Invalid admin credentials");
-        }
-
         var pageCollection = _database.GetCollection<Page>("Page");
         var filter = Builders<Page>.Filter.Eq(p => p.TenantId, tenantId);
         var allPages = await pageCollection.Find(filter).ToListAsync();
@@ -657,37 +732,57 @@ public class MongoDataConnection : IDataConnection, IDisposable
         throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
     }
 
-    public Task<Tenant?> GetTenantAsync(string apiKey, string adminTenantId, string tenantId)
+    public Task<Tenant?> GetTenantAsync(string tenantId)
     {
         throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
     }
 
-    public Task<Tenant> CreateTenantAsync(string apiKey, string adminTenantId, Tenant tenant)
+    public Task<Tenant> CreateTenantAsync(Tenant tenant)
     {
         throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
     }
 
-    public Task<List<Tenant>> GetAllTenantsAsync(string apiKey, string adminTenantId)
+    public Task<Tenant> UpdateTenantAsync(string tenantId, Tenant tenant)
     {
         throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
     }
 
-    public Task<List<Page>> GetAllPagesAsync(string apiKey, string adminTenantId, string? tenantId = null)
+    public Task<bool> DeleteTenantAsync(string tenantId)
     {
         throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
     }
 
-    public Task<List<Page>> GetHubPagesAsync(string apiKey, string adminTenantId, string tenantId)
+    public Task<List<Tenant>> GetAllTenantsAsync()
     {
         throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
     }
 
-    public Task<List<Page>> GetSpokePagesAsync(string apiKey, string adminTenantId, string tenantId, string hubPageSlug)
+    public Task<List<Page>> GetAllPagesAsync(string? tenantId = null)
     {
         throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
     }
 
-    public Task<object> GetContentHierarchyAsync(string apiKey, string adminTenantId, string tenantId)
+    public Task<List<Page>> GetPagesByTenantAsync(string tenantId)
+    {
+        throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
+    }
+
+    public Task<List<Tenant>> GetTenantsForUserAsync(string userTenantId, bool isSuperAdmin)
+    {
+        throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
+    }
+
+    public Task<List<Page>> GetHubPagesAsync(string tenantId)
+    {
+        throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
+    }
+
+    public Task<List<Page>> GetSpokePagesAsync(string tenantId, string hubPageSlug)
+    {
+        throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
+    }
+
+    public Task<object> GetContentHierarchyAsync(string tenantId)
     {
         throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
     }

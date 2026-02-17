@@ -92,6 +92,22 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 
+// Configure CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins(
+                "http://localhost:3000",      // React dev server
+                "https://localhost:3000",     // React dev server (HTTPS)
+                "http://localhost:3001"       // Alternative port
+            )
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .AllowCredentials();
+    });
+});
+
 // Register data connection implementations
 builder.Services.AddSingleton<CosmosDataConnection>();
 builder.Services.AddSingleton<MongoDataConnection>();
@@ -100,6 +116,9 @@ builder.Services.AddSingleton<MongoDataConnection>();
 builder.Services.AddSingleton<IDatabaseService, DatabaseService>();
 
 var app = builder.Build();
+
+// Configure CORS (must be before authentication/authorization)
+app.UseCors("AllowFrontend");
 
 // Configure authentication and authorization
 app.UseAuthentication();
@@ -267,6 +286,8 @@ app.MapPost("/api/auth/login",
             return Results.Unauthorized();
         }
         
+        Console.WriteLine($"[Login] User: {user.Username}, Role enum value: {user.Role}, Role as string: {user.Role.ToString()}");
+        
         // Generate JWT token
         var jwtSettings = configuration.GetSection("Jwt");
         var secretKey = new SymmetricSecurityKey(
@@ -306,6 +327,7 @@ app.MapPost("/api/auth/login",
             User = new UserInfo
             {
                 Id = user.Id,
+                TenantId = user.TenantId,
                 Email = user.Email,
                 Username = user.Username,
                 FirstName = user.FirstName,
@@ -327,178 +349,455 @@ app.MapPost("/api/auth/login",
 app.MapGet("/api/admin/tenants/{tenantId}",
     async (IDatabaseService databaseService, string tenantId, HttpContext context) =>
     {
-        var authHeader = context.Request.Headers.Authorization.FirstOrDefault();
-        var adminTenantId = context.Request.Headers["X-Admin-Tenant-Id"].FirstOrDefault();
-        var apiKey = string.Empty;
-        
-        if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+        // Validate JWT authentication
+        if (context.User?.Identity?.IsAuthenticated != true)
         {
-            apiKey = authHeader.Substring("Bearer ".Length).Trim();
+            return Results.Unauthorized();
         }
         
-        if (string.IsNullOrEmpty(adminTenantId))
+        // Extract user info from JWT claims
+        var userRole = context.User.FindFirst(ClaimTypes.Role)?.Value;
+        
+        // Only SuperAdmins can get any tenant
+        if (userRole != "SuperAdmin")
         {
-            return Results.BadRequest("X-Admin-Tenant-Id header is required");
+            return Results.Forbid();
         }
         
-        return await PumpkinManager.GetTenantAsync(databaseService, apiKey, adminTenantId, tenantId);
+        return await PumpkinManager.GetTenantAsync(databaseService, tenantId);
     })
+    .RequireAuthorization()
     .WithTags("Admin")
     .WithName("GetTenant")
     .WithSummary("Get tenant by ID (SuperAdmin only)")
-    .WithDescription("Retrieves a specific tenant by ID. Requires SuperAdmin API key via Authorization header and X-Admin-Tenant-Id header.");
+    .WithDescription("Retrieves a specific tenant by ID. Requires SuperAdmin role and JWT authentication via Bearer token.");
 
 // Admin: Create new tenant
 app.MapPost("/api/admin/tenants",
-    async (IDatabaseService databaseService, Tenant tenant, HttpContext context) =>
+    async (IDatabaseService databaseService, HttpContext context, Tenant tenant) =>
     {
-        var authHeader = context.Request.Headers.Authorization.FirstOrDefault();
-        var adminTenantId = context.Request.Headers["X-Admin-Tenant-Id"].FirstOrDefault();
-        var apiKey = string.Empty;
-        
-        if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+        // Validate JWT authentication
+        if (context.User?.Identity?.IsAuthenticated != true)
         {
-            apiKey = authHeader.Substring("Bearer ".Length).Trim();
+            return Results.Unauthorized();
         }
         
-        if (string.IsNullOrEmpty(adminTenantId))
+        // Debug: Log all claims
+        Console.WriteLine("[CreateTenant] All claims:");
+        foreach (var claim in context.User.Claims)
         {
-            return Results.BadRequest("X-Admin-Tenant-Id header is required");
+            Console.WriteLine($"  {claim.Type}: {claim.Value}");
         }
         
-        return await PumpkinManager.CreateTenantAsync(databaseService, apiKey, adminTenantId, tenant);
+        // Extract user info from JWT claims
+        var userTenantId = context.User.FindFirst("tenantId")?.Value;
+        var userRole = context.User.FindFirst(ClaimTypes.Role)?.Value;
+        
+        Console.WriteLine($"[CreateTenant] User TenantId: {userTenantId}, Role: {userRole}");
+        Console.WriteLine($"[CreateTenant] ClaimTypes.Role constant: {ClaimTypes.Role}");
+        
+        if (string.IsNullOrEmpty(userTenantId))
+        {
+            return Results.BadRequest("User tenant ID not found in token");
+        }
+        
+        // Only SuperAdmins can create tenants
+        if (userRole != "SuperAdmin")
+        {
+            Console.WriteLine($"[CreateTenant] Access denied. Required: SuperAdmin, Got: {userRole}");
+            return Results.Json(
+                new { error = "Forbidden", message = $"This action requires SuperAdmin role. Your role: {userRole ?? "none"}" },
+                statusCode: 403
+            );
+        }
+        
+        try
+        {
+            var createdTenant = await PumpkinManager.CreateTenantAsync(databaseService, tenant);
+            return Results.Ok(createdTenant);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Results.BadRequest(ex.Message);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Results.Forbid();
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Error creating tenant: {ex.Message}");
+        }
     })
+    .RequireAuthorization()
     .WithTags("Admin")
     .WithName("CreateTenant")
     .WithSummary("Create new tenant (SuperAdmin only)")
-    .WithDescription("Creates a new tenant. Requires SuperAdmin API key via Authorization header and X-Admin-Tenant-Id header.");
+    .WithDescription("Creates a new tenant. Requires SuperAdmin role and JWT authentication.");
 
 // Admin: Get all tenants
+// Admin: Get tenants (JWT-authenticated)
 app.MapGet("/api/admin/tenants",
     async (IDatabaseService databaseService, HttpContext context) =>
     {
-        var authHeader = context.Request.Headers.Authorization.FirstOrDefault();
-        var adminTenantId = context.Request.Headers["X-Admin-Tenant-Id"].FirstOrDefault();
-        var apiKey = string.Empty;
-        
-        if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+        // Validate JWT authentication
+        if (context.User?.Identity?.IsAuthenticated != true)
         {
-            apiKey = authHeader.Substring("Bearer ".Length).Trim();
+            return Results.Unauthorized();
         }
         
-        if (string.IsNullOrEmpty(adminTenantId))
+        // Extract user info from JWT claims
+        var userTenantId = context.User.FindFirst("tenantId")?.Value;
+        var userRole = context.User.FindFirst(ClaimTypes.Role)?.Value;
+        
+        if (string.IsNullOrEmpty(userTenantId))
         {
-            return Results.BadRequest("X-Admin-Tenant-Id header is required");
+            return Results.BadRequest("User tenant ID not found in token");
         }
         
-        return await PumpkinManager.GetAllTenantsAsync(databaseService, apiKey, adminTenantId);
+        try
+        {
+            // If SuperAdmin, return all tenants; otherwise just return the user's tenant
+            var tenants = await databaseService.GetTenantsForUserAsync(userTenantId, userRole == "SuperAdmin");
+            return Results.Ok(new { tenants, count = tenants.Count });
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Error retrieving tenants: {ex.Message}");
+        }
     })
+    .RequireAuthorization()
     .WithTags("Admin")
     .WithName("GetAllTenants")
-    .WithSummary("Get all tenants (SuperAdmin only)")
-    .WithDescription("Retrieves all tenants in the system. Requires SuperAdmin API key via Authorization header and X-Admin-Tenant-Id header.");
+    .WithSummary("Get tenants for authenticated user")
+    .WithDescription("Retrieves tenants accessible to the authenticated user. SuperAdmins see all tenants, others see only their own. Requires JWT authentication via Bearer token.");
+
+// Admin: Update tenant (JWT-authenticated)
+app.MapPut("/api/admin/tenants/{tenantId}",
+    async (IDatabaseService databaseService, HttpContext context, string tenantId, Tenant tenant) =>
+    {
+        // Validate JWT authentication
+        if (context.User?.Identity?.IsAuthenticated != true)
+        {
+            return Results.Unauthorized();
+        }
+        
+        // Extract user info from JWT claims
+        var userTenantId = context.User.FindFirst("tenantId")?.Value;
+        var userRole = context.User.FindFirst(ClaimTypes.Role)?.Value;
+        
+        if (string.IsNullOrEmpty(userTenantId))
+        {
+            return Results.BadRequest("User tenant ID not found in token");
+        }
+        
+        // Only SuperAdmins can update tenants
+        if (userRole != "SuperAdmin")
+        {
+            return Results.Forbid();
+        }
+        
+        try
+        {
+            var updatedTenant = await databaseService.UpdateTenantAsync(tenantId, tenant);
+            return Results.Ok(updatedTenant);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Results.NotFound(ex.Message);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Results.Forbid();
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Error updating tenant: {ex.Message}");
+        }
+    })
+    .RequireAuthorization()
+    .WithTags("Admin")
+    .WithName("UpdateTenant")
+    .WithSummary("Update tenant (SuperAdmin only)")
+    .WithDescription("Updates an existing tenant. Requires SuperAdmin role and JWT authentication via Bearer token.");
+// Admin: Regenerate tenant API key (JWT-authenticated)
+app.MapPost("/api/admin/tenants/{tenantId}/regenerate-api-key",
+    async (IDatabaseService databaseService, HttpContext context, string tenantId) =>
+    {
+        // Validate JWT authentication
+        if (context.User?.Identity?.IsAuthenticated != true)
+        {
+            return Results.Unauthorized();
+        }
+        
+        // Extract user info from JWT claims
+        var userTenantId = context.User.FindFirst("tenantId")?.Value;
+        var userRole = context.User.FindFirst(ClaimTypes.Role)?.Value;
+        
+        if (string.IsNullOrEmpty(userTenantId))
+        {
+            return Results.BadRequest("User tenant ID not found in token");
+        }
+        
+        // Only SuperAdmins can regenerate API keys
+        if (userRole != "SuperAdmin")
+        {
+            return Results.Forbid();
+        }
+        
+        try
+        {
+            // Get the tenant first
+            var tenant = await databaseService.GetTenantAsync(tenantId);
+            if (tenant == null)
+            {
+                return Results.NotFound($"Tenant {tenantId} not found");
+            }
+            
+            // Generate new API key
+            var keyBytes = System.Security.Cryptography.RandomNumberGenerator.GetBytes(32);
+            var newApiKey = Convert.ToBase64String(keyBytes);
+            var newApiKeyHash = BCrypt.Net.BCrypt.HashPassword(newApiKey, 12);
+            
+            // Update tenant with new API key
+            tenant.ApiKey = newApiKey;
+            tenant.ApiKeyHash = newApiKeyHash;
+            tenant.ApiKeyMeta = new ApiKeyMeta
+            {
+                CreatedAt = DateTime.UtcNow,
+                IsActive = true
+            };
+            tenant.UpdatedAt = DateTime.UtcNow;
+            
+            // Save updated tenant
+            var updatedTenant = await databaseService.UpdateTenantAsync(tenantId, tenant);
+            
+            // Return the plain-text API key (one-time view)
+            return Results.Ok(new 
+            { 
+                tenant = updatedTenant,
+                apiKey = newApiKey  // Plain-text key for one-time display
+            });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Results.NotFound(ex.Message);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Results.Forbid();
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Error regenerating API key: {ex.Message}");
+        }
+    })
+    .RequireAuthorization()
+    .WithTags("Admin")
+    .WithName("RegenerateTenantApiKey")
+    .WithSummary("Regenerate tenant API key (SuperAdmin only)")
+    .WithDescription("Generates a new API key for an existing tenant. The plain-text key is returned once for immediate capture. Requires SuperAdmin role and JWT authentication.");
+// Admin: Delete tenant (JWT-authenticated)
+app.MapDelete("/api/admin/tenants/{tenantId}",
+    async (IDatabaseService databaseService, HttpContext context, string tenantId) =>
+    {
+        // Validate JWT authentication
+        if (context.User?.Identity?.IsAuthenticated != true)
+        {
+            return Results.Unauthorized();
+        }
+        
+        // Extract user info from JWT claims
+        var userTenantId = context.User.FindFirst("tenantId")?.Value;
+        var userRole = context.User.FindFirst(ClaimTypes.Role)?.Value;
+        
+        if (string.IsNullOrEmpty(userTenantId))
+        {
+            return Results.BadRequest("User tenant ID not found in token");
+        }
+        
+        // Only SuperAdmins can delete tenants
+        if (userRole != "SuperAdmin")
+        {
+            return Results.Forbid();
+        }
+        
+        // Prevent deleting their own tenant
+        if (tenantId == userTenantId)
+        {
+            return Results.BadRequest("Cannot delete your own tenant");
+        }
+        
+        try
+        {
+            var deleted = await databaseService.DeleteTenantAsync(tenantId);
+            if (deleted)
+            {
+                return Results.Ok(new { message = "Tenant deleted successfully", tenantId });
+            }
+            return Results.NotFound("Tenant not found");
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Results.Forbid();
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Error deleting tenant: {ex.Message}");
+        }
+    })
+    .RequireAuthorization()
+    .WithTags("Admin")
+    .WithName("DeleteTenant")
+    .WithSummary("Delete tenant (SuperAdmin only)")
+    .WithDescription("Deletes a tenant. Requires SuperAdmin role and JWT authentication via Bearer token. Cannot delete own tenant.");
 
 // Admin: Get all pages (optionally filtered by tenant)
 app.MapGet("/api/admin/pages",
     async (IDatabaseService databaseService, HttpContext context, string? tenantId = null) =>
     {
-        var authHeader = context.Request.Headers.Authorization.FirstOrDefault();
-        var adminTenantId = context.Request.Headers["X-Admin-Tenant-Id"].FirstOrDefault();
-        var apiKey = string.Empty;
-        
-        if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+        // Validate JWT authentication
+        if (context.User?.Identity?.IsAuthenticated != true)
         {
-            apiKey = authHeader.Substring("Bearer ".Length).Trim();
+            return Results.Unauthorized();
         }
         
-        if (string.IsNullOrEmpty(adminTenantId))
+        // Extract user info from JWT claims
+        var userTenantId = context.User.FindFirst("tenantId")?.Value;
+        var userRole = context.User.FindFirst(ClaimTypes.Role)?.Value;
+        
+        if (string.IsNullOrEmpty(userTenantId))
         {
-            return Results.BadRequest("X-Admin-Tenant-Id header is required");
+            return Results.BadRequest("User tenant ID not found in token");
         }
         
-        return await PumpkinManager.GetAllPagesAsync(databaseService, apiKey, adminTenantId, tenantId);
+        // Determine which tenant's pages to retrieve
+        // If tenantId query param is provided, use that (requires SuperAdmin)
+        // Otherwise, use the user's tenantId from the JWT
+        var targetTenantId = tenantId ?? userTenantId;
+        
+        // If requesting different tenant data, verify SuperAdmin role
+        if (targetTenantId != userTenantId && userRole != "SuperAdmin")
+        {
+            return Results.Forbid();
+        }
+        
+        try
+        {
+            var pages = await databaseService.GetPagesByTenantAsync(targetTenantId);
+            return Results.Ok(new { pages, count = pages.Count, tenantId = targetTenantId });
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Error retrieving pages: {ex.Message}");
+        }
     })
+    .RequireAuthorization()
     .WithTags("Admin")
     .WithName("GetAllPages")
-    .WithSummary("Get all pages across tenants (SuperAdmin only)")
-    .WithDescription("Retrieves all pages, optionally filtered by tenantId query parameter. Requires SuperAdmin API key via Authorization header and X-Admin-Tenant-Id header.");
+    .WithSummary("Get all pages for authenticated user's tenant")
+    .WithDescription("Retrieves pages for the authenticated user's tenant. Requires JWT authentication via Bearer token.");
 
 // Admin: Get hub pages for a tenant
 app.MapGet("/api/admin/tenants/{tenantId}/hubs",
     async (IDatabaseService databaseService, string tenantId, HttpContext context) =>
     {
-        var authHeader = context.Request.Headers.Authorization.FirstOrDefault();
-        var adminTenantId = context.Request.Headers["X-Admin-Tenant-Id"].FirstOrDefault();
-        var apiKey = string.Empty;
-        
-        if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+        // Validate JWT authentication
+        if (context.User?.Identity?.IsAuthenticated != true)
         {
-            apiKey = authHeader.Substring("Bearer ".Length).Trim();
+            return Results.Unauthorized();
         }
         
-        if (string.IsNullOrEmpty(adminTenantId))
+        // Extract user info from JWT claims
+        var userTenantId = context.User.FindFirst("tenantId")?.Value;
+        var userRole = context.User.FindFirst(ClaimTypes.Role)?.Value;
+        
+        if (string.IsNullOrEmpty(userTenantId))
         {
-            return Results.BadRequest("X-Admin-Tenant-Id header is required");
+            return Results.BadRequest("User tenant ID not found in token");
         }
         
-        return await PumpkinManager.GetHubPagesAsync(databaseService, apiKey, adminTenantId, tenantId);
+        // If requesting different tenant data, verify SuperAdmin role
+        if (tenantId != userTenantId && userRole != "SuperAdmin")
+        {
+            return Results.Forbid();
+        }
+        
+        return await PumpkinManager.GetHubPagesAsync(databaseService, tenantId);
     })
+    .RequireAuthorization()
     .WithTags("Admin")
     .WithName("GetHubPages")
-    .WithSummary("Get all hub/pillar pages for a tenant (SuperAdmin only)")
-    .WithDescription("Retrieves all pages marked as hubs (contentRelationships.isHub = true) for a specific tenant. Requires SuperAdmin API key via Authorization header and X-Admin-Tenant-Id header.");
+    .WithSummary("Get all hub/pillar pages for a tenant")
+    .WithDescription("Retrieves all pages marked as hubs (contentRelationships.isHub = true) for a specific tenant. Requires JWT authentication via Bearer token.");
 
 // Admin: Get spoke pages for a hub
 app.MapGet("/api/admin/tenants/{tenantId}/hubs/{hubPageSlug}/spokes",
     async (IDatabaseService databaseService, string tenantId, string hubPageSlug, HttpContext context) =>
     {
-        var authHeader = context.Request.Headers.Authorization.FirstOrDefault();
-        var adminTenantId = context.Request.Headers["X-Admin-Tenant-Id"].FirstOrDefault();
-        var apiKey = string.Empty;
-        
-        if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+        // Validate JWT authentication
+        if (context.User?.Identity?.IsAuthenticated != true)
         {
-            apiKey = authHeader.Substring("Bearer ".Length).Trim();
+            return Results.Unauthorized();
         }
         
-        if (string.IsNullOrEmpty(adminTenantId))
+        // Extract user info from JWT claims
+        var userTenantId = context.User.FindFirst("tenantId")?.Value;
+        var userRole = context.User.FindFirst(ClaimTypes.Role)?.Value;
+        
+        if (string.IsNullOrEmpty(userTenantId))
         {
-            return Results.BadRequest("X-Admin-Tenant-Id header is required");
+            return Results.BadRequest("User tenant ID not found in token");
+        }
+        
+        // If requesting different tenant data, verify SuperAdmin role
+        if (tenantId != userTenantId && userRole != "SuperAdmin")
+        {
+            return Results.Forbid();
         }
         
         // Decode hubPageSlug in case it's URL encoded
         var decodedHubPageSlug = Uri.UnescapeDataString(hubPageSlug);
         
-        return await PumpkinManager.GetSpokePagesAsync(databaseService, apiKey, adminTenantId, tenantId, decodedHubPageSlug);
+        return await PumpkinManager.GetSpokePagesAsync(databaseService, tenantId, decodedHubPageSlug);
     })
+    .RequireAuthorization()
     .WithTags("Admin")
     .WithName("GetSpokePages")
-    .WithSummary("Get all spoke pages for a hub (SuperAdmin only)")
-    .WithDescription("Retrieves all spoke/cluster pages linked to a specific hub page, ordered by spokePriority. Requires SuperAdmin API key via Authorization header and X-Admin-Tenant-Id header.");
+    .WithSummary("Get all spoke pages for a hub")
+    .WithDescription("Retrieves all spoke/cluster pages linked to a specific hub page, ordered by spokePriority. Requires JWT authentication via Bearer token.");
 
 // Admin: Get complete content hierarchy visualization
 app.MapGet("/api/admin/tenants/{tenantId}/content-hierarchy",
     async (IDatabaseService databaseService, string tenantId, HttpContext context) =>
     {
-        var authHeader = context.Request.Headers.Authorization.FirstOrDefault();
-        var adminTenantId = context.Request.Headers["X-Admin-Tenant-Id"].FirstOrDefault();
-        var apiKey = string.Empty;
-        
-        if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+        // Validate JWT authentication
+        if (context.User?.Identity?.IsAuthenticated != true)
         {
-            apiKey = authHeader.Substring("Bearer ".Length).Trim();
+            return Results.Unauthorized();
         }
         
-        if (string.IsNullOrEmpty(adminTenantId))
+        // Extract user info from JWT claims
+        var userTenantId = context.User.FindFirst("tenantId")?.Value;
+        var userRole = context.User.FindFirst(ClaimTypes.Role)?.Value;
+        
+        if (string.IsNullOrEmpty(userTenantId))
         {
-            return Results.BadRequest("X-Admin-Tenant-Id header is required");
+            return Results.BadRequest("User tenant ID not found in token");
         }
         
-        return await PumpkinManager.GetContentHierarchyAsync(databaseService, apiKey, adminTenantId, tenantId);
+        // If requesting different tenant data, verify SuperAdmin role
+        if (tenantId != userTenantId && userRole != "SuperAdmin")
+        {
+            return Results.Forbid();
+        }
+        
+        return await PumpkinManager.GetContentHierarchyAsync(databaseService, tenantId);
     })
+    .RequireAuthorization()
     .WithTags("Admin")
     .WithName("GetContentHierarchy")
-    .WithSummary("Get complete content hierarchy visualization (SuperAdmin only)")
-    .WithDescription("Retrieves a comprehensive view of the content architecture including hubs, spokes, clusters, and orphan pages. Perfect for visualizing internal linking structure. Requires SuperAdmin API key via Authorization header and X-Admin-Tenant-Id header.");
+    .WithSummary("Get complete content hierarchy visualization")
+    .WithDescription("Retrieves a comprehensive view of the content architecture including hubs, spokes, clusters, and orphan pages. Perfect for visualizing internal linking structure. Requires JWT authentication via Bearer token.");
 
 app.Run();

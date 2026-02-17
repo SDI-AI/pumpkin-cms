@@ -475,26 +475,38 @@ internal class TestDatabaseService : IDatabaseService, IDisposable
         => _connection.GetSitemapPagesAsync(apiKey, tenantId);
 
     // Admin methods
-    public Task<Tenant?> GetTenantAsync(string apiKey, string adminTenantId, string tenantId)
-        => _connection.GetTenantAsync(apiKey, adminTenantId, tenantId);
+    public Task<Tenant?> GetTenantAsync(string tenantId)
+        => _connection.GetTenantAsync(tenantId);
 
-    public Task<Tenant> CreateTenantAsync(string apiKey, string adminTenantId, Tenant tenant)
-        => _connection.CreateTenantAsync(apiKey, adminTenantId, tenant);
+    public Task<Tenant> CreateTenantAsync(Tenant tenant)
+        => _connection.CreateTenantAsync(tenant);
 
-    public Task<List<Tenant>> GetAllTenantsAsync(string apiKey, string adminTenantId)
-        => _connection.GetAllTenantsAsync(apiKey, adminTenantId);
+    public Task<List<Tenant>> GetAllTenantsAsync()
+        => _connection.GetAllTenantsAsync();
 
-    public Task<List<Page>> GetAllPagesAsync(string apiKey, string adminTenantId, string? tenantId = null)
-        => _connection.GetAllPagesAsync(apiKey, adminTenantId, tenantId);
+    public Task<List<Page>> GetAllPagesAsync(string? tenantId = null)
+        => _connection.GetAllPagesAsync(tenantId);
 
-    public Task<List<Page>> GetHubPagesAsync(string apiKey, string adminTenantId, string tenantId)
-        => _connection.GetHubPagesAsync(apiKey, adminTenantId, tenantId);
+    public Task<List<Page>> GetPagesByTenantAsync(string tenantId)
+        => _connection.GetPagesByTenantAsync(tenantId);
 
-    public Task<List<Page>> GetSpokePagesAsync(string apiKey, string adminTenantId, string tenantId, string hubPageSlug)
-        => _connection.GetSpokePagesAsync(apiKey, adminTenantId, tenantId, hubPageSlug);
+    public Task<List<Tenant>> GetTenantsForUserAsync(string userTenantId, bool isSuperAdmin)
+        => _connection.GetTenantsForUserAsync(userTenantId, isSuperAdmin);
 
-    public Task<object> GetContentHierarchyAsync(string apiKey, string adminTenantId, string tenantId)
-        => _connection.GetContentHierarchyAsync(apiKey, adminTenantId, tenantId);
+    public Task<List<Page>> GetHubPagesAsync(string tenantId)
+        => _connection.GetHubPagesAsync(tenantId);
+
+    public Task<List<Page>> GetSpokePagesAsync(string tenantId, string hubPageSlug)
+        => _connection.GetSpokePagesAsync(tenantId, hubPageSlug);
+
+    public Task<object> GetContentHierarchyAsync(string tenantId)
+        => _connection.GetContentHierarchyAsync(tenantId);
+
+    public Task<Tenant> UpdateTenantAsync(string tenantId, Tenant tenant)
+        => _connection.UpdateTenantAsync(tenantId, tenant);
+
+    public Task<bool> DeleteTenantAsync(string tenantId)
+        => _connection.DeleteTenantAsync(tenantId);
 
     // User authentication methods
     public Task<pumpkin_net_models.Models.User?> GetUserByEmailAsync(string email)

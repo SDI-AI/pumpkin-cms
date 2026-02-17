@@ -24,7 +24,12 @@ export type {
   TenantSettings,
   Features,
   Contact,
-  Billing
+  Billing,
+  TenantInfo
+} from './models/Tenant';
+
+export {
+  tenantToTenantInfo
 } from './models/Tenant';
 
 // Form Entry models

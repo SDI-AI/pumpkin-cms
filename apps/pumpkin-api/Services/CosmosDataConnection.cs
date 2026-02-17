@@ -2,6 +2,7 @@ using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Options;
 using pumpkin_net_models.Models;
 using System.Net;
+using System.Security.Cryptography;
 
 namespace pumpkin_api.Services;
 
@@ -496,17 +497,11 @@ public class CosmosDataConnection : IDataConnection, IDisposable
         }
     }
 
-    // Admin: Get tenant by ID
-    public async Task<Tenant?> GetTenantAsync(string apiKey, string adminTenantId, string tenantId)
+    // Admin: Get tenant by ID (JWT authentication required at endpoint level)
+    public async Task<Tenant?> GetTenantAsync(string tenantId)
     {
         try
         {
-            // Validate admin permissions
-            if (!await ValidateTenantApiKeyAsync(apiKey, adminTenantId))
-            {
-                throw new UnauthorizedAccessException("Invalid admin credentials");
-            }
-
             var tenantContainer = _database.GetContainer("Tenant");
             var query = "SELECT * FROM c WHERE c.tenantId = @tenantId";
             var queryDefinition = new QueryDefinition(query).WithParameter("@tenantId", tenantId);
@@ -530,24 +525,31 @@ public class CosmosDataConnection : IDataConnection, IDisposable
         }
     }
 
-    // Admin: Create new tenant
-    public async Task<Tenant> CreateTenantAsync(string apiKey, string adminTenantId, Tenant tenant)
+    // Admin: Create new tenant (JWT authentication required at endpoint level)
+    public async Task<Tenant> CreateTenantAsync(Tenant tenant)
     {
         try
         {
-            // Validate admin permissions
-            if (!await ValidateTenantApiKeyAsync(apiKey, adminTenantId))
-            {
-                throw new UnauthorizedAccessException("Invalid admin credentials");
-            }
-
             var tenantContainer = _database.GetContainer("Tenant");
             
             // Check if tenant already exists
-            var existing = await GetTenantAsync(apiKey, adminTenantId, tenant.TenantId);
+            var existing = await GetTenantAsync(tenant.TenantId);
             if (existing != null)
             {
                 throw new InvalidOperationException($"Tenant with ID '{tenant.TenantId}' already exists");
+            }
+
+            // Generate API key and hash if not provided
+            if (string.IsNullOrEmpty(tenant.ApiKey) || string.IsNullOrEmpty(tenant.ApiKeyHash))
+            {
+                // Generate a new random API key (32 bytes = 44 base64 characters)
+                var keyBytes = RandomNumberGenerator.GetBytes(32);
+                tenant.ApiKey = Convert.ToBase64String(keyBytes);
+                
+                // Hash the API key using BCrypt
+                tenant.ApiKeyHash = BCrypt.Net.BCrypt.HashPassword(tenant.ApiKey, 12);
+                
+                _logger.LogInformation("Generated new API key for tenant - TenantId: {TenantId}", tenant.TenantId);
             }
 
             // Set timestamps
@@ -576,17 +578,112 @@ public class CosmosDataConnection : IDataConnection, IDisposable
         }
     }
 
-    // Admin: Get all tenants
-    public async Task<List<Tenant>> GetAllTenantsAsync(string apiKey, string adminTenantId)
+    // Admin: Update tenant (JWT authentication required at endpoint level)
+    public async Task<Tenant> UpdateTenantAsync(string tenantId, Tenant tenant)
     {
         try
         {
-            // Validate admin permissions
-            if (!await ValidateTenantApiKeyAsync(apiKey, adminTenantId))
+            var tenantContainer = _database.GetContainer("Tenant");
+            
+            // Query to check if tenant exists
+            var query = "SELECT * FROM c WHERE c.tenantId = @tenantId";
+            var queryDefinition = new QueryDefinition(query).WithParameter("@tenantId", tenantId);
+            using var iterator = tenantContainer.GetItemQueryIterator<Tenant>(queryDefinition);
+            
+            Tenant? existing = null;
+            if (iterator.HasMoreResults)
             {
-                throw new UnauthorizedAccessException("Invalid admin credentials");
+                var response = await iterator.ReadNextAsync();
+                existing = response.FirstOrDefault();
+            }
+            
+            if (existing == null)
+            {
+                throw new InvalidOperationException($"Tenant with ID '{tenantId}' not found");
             }
 
+            // Preserve creation timestamp and API key if not provided in update
+            tenant.CreatedAt = existing.CreatedAt;
+            tenant.UpdatedAt = DateTime.UtcNow;
+            if (string.IsNullOrEmpty(tenant.ApiKey))
+            {
+                tenant.ApiKey = existing.ApiKey;
+                tenant.ApiKeyHash = existing.ApiKeyHash;
+                tenant.ApiKeyMeta = existing.ApiKeyMeta;
+            }
+            
+            // Ensure id matches tenantId for Cosmos DB
+            tenant.Id = tenantId;
+            tenant.TenantId = tenantId;
+
+            var replaceResponse = await tenantContainer.ReplaceItemAsync(tenant, tenant.Id, new PartitionKey(tenantId));
+            
+            _logger.LogInformation("Tenant updated - TenantId: {TenantId}, Name: {Name}, RU Cost: {RequestCharge}",
+                tenantId, tenant.Name, replaceResponse.RequestCharge);
+            
+            return replaceResponse.Resource;
+        }
+        catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+        {
+            throw new InvalidOperationException($"Tenant with ID '{tenantId}' not found");
+        }
+        catch (CosmosException ex)
+        {
+            _logger.LogError(ex, "Error updating tenant - TenantId: {TenantId}", tenantId);
+            throw;
+        }
+    }
+
+    // Admin: Delete tenant (JWT authentication required at endpoint level)
+    public async Task<bool> DeleteTenantAsync(string tenantId)
+    {
+        try
+        {
+            var tenantContainer = _database.GetContainer("Tenant");
+            
+            // Check if tenant exists using query
+            var query = "SELECT * FROM c WHERE c.tenantId = @tenantId";
+            var queryDefinition = new QueryDefinition(query).WithParameter("@tenantId", tenantId);
+            using var iterator = tenantContainer.GetItemQueryIterator<Tenant>(queryDefinition);
+            
+            if (!iterator.HasMoreResults)
+            {
+                _logger.LogWarning("Attempted to delete non-existent tenant - TenantId: {TenantId}", tenantId);
+                return false;
+            }
+            
+            var response = await iterator.ReadNextAsync();
+            var existing = response.FirstOrDefault();
+            if (existing == null)
+            {
+                _logger.LogWarning("Attempted to delete non-existent tenant - TenantId: {TenantId}", tenantId);
+                return false;
+            }
+
+            var deleteResponse = await tenantContainer.DeleteItemAsync<Tenant>(tenantId, new PartitionKey(tenantId));
+            
+            _logger.LogInformation("Tenant deleted - TenantId: {TenantId}, RU Cost: {RequestCharge}",
+                tenantId, deleteResponse.RequestCharge);
+            
+            return true;
+        }
+        catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+        {
+            _logger.LogWarning("Tenant not found for deletion - TenantId: {TenantId}", tenantId);
+            return false;
+        }
+        catch (CosmosException ex)
+        {
+            _logger.LogError(ex, "Error deleting tenant - TenantId: {TenantId}", tenantId);
+            throw;
+        }
+    }
+
+    // Admin: Get all tenants (JWT authentication required at endpoint level)
+    public async Task<List<Tenant>> GetAllTenantsAsync()
+    {
+        try
+        {
             var tenantContainer = _database.GetContainer("Tenant");
             var query = "SELECT * FROM c ORDER BY c.createdAt DESC";
             var queryDefinition = new QueryDefinition(query);
@@ -612,17 +709,74 @@ public class CosmosDataConnection : IDataConnection, IDisposable
         }
     }
 
-    // Admin: Get all pages (optionally filtered by tenant)
-    public async Task<List<Page>> GetAllPagesAsync(string apiKey, string adminTenantId, string? tenantId = null)
+    // JWT-authenticated: Get tenants for user (SuperAdmin sees all, others see only their own)
+    public async Task<List<Tenant>> GetTenantsForUserAsync(string userTenantId, bool isSuperAdmin)
     {
         try
         {
-            // Validate admin permissions
-            if (!await ValidateTenantApiKeyAsync(apiKey, adminTenantId))
+            var tenantContainer = _database.GetContainer("Tenant");
+            
+            string query;
+            QueryDefinition queryDefinition;
+            
+            if (isSuperAdmin)
             {
-                throw new UnauthorizedAccessException("Invalid admin credentials");
+                // SuperAdmin sees all active tenants
+                query = "SELECT * FROM c WHERE c.status = 'active' ORDER BY c.name ASC";
+                queryDefinition = new QueryDefinition(query);
+            }
+            else
+            {
+                // Regular users see only their own tenant (no status filter to ensure they can see it)
+                query = "SELECT * FROM c WHERE c.tenantId = @tenantId";
+                queryDefinition = new QueryDefinition(query).WithParameter("@tenantId", userTenantId);
             }
 
+            var tenants = new List<Tenant>();
+            using var iterator = tenantContainer.GetItemQueryIterator<Tenant>(queryDefinition);
+            
+            while (iterator.HasMoreResults)
+            {
+                var response = await iterator.ReadNextAsync();
+                tenants.AddRange(response);
+                _logger.LogInformation("GetTenantsForUser - Retrieved {Count} tenants, RU Cost: {RequestCharge}", 
+                    response.Count, response.RequestCharge);
+            }
+            
+            // If no tenant found for regular user, create a minimal one for display
+            if (!isSuperAdmin && tenants.Count == 0)
+            {
+                _logger.LogWarning("No tenant found for user tenantId: {UserTenantId}, creating minimal tenant info", userTenantId);
+                tenants.Add(new Tenant
+                {
+                    Id = userTenantId,
+                    TenantId = userTenantId,
+                    Name = $"Tenant {userTenantId}",
+                    Status = "active",
+                    Plan = "basic",
+                    ApiKeyMeta = new ApiKeyMeta { IsActive = true, CreatedAt = DateTime.UtcNow },
+                    Settings = new TenantSettings(),
+                    Contact = new Contact(),
+                    Billing = new Billing()
+                });
+            }
+            
+            _logger.LogInformation("GetTenantsForUser - Total tenants: {TotalCount}, UserTenantId: {UserTenantId}, IsSuperAdmin: {IsSuperAdmin}", 
+                tenants.Count, userTenantId, isSuperAdmin);
+            return tenants;
+        }
+        catch (CosmosException ex)
+        {
+            _logger.LogError(ex, "Error retrieving tenants for user: {UserTenantId}", userTenantId);
+            throw;
+        }
+    }
+
+    // Admin: Get all pages (optionally filtered by tenant) (JWT authentication required at endpoint level)
+    public async Task<List<Page>> GetAllPagesAsync(string? tenantId = null)
+    {
+        try
+        {
             var pageContainer = _database.GetContainer("Page");
             var query = string.IsNullOrEmpty(tenantId) 
                 ? "SELECT * FROM c ORDER BY c.MetaData.updatedAt DESC"
@@ -656,17 +810,42 @@ public class CosmosDataConnection : IDataConnection, IDisposable
         }
     }
 
-    // Admin: Get hub pages for a tenant
-    public async Task<List<Page>> GetHubPagesAsync(string apiKey, string adminTenantId, string tenantId)
+    // JWT-authenticated admin method: Get pages by tenant (no API key validation)
+    public async Task<List<Page>> GetPagesByTenantAsync(string tenantId)
     {
         try
         {
-            // Validate admin permissions
-            if (!await ValidateTenantApiKeyAsync(apiKey, adminTenantId))
-            {
-                throw new UnauthorizedAccessException("Invalid admin credentials");
-            }
+            var pageContainer = _database.GetContainer("Page");
+            var query = "SELECT * FROM c WHERE c.tenantId = @tenantId ORDER BY c.MetaData.updatedAt DESC";
+            var queryDefinition = new QueryDefinition(query).WithParameter("@tenantId", tenantId);
 
+            var pages = new List<Page>();
+            using var iterator = pageContainer.GetItemQueryIterator<Page>(queryDefinition);
+            
+            while (iterator.HasMoreResults)
+            {
+                var response = await iterator.ReadNextAsync();
+                pages.AddRange(response);
+                _logger.LogInformation("GetPagesByTenant - Retrieved {Count} pages, RU Cost: {RequestCharge}", 
+                    response.Count, response.RequestCharge);
+            }
+            
+            _logger.LogInformation("GetPagesByTenant - Total pages: {TotalCount}, TenantId: {TenantId}", 
+                pages.Count, tenantId);
+            return pages;
+        }
+        catch (CosmosException ex)
+        {
+            _logger.LogError(ex, "Error retrieving pages by tenant: {TenantId}", tenantId);
+            throw;
+        }
+    }
+
+    // Admin: Get hub pages for a tenant (JWT authentication required at endpoint level)
+    public async Task<List<Page>> GetHubPagesAsync(string tenantId)
+    {
+        try
+        {
             var pageContainer = _database.GetContainer("Page");
             var query = "SELECT * FROM c WHERE c.tenantId = @tenantId AND c.contentRelationships.isHub = true ORDER BY c.MetaData.updatedAt DESC";
             var queryDefinition = new QueryDefinition(query).WithParameter("@tenantId", tenantId);
@@ -693,17 +872,11 @@ public class CosmosDataConnection : IDataConnection, IDisposable
         }
     }
 
-    // Admin: Get spoke pages for a specific hub
-    public async Task<List<Page>> GetSpokePagesAsync(string apiKey, string adminTenantId, string tenantId, string hubPageSlug)
+    // Admin: Get spoke pages for a specific hub (JWT authentication required at endpoint level)
+    public async Task<List<Page>> GetSpokePagesAsync(string tenantId, string hubPageSlug)
     {
         try
         {
-            // Validate admin permissions
-            if (!await ValidateTenantApiKeyAsync(apiKey, adminTenantId))
-            {
-                throw new UnauthorizedAccessException("Invalid admin credentials");
-            }
-
             var pageContainer = _database.GetContainer("Page");
             var query = "SELECT * FROM c WHERE c.tenantId = @tenantId AND c.contentRelationships.hubPageSlug = @hubPageSlug ORDER BY c.contentRelationships.spokePriority DESC, c.MetaData.updatedAt DESC";
             var queryDefinition = new QueryDefinition(query)
@@ -732,17 +905,11 @@ public class CosmosDataConnection : IDataConnection, IDisposable
         }
     }
 
-    // Admin: Get complete content hierarchy visualization
-    public async Task<object> GetContentHierarchyAsync(string apiKey, string adminTenantId, string tenantId)
+    // Admin: Get complete content hierarchy visualization (JWT authentication required at endpoint level)
+    public async Task<object> GetContentHierarchyAsync(string tenantId)
     {
         try
         {
-            // Validate admin permissions
-            if (!await ValidateTenantApiKeyAsync(apiKey, adminTenantId))
-            {
-                throw new UnauthorizedAccessException("Invalid admin credentials");
-            }
-
             var pageContainer = _database.GetContainer("Page");
             var query = "SELECT * FROM c WHERE c.tenantId = @tenantId";
             var queryDefinition = new QueryDefinition(query).WithParameter("@tenantId", tenantId);
