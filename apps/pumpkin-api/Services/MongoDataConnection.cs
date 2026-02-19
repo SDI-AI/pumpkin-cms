@@ -543,6 +543,17 @@ public class MongoDataConnection : IDataConnection, IDisposable
     }
 
     // JWT-authenticated admin method: Get pages by tenant (no API key validation)
+    public async Task<Page?> GetPageBySlugAsync(string tenantId, string pageSlug)
+    {
+        var pageCollection = _database.GetCollection<Page>("Page");
+        var normalizedSlug = pageSlug.ToLowerInvariant();
+        var filter = Builders<Page>.Filter.And(
+            Builders<Page>.Filter.Eq(p => p.TenantId, tenantId),
+            Builders<Page>.Filter.Eq(p => p.PageSlug, normalizedSlug)
+        );
+        return await pageCollection.Find(filter).FirstOrDefaultAsync();
+    }
+
     public async Task<List<Page>> GetPagesByTenantAsync(string tenantId)
     {
         var pageCollection = _database.GetCollection<Page>("Page");
@@ -588,6 +599,83 @@ public class MongoDataConnection : IDataConnection, IDisposable
         }
         
         return tenants;
+    }
+
+    // JWT-authenticated admin method: Save page (no API key validation)
+    public async Task<Page> SavePageAdminAsync(string tenantId, Page page)
+    {
+        if (string.IsNullOrEmpty(page.PageId))
+        {
+            throw new ArgumentException("PageId is required", nameof(page));
+        }
+
+        var pagesCollection = _database.GetCollection<Page>("Page");
+
+        // Check if page already exists
+        var existingFilter = Builders<Page>.Filter.And(
+            Builders<Page>.Filter.Eq(p => p.PageId, page.PageId),
+            Builders<Page>.Filter.Eq(p => p.TenantId, tenantId)
+        );
+        var exists = await pagesCollection.Find(existingFilter).AnyAsync();
+
+        if (exists)
+        {
+            throw new InvalidOperationException($"Page with ID {page.PageId} already exists");
+        }
+
+        page.TenantId = tenantId;
+        if (page.MetaData.CreatedAt == default)
+        {
+            page.MetaData.CreatedAt = DateTime.UtcNow;
+        }
+        page.MetaData.UpdatedAt = DateTime.UtcNow;
+
+        await pagesCollection.InsertOneAsync(page);
+
+        _logger.LogInformation("SavePageAdminAsync - Page created - PageId: {PageId}, TenantId: {TenantId}",
+            page.PageId, tenantId);
+
+        return page;
+    }
+
+    // JWT-authenticated admin method: Update page (no API key validation)
+    public async Task<Page> UpdatePageAdminAsync(string tenantId, string pageSlug, Page page)
+    {
+        var pagesCollection = _database.GetCollection<Page>("Page");
+        var normalizedSlug = pageSlug.ToLowerInvariant();
+
+        var findFilter = Builders<Page>.Filter.And(
+            Builders<Page>.Filter.Eq(p => p.TenantId, tenantId),
+            Builders<Page>.Filter.Eq(p => p.PageSlug, normalizedSlug)
+        );
+
+        var existingPage = await pagesCollection.Find(findFilter).FirstOrDefaultAsync();
+
+        if (existingPage == null)
+        {
+            throw new KeyNotFoundException($"Page with slug '{pageSlug}' not found");
+        }
+
+        page.PageId = existingPage.PageId;
+        page.TenantId = tenantId;
+        page.MetaData.UpdatedAt = DateTime.UtcNow;
+        page.PageVersion++;
+
+        var replaceFilter = Builders<Page>.Filter.And(
+            Builders<Page>.Filter.Eq(p => p.PageId, existingPage.PageId),
+            Builders<Page>.Filter.Eq(p => p.TenantId, tenantId)
+        );
+
+        var result = await pagesCollection.ReplaceOneAsync(replaceFilter, page);
+        if (result.ModifiedCount == 0)
+        {
+            throw new InvalidOperationException("Page update failed");
+        }
+
+        _logger.LogInformation("UpdatePageAdminAsync - Page updated - Slug: {Slug}, TenantId: {TenantId}, Version: {Version}",
+            normalizedSlug, tenantId, page.PageVersion);
+
+        return page;
     }
 
     public async Task<List<Page>> GetHubPagesAsync(string tenantId)
@@ -762,12 +850,27 @@ public class MongoDataConnection : IDataConnection, IDisposable
         throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
     }
 
+    public Task<Page?> GetPageBySlugAsync(string tenantId, string pageSlug)
+    {
+        throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
+    }
+
     public Task<List<Page>> GetPagesByTenantAsync(string tenantId)
     {
         throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
     }
 
     public Task<List<Tenant>> GetTenantsForUserAsync(string userTenantId, bool isSuperAdmin)
+    {
+        throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
+    }
+
+    public Task<Page> SavePageAdminAsync(string tenantId, Page page)
+    {
+        throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
+    }
+
+    public Task<Page> UpdatePageAdminAsync(string tenantId, string pageSlug, Page page)
     {
         throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
     }

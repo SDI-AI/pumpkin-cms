@@ -28,8 +28,11 @@ public interface IDataConnection
     Task<object> GetContentHierarchyAsync(string tenantId);
     
     // JWT-authenticated admin methods (no API key required)
+    Task<Page?> GetPageBySlugAsync(string tenantId, string pageSlug);
     Task<List<Page>> GetPagesByTenantAsync(string tenantId);
     Task<List<Tenant>> GetTenantsForUserAsync(string userTenantId, bool isSuperAdmin);
+    Task<Page> SavePageAdminAsync(string tenantId, Page page);
+    Task<Page> UpdatePageAdminAsync(string tenantId, string pageSlug, Page page);
     
     // User authentication methods
     Task<User?> GetUserByEmailAsync(string email);

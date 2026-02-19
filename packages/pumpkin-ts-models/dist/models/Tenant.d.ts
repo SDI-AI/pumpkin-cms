@@ -57,7 +57,7 @@ export interface Contact {
  */
 export interface Billing {
     cycle: string;
-    nextInvoice: string;
+    nextInvoice: string | null;
 }
 /**
  * Simplified tenant info for dropdown and display

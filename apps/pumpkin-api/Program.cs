@@ -698,6 +698,145 @@ app.MapGet("/api/admin/pages",
     .WithSummary("Get all pages for authenticated user's tenant")
     .WithDescription("Retrieves pages for the authenticated user's tenant. Requires JWT authentication via Bearer token.");
 
+// Admin: Get a single page by slug (JWT, no API key, includes drafts)
+app.MapGet("/api/admin/pages/{tenantId}/{**pageSlug}",
+    async (IDatabaseService databaseService, string tenantId, string pageSlug, HttpContext context) =>
+    {
+        if (context.User?.Identity?.IsAuthenticated != true)
+        {
+            return Results.Unauthorized();
+        }
+
+        var userTenantId = context.User.FindFirst("tenantId")?.Value;
+        var userRole = context.User.FindFirst(ClaimTypes.Role)?.Value;
+
+        if (string.IsNullOrEmpty(userTenantId))
+        {
+            return Results.BadRequest("User tenant ID not found in token");
+        }
+
+        if (tenantId != userTenantId && userRole != "SuperAdmin")
+        {
+            return Results.Forbid();
+        }
+
+        var decodedSlug = Uri.UnescapeDataString(pageSlug);
+        var page = await databaseService.GetPageBySlugAsync(tenantId, decodedSlug);
+
+        if (page == null)
+        {
+            return Results.NotFound("Page not found");
+        }
+
+        return Results.Ok(page);
+    })
+    .RequireAuthorization()
+    .WithTags("Admin")
+    .WithName("GetPageBySlug")
+    .WithSummary("Get a single page by slug for editing")
+    .WithDescription("Retrieves a page by slug for a specific tenant. Returns both published and draft pages. Requires JWT authentication.");
+
+// Admin: Create a new page (JWT auth, no API key)
+app.MapPost("/api/admin/pages/{tenantId}",
+    async (IDatabaseService databaseService, string tenantId, pumpkin_net_models.Models.Page page, HttpContext context) =>
+    {
+        if (context.User?.Identity?.IsAuthenticated != true)
+        {
+            return Results.Unauthorized();
+        }
+
+        var userTenantId = context.User.FindFirst("tenantId")?.Value;
+        var userRole = context.User.FindFirst(ClaimTypes.Role)?.Value;
+
+        if (string.IsNullOrEmpty(userTenantId))
+        {
+            return Results.BadRequest("User tenant ID not found in token");
+        }
+
+        if (tenantId != userTenantId && userRole != "SuperAdmin")
+        {
+            return Results.Forbid();
+        }
+
+        try
+        {
+            if (page == null)
+                return Results.BadRequest("Page data is required");
+            if (string.IsNullOrEmpty(page.PageId))
+                return Results.BadRequest("Page ID is required");
+
+            var savedPage = await databaseService.SavePageAdminAsync(tenantId, page);
+            return Results.Created($"/api/admin/pages/{tenantId}/{savedPage.PageSlug}", savedPage);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Results.Conflict(ex.Message);
+        }
+        catch (ArgumentException ex)
+        {
+            return Results.BadRequest(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Error creating page: {ex.Message}");
+        }
+    })
+    .RequireAuthorization()
+    .WithTags("Admin")
+    .WithName("AdminCreatePage")
+    .WithSummary("Create a new page (admin)")
+    .WithDescription("Creates a new page for a specific tenant. Requires JWT authentication.");
+
+// Admin: Update an existing page (JWT auth, no API key)
+app.MapPut("/api/admin/pages/{tenantId}/{**pageSlug}",
+    async (IDatabaseService databaseService, string tenantId, string pageSlug, pumpkin_net_models.Models.Page page, HttpContext context) =>
+    {
+        if (context.User?.Identity?.IsAuthenticated != true)
+        {
+            return Results.Unauthorized();
+        }
+
+        var userTenantId = context.User.FindFirst("tenantId")?.Value;
+        var userRole = context.User.FindFirst(ClaimTypes.Role)?.Value;
+
+        if (string.IsNullOrEmpty(userTenantId))
+        {
+            return Results.BadRequest("User tenant ID not found in token");
+        }
+
+        if (tenantId != userTenantId && userRole != "SuperAdmin")
+        {
+            return Results.Forbid();
+        }
+
+        try
+        {
+            if (page == null)
+                return Results.BadRequest("Page data is required");
+
+            var decodedSlug = Uri.UnescapeDataString(pageSlug);
+            var updatedPage = await databaseService.UpdatePageAdminAsync(tenantId, decodedSlug, page);
+            return Results.Ok(updatedPage);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return Results.NotFound(ex.Message);
+        }
+        catch (ArgumentException ex)
+        {
+            return Results.BadRequest(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Error updating page: {ex.Message}");
+        }
+    })
+    .RequireAuthorization()
+    .WithTags("Admin")
+    .WithName("AdminUpdatePage")
+    .WithSummary("Update an existing page (admin)")
+    .WithDescription("Updates a page by slug for a specific tenant. Requires JWT authentication.");
+
 // Admin: Get hub pages for a tenant
 app.MapGet("/api/admin/tenants/{tenantId}/hubs",
     async (IDatabaseService databaseService, string tenantId, HttpContext context) =>

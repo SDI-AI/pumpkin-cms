@@ -487,11 +487,20 @@ internal class TestDatabaseService : IDatabaseService, IDisposable
     public Task<List<Page>> GetAllPagesAsync(string? tenantId = null)
         => _connection.GetAllPagesAsync(tenantId);
 
+    public Task<Page?> GetPageBySlugAsync(string tenantId, string pageSlug)
+        => _connection.GetPageBySlugAsync(tenantId, pageSlug);
+
     public Task<List<Page>> GetPagesByTenantAsync(string tenantId)
         => _connection.GetPagesByTenantAsync(tenantId);
 
     public Task<List<Tenant>> GetTenantsForUserAsync(string userTenantId, bool isSuperAdmin)
         => _connection.GetTenantsForUserAsync(userTenantId, isSuperAdmin);
+
+    public Task<Page> SavePageAdminAsync(string tenantId, Page page)
+        => _connection.SavePageAdminAsync(tenantId, page);
+
+    public Task<Page> UpdatePageAdminAsync(string tenantId, string pageSlug, Page page)
+        => _connection.UpdatePageAdminAsync(tenantId, pageSlug, page);
 
     public Task<List<Page>> GetHubPagesAsync(string tenantId)
         => _connection.GetHubPagesAsync(tenantId);

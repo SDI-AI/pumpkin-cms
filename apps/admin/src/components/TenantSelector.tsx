@@ -55,11 +55,6 @@ export default function TenantSelector() {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </div>
-      {user?.role === 'SuperAdmin' && (
-        <div className="absolute left-0 -bottom-5 text-xs text-neutral-500">
-          Multi-tenant view
-        </div>
-      )}
     </div>
   )
 }

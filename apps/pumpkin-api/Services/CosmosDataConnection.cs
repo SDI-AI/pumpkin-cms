@@ -811,6 +811,45 @@ public class CosmosDataConnection : IDataConnection, IDisposable
     }
 
     // JWT-authenticated admin method: Get pages by tenant (no API key validation)
+    public async Task<Page?> GetPageBySlugAsync(string tenantId, string pageSlug)
+    {
+        try
+        {
+            var pageContainer = _database.GetContainer("Page");
+            var normalizedSlug = pageSlug.ToLowerInvariant();
+
+            var query = "SELECT * FROM c WHERE c.tenantId = @tenantId AND c.pageSlug = @slug";
+            var queryDefinition = new QueryDefinition(query)
+                .WithParameter("@slug", normalizedSlug)
+                .WithParameter("@tenantId", tenantId);
+
+            using var iterator = pageContainer.GetItemQueryIterator<Page>(queryDefinition, requestOptions: new QueryRequestOptions
+            {
+                PartitionKey = new PartitionKey(tenantId)
+            });
+
+            if (iterator.HasMoreResults)
+            {
+                var response = await iterator.ReadNextAsync();
+                var page = response.FirstOrDefault();
+                if (page != null)
+                {
+                    _logger.LogInformation("GetPageBySlugAsync - Found page - Slug: {Slug}, TenantId: {TenantId}, RU: {RU}",
+                        normalizedSlug, tenantId, response.RequestCharge);
+                    return page;
+                }
+            }
+
+            _logger.LogInformation("GetPageBySlugAsync - Page not found - Slug: {Slug}, TenantId: {TenantId}", normalizedSlug, tenantId);
+            return null;
+        }
+        catch (CosmosException ex)
+        {
+            _logger.LogError(ex, "GetPageBySlugAsync error - Slug: {Slug}, TenantId: {TenantId}", pageSlug, tenantId);
+            throw;
+        }
+    }
+
     public async Task<List<Page>> GetPagesByTenantAsync(string tenantId)
     {
         try
@@ -837,6 +876,109 @@ public class CosmosDataConnection : IDataConnection, IDisposable
         catch (CosmosException ex)
         {
             _logger.LogError(ex, "Error retrieving pages by tenant: {TenantId}", tenantId);
+            throw;
+        }
+    }
+
+    // JWT-authenticated admin method: Save page (no API key validation)
+    public async Task<Page> SavePageAdminAsync(string tenantId, Page page)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(page.PageId))
+            {
+                throw new ArgumentException("PageId is required", nameof(page));
+            }
+
+            var pagesContainer = _database.GetContainer("Page");
+
+            // Ensure tenantId is set
+            page.TenantId = tenantId;
+
+            // Set timestamps
+            if (page.MetaData.CreatedAt == default)
+            {
+                page.MetaData.CreatedAt = DateTime.UtcNow;
+            }
+            page.MetaData.UpdatedAt = DateTime.UtcNow;
+
+            var response = await pagesContainer.CreateItemAsync(page, new PartitionKey(tenantId));
+
+            _logger.LogInformation("SavePageAdminAsync - Page created - PageId: {PageId}, TenantId: {TenantId}, RU: {RU}",
+                page.PageId, tenantId, response.RequestCharge);
+
+            return response.Resource;
+        }
+        catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.Conflict)
+        {
+            _logger.LogWarning("SavePageAdminAsync - Page already exists - PageId: {PageId}, TenantId: {TenantId}", page.PageId, tenantId);
+            throw new InvalidOperationException($"Page with ID {page.PageId} already exists", ex);
+        }
+        catch (CosmosException ex)
+        {
+            _logger.LogError(ex, "SavePageAdminAsync error - PageId: {PageId}, TenantId: {TenantId}", page.PageId, tenantId);
+            throw;
+        }
+    }
+
+    // JWT-authenticated admin method: Update page (no API key validation)
+    public async Task<Page> UpdatePageAdminAsync(string tenantId, string pageSlug, Page page)
+    {
+        try
+        {
+            var pagesContainer = _database.GetContainer("Page");
+            var normalizedSlug = pageSlug.ToLowerInvariant();
+
+            // Find existing page by slug
+            var query = "SELECT * FROM c WHERE c.tenantId = @tenantId AND c.pageSlug = @slug";
+            var queryDefinition = new QueryDefinition(query)
+                .WithParameter("@slug", normalizedSlug)
+                .WithParameter("@tenantId", tenantId);
+
+            using var iterator = pagesContainer.GetItemQueryIterator<Page>(queryDefinition, requestOptions: new QueryRequestOptions
+            {
+                PartitionKey = new PartitionKey(tenantId)
+            });
+
+            Page? existingPage = null;
+            if (iterator.HasMoreResults)
+            {
+                var response = await iterator.ReadNextAsync();
+                existingPage = response.FirstOrDefault();
+            }
+
+            if (existingPage == null)
+            {
+                _logger.LogWarning("UpdatePageAdminAsync - Page not found - Slug: {Slug}, TenantId: {TenantId}", normalizedSlug, tenantId);
+                throw new KeyNotFoundException($"Page with slug '{pageSlug}' not found");
+            }
+
+            // Preserve the PageId from the existing page
+            page.PageId = existingPage.PageId;
+            page.TenantId = tenantId;
+
+            // Update timestamp
+            page.MetaData.UpdatedAt = DateTime.UtcNow;
+
+            // Increment version
+            page.PageVersion++;
+
+            // Replace the page
+            var updateResponse = await pagesContainer.ReplaceItemAsync(page, existingPage.PageId, new PartitionKey(tenantId));
+
+            _logger.LogInformation("UpdatePageAdminAsync - Page updated - Slug: {Slug}, PageId: {PageId}, TenantId: {TenantId}, Version: {Version}, RU: {RU}",
+                normalizedSlug, existingPage.PageId, tenantId, page.PageVersion, updateResponse.RequestCharge);
+
+            return updateResponse.Resource;
+        }
+        catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+        {
+            _logger.LogWarning("UpdatePageAdminAsync - Page not found - Slug: {Slug}, TenantId: {TenantId}", pageSlug, tenantId);
+            throw new KeyNotFoundException($"Page with slug '{pageSlug}' not found", ex);
+        }
+        catch (CosmosException ex)
+        {
+            _logger.LogError(ex, "UpdatePageAdminAsync error - Slug: {Slug}, TenantId: {TenantId}", pageSlug, tenantId);
             throw;
         }
     }

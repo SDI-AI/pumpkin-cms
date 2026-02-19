@@ -233,18 +233,51 @@ class ApiClient {
     return response.pages
   }
 
-  // Get a single page by slug (requires authentication)
+  // Get a single page by slug (uses admin pages list endpoint and filters)
   async getPage(token: string, tenantId: string, pageSlug: string): Promise<Page> {
-    const response = await this.request<Page>(
-      `/api/pages/${tenantId}/${encodeURIComponent(pageSlug)}`,
+    console.log('[API Client] getPage called:', { tenantId, pageSlug })
+    const pages = await this.getPages(token, tenantId)
+    const normalizedSlug = pageSlug.toLowerCase()
+    const page = pages.find(p => p.pageSlug?.toLowerCase() === normalizedSlug)
+    if (!page) {
+      console.error('[API Client] Page not found in list:', { pageSlug, normalizedSlug, availableSlugs: pages.map(p => p.pageSlug) })
+      throw {
+        message: `Page not found: ${pageSlug}`,
+        status: 404,
+        details: { pageSlug, tenantId }
+      } as ApiError
+    }
+    return page
+  }
+
+  // Create a new page (admin, JWT auth)
+  async createPage(token: string, tenantId: string, page: Page): Promise<Page> {
+    console.log('[API Client] Creating page:', { tenantId, pageSlug: page.pageSlug })
+    return this.request<Page>(
+      `/api/admin/pages/${encodeURIComponent(tenantId)}`,
       {
-        method: 'GET',
+        method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
         },
+        body: JSON.stringify(page),
       }
     )
-    return response
+  }
+
+  // Update an existing page (admin, JWT auth)
+  async updatePage(token: string, tenantId: string, pageSlug: string, page: Page): Promise<Page> {
+    console.log('[API Client] Updating page:', { tenantId, pageSlug })
+    return this.request<Page>(
+      `/api/admin/pages/${encodeURIComponent(tenantId)}/${encodeURIComponent(pageSlug)}`,
+      {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(page),
+      }
+    )
   }
 
   // Get dashboard statistics

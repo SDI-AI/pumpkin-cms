@@ -110,6 +110,11 @@ public class DatabaseService : IDatabaseService, IDisposable
     }
 
     // JWT-authenticated admin methods (no API key required)
+    public Task<Page?> GetPageBySlugAsync(string tenantId, string pageSlug)
+    {
+        return _dataConnection.GetPageBySlugAsync(tenantId, pageSlug);
+    }
+
     public Task<List<Page>> GetPagesByTenantAsync(string tenantId)
     {
         return _dataConnection.GetPagesByTenantAsync(tenantId);
@@ -118,6 +123,16 @@ public class DatabaseService : IDatabaseService, IDisposable
     public Task<List<Tenant>> GetTenantsForUserAsync(string userTenantId, bool isSuperAdmin)
     {
         return _dataConnection.GetTenantsForUserAsync(userTenantId, isSuperAdmin);
+    }
+
+    public Task<Page> SavePageAdminAsync(string tenantId, Page page)
+    {
+        return _dataConnection.SavePageAdminAsync(tenantId, page);
+    }
+
+    public Task<Page> UpdatePageAdminAsync(string tenantId, string pageSlug, Page page)
+    {
+        return _dataConnection.UpdatePageAdminAsync(tenantId, pageSlug, page);
     }
 
     // User authentication methods

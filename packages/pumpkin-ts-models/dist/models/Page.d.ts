@@ -107,10 +107,8 @@ export interface TwitterCardData {
 export interface ContentRelationships {
     isHub: boolean;
     hubPageSlug: string;
-    spokePageSlugs: string[];
     topicCluster: string;
     relatedHubs: string[];
-    siblingSpokes: string[];
     spokePriority: number;
 }
 //# sourceMappingURL=Page.d.ts.map

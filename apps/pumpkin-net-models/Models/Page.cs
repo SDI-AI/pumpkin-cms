@@ -245,17 +245,11 @@ public class ContentRelationships
     [JsonPropertyName("hubPageSlug")]
     public string HubPageSlug { get; set; } = string.Empty;
 
-    [JsonPropertyName("spokePageSlugs")]
-    public List<string> SpokePageSlugs { get; set; } = new();
-
     [JsonPropertyName("topicCluster")]
     public string TopicCluster { get; set; } = string.Empty;
 
     [JsonPropertyName("relatedHubs")]
     public List<string> RelatedHubs { get; set; } = new();
-
-    [JsonPropertyName("siblingSpokes")]
-    public List<string> SiblingSpokes { get; set; } = new();
 
     [JsonPropertyName("spokePriority")]
     public int SpokePriority { get; set; } = 0;

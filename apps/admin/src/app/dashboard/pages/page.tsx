@@ -172,7 +172,7 @@ export default function PagesPage() {
                 {pages.map((page) => (
                   <tr
                     key={page.id}
-                    onClick={() => router.push(`/dashboard/pages/${encodeURIComponent(page.pageSlug)}`)}
+                    onClick={() => router.push(`/dashboard/pages/${encodeURIComponent(page.pageSlug)}?tenantId=${encodeURIComponent(page.tenantId)}`)}
                     className="hover:bg-neutral-50 cursor-pointer transition-colors"
                   >
                     <td className="px-6 py-4 whitespace-nowrap">
