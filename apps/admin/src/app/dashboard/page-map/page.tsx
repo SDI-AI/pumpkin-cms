@@ -1,9 +1,11 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { apiClient } from '@/lib/api'
 import TenantSelector from '@/components/TenantSelector'
+import AddSpokeModal from '@/components/AddSpokeModal'
 import type { Page } from 'pumpkin-ts-models'
 import {
   ReactFlow,
@@ -67,12 +69,26 @@ function applyDagreLayout(nodes: Node[], edges: Edge[]): Node[] {
 }
 
 export default function PageMapPage() {
+  const router = useRouter()
   const { token, currentTenant } = useAuth()
   const [pages, setPages] = useState<Page[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([])
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([])
+  const [addSpokeHub, setAddSpokeHub] = useState<string | null>(null)
+
+  const handleAddSpoke = useCallback((hubSlug: string) => {
+    setAddSpokeHub(hubSlug)
+  }, [])
+
+  const handleConfirmAddSpoke = useCallback((slug: string) => {
+    const hubSlug = addSpokeHub
+    setAddSpokeHub(null)
+    if (!hubSlug) return
+    const tenantId = currentTenant?.tenantId || ''
+    router.push(`/dashboard/pages/new?tenantId=${encodeURIComponent(tenantId)}&hubPageSlug=${encodeURIComponent(hubSlug)}&pageSlug=${encodeURIComponent(slug)}`)
+  }, [addSpokeHub, currentTenant, router])
 
   useEffect(() => {
     async function fetchPages() {
@@ -142,7 +158,15 @@ export default function PageMapPage() {
               <div className="font-semibold text-xs leading-snug truncate" style={{ color: '#c2410c', maxWidth: HUB_WIDTH - 24 }}>
                 {hub.MetaData?.title || hub.pageSlug}
               </div>
-              <div className="text-[9px] uppercase tracking-wider mt-0.5" style={{ color: '#9a3412' }}>Hub</div>
+              <div className="flex items-center justify-center gap-1.5 mt-0.5">
+                <span className="text-[9px] uppercase tracking-wider" style={{ color: '#9a3412' }}>Hub</span>
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleAddSpoke(hub.pageSlug) }}
+                  className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full text-[9px] font-bold leading-none hover:scale-110 transition-transform"
+                  style={{ background: '#f97316', color: '#fff' }}
+                  title="Add spoke page"
+                >+</button>
+              </div>
               {hub.contentRelationships?.topicCluster && (
                 <div className="text-[9px] mt-0.5 truncate" style={{ color: '#ea580c', maxWidth: HUB_WIDTH - 24 }}>{hub.contentRelationships.topicCluster}</div>
               )}
@@ -412,6 +436,15 @@ export default function PageMapPage() {
           )}
         </ReactFlow>
       </div>
+
+      {/* Add Spoke Modal */}
+      {addSpokeHub && (
+        <AddSpokeModal
+          hubPageSlug={addSpokeHub}
+          onConfirm={handleConfirmAddSpoke}
+          onCancel={() => setAddSpokeHub(null)}
+        />
+      )}
     </div>
   )
 }

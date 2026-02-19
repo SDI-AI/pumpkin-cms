@@ -17,12 +17,14 @@ export default function PageEditorPage() {
   const isNew = pageId === 'new'
   // Use tenantId from query param (set by pages list), fall back to user's tenant
   const tenantId = searchParams.get('tenantId') || user?.tenantId || ''
+  const initialHubSlug = searchParams.get('hubPageSlug') || ''
+  const initialPageSlug = searchParams.get('pageSlug') || ''
 
   const [formData, setFormData] = useState<Page>({
     id: '',
     PageId: '',
     tenantId: tenantId || user?.tenantId || '',
-    pageSlug: '',
+    pageSlug: initialPageSlug,
     PageVersion: 1,
     Layout: 'standard',
     MetaData: {
@@ -53,7 +55,7 @@ export default function PageEditorPage() {
     },
     contentRelationships: {
       isHub: false,
-      hubPageSlug: '',
+      hubPageSlug: initialHubSlug,
       topicCluster: '',
       relatedHubs: [],
       spokePriority: 0,
