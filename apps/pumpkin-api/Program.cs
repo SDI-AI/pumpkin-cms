@@ -7,6 +7,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Cors.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -93,20 +94,18 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddAuthorization();
 
 // Configure CORS
+// Admin/auth routes use the "AllowAll" policy (access is controlled by JWT).
+// Content routes use the "TenantCors" policy, which resolves per-tenant allowed origins from the database.
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowFrontend", policy =>
+    options.AddPolicy("AllowAll", policy =>
     {
-        policy.WithOrigins(
-                "http://localhost:3000",      // React dev server
-                "https://localhost:3000",     // React dev server (HTTPS)
-                "http://localhost:3001"       // Alternative port
-            )
+        policy.AllowAnyOrigin()
             .AllowAnyMethod()
-            .AllowAnyHeader()
-            .AllowCredentials();
+            .AllowAnyHeader();
     });
 });
+builder.Services.AddSingleton<ICorsPolicyProvider, TenantCorsPolicyProvider>();
 
 // Register data connection implementations
 builder.Services.AddSingleton<CosmosDataConnection>();
@@ -117,8 +116,9 @@ builder.Services.AddSingleton<IDatabaseService, DatabaseService>();
 
 var app = builder.Build();
 
-// Configure CORS (must be before authentication/authorization)
-app.UseCors("AllowFrontend");
+// Configure CORS (must be before authentication/authorization).
+// "AllowAll" is the default for admin/auth routes; content routes override with "TenantCors".
+app.UseCors("AllowAll");
 
 // Configure authentication and authorization
 app.UseAuthentication();
@@ -165,7 +165,8 @@ app.MapGet("/api/pages/{tenantId}/{**pageSlug}",
     .WithTags("Pages")
     .WithName("GetPage")
     .WithSummary("Get a published page by slug")
-    .WithDescription("Retrieves a published page by its slug for a specific tenant. Requires API key authentication via Authorization header (Bearer {apiKey})");
+    .WithDescription("Retrieves a published page by its slug for a specific tenant. Requires API key authentication via Authorization header (Bearer {apiKey})")
+    .RequireCors("TenantCors");
 
 // Save a new page
 app.MapPost("/api/pages/{tenantId}",
@@ -185,7 +186,8 @@ app.MapPost("/api/pages/{tenantId}",
     .WithTags("Pages")
     .WithName("SavePage")
     .WithSummary("Create a new page")
-    .WithDescription("Creates a new page for a specific tenant. Requires API key authentication via Authorization header (Bearer {apiKey})");
+    .WithDescription("Creates a new page for a specific tenant. Requires API key authentication via Authorization header (Bearer {apiKey})")
+    .RequireCors("TenantCors");
 
 // Update an existing page
 app.MapPut("/api/pages/{tenantId}/{**pageSlug}",
@@ -205,7 +207,8 @@ app.MapPut("/api/pages/{tenantId}/{**pageSlug}",
     .WithTags("Pages")
     .WithName("UpdatePage")
     .WithSummary("Update an existing page by slug")
-    .WithDescription("Updates an existing page by its slug for a specific tenant. Requires API key authentication via Authorization header (Bearer {apiKey})");
+    .WithDescription("Updates an existing page by its slug for a specific tenant. Requires API key authentication via Authorization header (Bearer {apiKey})")
+    .RequireCors("TenantCors");
 
 // Delete a page
 app.MapDelete("/api/pages/{tenantId}/{**pageSlug}",
@@ -225,7 +228,8 @@ app.MapDelete("/api/pages/{tenantId}/{**pageSlug}",
     .WithTags("Pages")
     .WithName("DeletePage")
     .WithSummary("Delete a page by slug")
-    .WithDescription("Deletes a page by its slug for a specific tenant. Requires API key authentication via Authorization header (Bearer {apiKey})");
+    .WithDescription("Deletes a page by its slug for a specific tenant. Requires API key authentication via Authorization header (Bearer {apiKey})")
+    .RequireCors("TenantCors");
 
 // Save a form entry
 app.MapPost("/api/forms/{tenantId}/entries",
@@ -245,7 +249,8 @@ app.MapPost("/api/forms/{tenantId}/entries",
     .WithTags("Forms")
     .WithName("SaveFormEntry")
     .WithSummary("Submit a form entry")
-    .WithDescription("Submits a new form entry for a specific tenant. Requires API key authentication via Authorization header (Bearer {apiKey})");
+    .WithDescription("Submits a new form entry for a specific tenant. Requires API key authentication via Authorization header (Bearer {apiKey})")
+    .RequireCors("TenantCors");
 
 // Get sitemap pages
 app.MapGet("/api/tenant/{tenantId}/sitemap",
@@ -265,7 +270,8 @@ app.MapGet("/api/tenant/{tenantId}/sitemap",
     .WithTags("Sitemap")
     .WithName("GetSitemapPages")
     .WithSummary("Get all published page slugs for sitemap generation")
-    .WithDescription("Returns a list of all published page slugs where isPublished=true and includeInSitemap=true. Useful for generating XML sitemaps. Requires API key authentication via Authorization header (Bearer {apiKey})");
+    .WithDescription("Returns a list of all published page slugs where isPublished=true and includeInSitemap=true. Useful for generating XML sitemaps. Requires API key authentication via Authorization header (Bearer {apiKey})")
+    .RequireCors("TenantCors");
 
 // ===== AUTHENTICATION ENDPOINTS =====
 
