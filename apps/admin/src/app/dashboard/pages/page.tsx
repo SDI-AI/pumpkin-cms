@@ -4,50 +4,33 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { apiClient } from '@/lib/api'
-import { Page, Tenant } from 'pumpkin-ts-models'
+import { Page } from 'pumpkin-ts-models'
 
 export default function PagesPage() {
   const router = useRouter()
-  const { token, user } = useAuth()
+  const { token, user, currentTenant } = useAuth()
   const [pages, setPages] = useState<Page[]>([])
-  const [tenants, setTenants] = useState<Tenant[]>([])
-  const [selectedTenantId, setSelectedTenantId] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const isSuperAdmin = user?.role === 'SuperAdmin'
-
-  // Fetch tenants (for SuperAdmin filter)
-  useEffect(() => {
-    const fetchTenants = async () => {
-      if (!token || !isSuperAdmin) return
-      
-      try {
-        const allTenants = await apiClient.getTenants(token)
-        setTenants(allTenants)
-      } catch (error) {
-        console.error('Error fetching tenants:', error)
-      }
-    }
-
-    fetchTenants()
-  }, [token, isSuperAdmin])
-
-  // Fetch pages
+  // Fetch pages using the globally-selected tenant
   useEffect(() => {
     const fetchPages = async () => {
-      if (!token || !user) return
+      if (!token || !user || !currentTenant) {
+        setLoading(false)
+        return
+      }
 
       try {
         setLoading(true)
         setError(null)
+        console.log('[Pages] Fetching pages for tenant:', currentTenant.tenantId)
         
-        // Use selected tenant or default to user's tenant
-        const targetTenantId = selectedTenantId || user.tenantId
-        const pagesData = await apiClient.getPages(token, targetTenantId)
+        const pagesData = await apiClient.getPages(token, currentTenant.tenantId)
+        console.log('[Pages] Fetched', pagesData.length, 'pages')
         setPages(pagesData)
       } catch (error) {
-        console.error('Error fetching pages:', error)
+        console.error('[Pages] Error fetching pages:', error)
         setError(error instanceof Error ? error.message : 'Failed to load pages')
       } finally {
         setLoading(false)
@@ -55,7 +38,7 @@ export default function PagesPage() {
     }
 
     fetchPages()
-  }, [token, user, selectedTenantId])
+  }, [token, user, currentTenant])
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'Never'
@@ -89,32 +72,6 @@ export default function PagesPage() {
         </button>
       </div>
 
-      {/* Filters */}
-      {isSuperAdmin && tenants.length > 0 && (
-        <div className="card p-4">
-          <div className="flex items-center gap-4">
-            <label className="text-sm font-medium text-neutral-700">
-              Filter by Tenant:
-            </label>
-            <select
-              value={selectedTenantId}
-              onChange={(e) => setSelectedTenantId(e.target.value)}
-              className="px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-            >
-              <option value="">My Tenant ({user.tenantId})</option>
-              {tenants
-                .filter(t => t.tenantId !== user.tenantId)
-                .map(tenant => (
-                  <option key={tenant.tenantId} value={tenant.tenantId}>
-                    {tenant.name} ({tenant.tenantId})
-                  </option>
-                ))
-              }
-            </select>
-          </div>
-        </div>
-      )}
-
       {/* Error Message */}
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-md">
@@ -138,9 +95,9 @@ export default function PagesPage() {
             </div>
             <h3 className="text-lg font-semibold text-neutral-900 mb-2">No pages found</h3>
             <p className="text-neutral-600">
-              {selectedTenantId 
-                ? 'This tenant has no pages yet.'
-                : 'Your tenant has no pages yet.'}
+              {currentTenant
+                ? `No pages found for "${currentTenant.name}".`
+                : 'Select a tenant to view pages.'}
             </p>
           </div>
         ) : (

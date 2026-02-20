@@ -4,7 +4,6 @@ import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { apiClient } from '@/lib/api'
-import TenantSelector from '@/components/TenantSelector'
 import AddSpokeModal from '@/components/AddSpokeModal'
 import type { Page } from 'pumpkin-ts-models'
 import {
@@ -382,10 +381,7 @@ export default function PageMapPage() {
           {/* Legend as floating panel — always visible */}
           <Panel position="top-left">
             <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-lg border border-neutral-200 px-5 py-3.5 max-w-md">
-              <div className="flex items-center justify-between mb-2.5">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Legend</h3>
-                <TenantSelector />
-              </div>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500 mb-2.5">Legend</h3>
               <div className="grid grid-cols-2 gap-x-6 gap-y-1.5">
                 {/* Nodes */}
                 <div className="flex items-center gap-2">

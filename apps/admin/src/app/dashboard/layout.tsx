@@ -98,8 +98,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 </nav>
               </div>
               
-              {/* User Menu */}
+              {/* Tenant Selector + User Menu */}
               <div className="flex items-center space-x-4">
+                <TenantSelector />
                 <div className="hidden sm:block text-right">
                   <p className="text-sm font-medium text-neutral-900">{user?.username || 'User'}</p>
                   <p className="text-xs text-neutral-500">{user?.role || 'Role'}</p>
