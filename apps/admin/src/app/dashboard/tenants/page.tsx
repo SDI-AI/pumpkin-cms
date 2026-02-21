@@ -374,6 +374,8 @@ function TenantModal({
   onClose: () => void
 }) {
   const [showRegenerateConfirm, setShowRegenerateConfirm] = useState(false)
+  const [originInput, setOriginInput] = useState('')
+  const [originError, setOriginError] = useState<string | null>(null)
   const [formData, setFormData] = useState<Tenant>(
     tenant || {
       id: '',
@@ -438,6 +440,38 @@ function TenantModal({
     }
     
     onSave(cleanedData)
+  }
+
+  const addOrigin = () => {
+    const trimmed = originInput.trim()
+    if (!trimmed) return
+
+    // Validate URL format
+    try {
+      const url = new URL(trimmed)
+      // Only allow http/https protocols
+      if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+        setOriginError('Origin must use http:// or https://')
+        return
+      }
+      // Origin = protocol + host (no path, query, or hash)
+      const origin = url.origin
+      if (formData.settings.allowedOrigins.includes(origin)) {
+        setOriginError('This origin is already added')
+        return
+      }
+      setFormData({
+        ...formData,
+        settings: {
+          ...formData.settings,
+          allowedOrigins: [...formData.settings.allowedOrigins, origin],
+        },
+      })
+      setOriginInput('')
+      setOriginError(null)
+    } catch {
+      setOriginError('Enter a valid URL (e.g. https://example.com)')
+    }
   }
 
   return (
@@ -828,22 +862,78 @@ function TenantModal({
             <label className="block text-sm font-medium text-neutral-700 mb-1">
               Allowed Origins (CORS)
             </label>
-            <textarea
-              value={formData.settings.allowedOrigins.join('\n')}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  settings: {
-                    ...formData.settings,
-                    allowedOrigins: e.target.value.split('\n').filter(origin => origin.trim() !== ''),
-                  },
-                })
-              }
-              rows={3}
-              className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 font-mono text-sm"
-              placeholder="https://example.com&#10;https://app.example.com"
-            />
-            <p className="text-xs text-neutral-500 mt-1">Enter one origin per line</p>
+            <p className="text-xs text-neutral-500 mb-2">
+              Domains allowed to make API requests for this tenant. Include the protocol (https://).
+            </p>
+
+            {/* Origin tags */}
+            {formData.settings.allowedOrigins.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-2">
+                {formData.settings.allowedOrigins.map((origin, index) => (
+                  <span
+                    key={index}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-50 border border-blue-200 text-sm font-mono text-blue-800"
+                  >
+                    {origin}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFormData({
+                          ...formData,
+                          settings: {
+                            ...formData.settings,
+                            allowedOrigins: formData.settings.allowedOrigins.filter((_, i) => i !== index),
+                          },
+                        })
+                      }}
+                      className="text-blue-400 hover:text-red-600 transition-colors ml-0.5"
+                      title="Remove origin"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {/* Add origin input */}
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={originInput}
+                onChange={(e) => {
+                  setOriginInput(e.target.value)
+                  setOriginError(null)
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    addOrigin()
+                  }
+                }}
+                className={`flex-1 px-3 py-2 border rounded-md font-mono text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                  originError ? 'border-red-300 bg-red-50' : 'border-neutral-300'
+                }`}
+                placeholder="https://example.com"
+              />
+              <button
+                type="button"
+                onClick={addOrigin}
+                className="px-3 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 text-sm font-medium whitespace-nowrap"
+              >
+                Add
+              </button>
+            </div>
+            {originError && (
+              <p className="text-xs text-red-600 mt-1">{originError}</p>
+            )}
+            {formData.settings.allowedOrigins.length === 0 && (
+              <p className="text-xs text-amber-600 mt-1">
+                No origins configured — API requests from browsers will be blocked by CORS.
+              </p>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
