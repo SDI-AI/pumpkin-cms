@@ -135,6 +135,48 @@ public class DatabaseService : IDatabaseService, IDisposable
         return _dataConnection.UpdatePageAdminAsync(tenantId, pageSlug, page);
     }
 
+    // Theme methods (content serving - API key required)
+    public Task<Theme?> GetThemeAsync(string apiKey, string tenantId, string themeId)
+    {
+        return _dataConnection.GetThemeAsync(apiKey, tenantId, themeId);
+    }
+
+    public Task<Theme?> GetActiveThemeAsync(string apiKey, string tenantId)
+    {
+        return _dataConnection.GetActiveThemeAsync(apiKey, tenantId);
+    }
+
+    // Theme admin methods (JWT authentication required at endpoint level)
+    public Task<Theme?> GetThemeAdminAsync(string tenantId, string themeId)
+    {
+        return _dataConnection.GetThemeAdminAsync(tenantId, themeId);
+    }
+
+    public Task<Theme?> GetActiveThemeAdminAsync(string tenantId)
+    {
+        return _dataConnection.GetActiveThemeAdminAsync(tenantId);
+    }
+
+    public Task<List<Theme>> GetThemesByTenantAsync(string tenantId)
+    {
+        return _dataConnection.GetThemesByTenantAsync(tenantId);
+    }
+
+    public Task<Theme> CreateThemeAsync(string tenantId, Theme theme)
+    {
+        return _dataConnection.CreateThemeAsync(tenantId, theme);
+    }
+
+    public Task<Theme> UpdateThemeAsync(string tenantId, string themeId, Theme theme)
+    {
+        return _dataConnection.UpdateThemeAsync(tenantId, themeId, theme);
+    }
+
+    public Task<bool> DeleteThemeAsync(string tenantId, string themeId)
+    {
+        return _dataConnection.DeleteThemeAsync(tenantId, themeId);
+    }
+
     // User authentication methods
     public Task<User?> GetUserByEmailAsync(string email)
     {

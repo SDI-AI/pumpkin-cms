@@ -1,0 +1,58 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-display: 'Inter', system-ui, sans-serif;
+    --font-body: 'Inter', system-ui, sans-serif;
+  }
+
+  html {
+    @apply scroll-smooth antialiased;
+  }
+
+  body {
+    @apply bg-white text-neutral-900 font-body;
+  }
+}
+
+@layer components {
+  /* Prose overrides for blog body content */
+  .prose h2 {
+    @apply text-2xl font-bold text-neutral-900 mt-8 mb-4;
+  }
+  .prose h3 {
+    @apply text-xl font-bold text-neutral-800 mt-6 mb-3;
+  }
+  .prose p {
+    @apply text-base leading-relaxed text-neutral-700 mb-4;
+  }
+  .prose a {
+    @apply text-pumpkin-600 underline hover:text-pumpkin-700 transition-colors;
+  }
+  .prose ul {
+    @apply list-disc pl-5 mb-4 space-y-1;
+  }
+  .prose ol {
+    @apply list-decimal pl-5 mb-4 space-y-1;
+  }
+  .prose li {
+    @apply text-base text-neutral-700;
+  }
+  .prose code {
+    @apply bg-neutral-100 text-pumpkin-700 px-1.5 py-0.5 rounded text-sm font-mono;
+  }
+  .prose pre {
+    @apply bg-neutral-900 text-neutral-100 p-4 rounded-lg overflow-x-auto mb-4;
+  }
+  .prose pre code {
+    @apply bg-transparent text-neutral-100 p-0;
+  }
+  .prose blockquote {
+    @apply border-l-4 border-pumpkin-300 pl-4 italic text-neutral-600 my-4;
+  }
+  .prose strong {
+    @apply font-bold text-neutral-900;
+  }
+}

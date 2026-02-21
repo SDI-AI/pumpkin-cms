@@ -34,6 +34,18 @@ public interface IDataConnection
     Task<Page> SavePageAdminAsync(string tenantId, Page page);
     Task<Page> UpdatePageAdminAsync(string tenantId, string pageSlug, Page page);
     
+    // Theme methods (content serving - API key required)
+    Task<Theme?> GetThemeAsync(string apiKey, string tenantId, string themeId);
+    Task<Theme?> GetActiveThemeAsync(string apiKey, string tenantId);
+
+    // Theme admin methods (JWT authentication required at endpoint level)
+    Task<Theme?> GetThemeAdminAsync(string tenantId, string themeId);
+    Task<Theme?> GetActiveThemeAdminAsync(string tenantId);
+    Task<List<Theme>> GetThemesByTenantAsync(string tenantId);
+    Task<Theme> CreateThemeAsync(string tenantId, Theme theme);
+    Task<Theme> UpdateThemeAsync(string tenantId, string themeId, Theme theme);
+    Task<bool> DeleteThemeAsync(string tenantId, string themeId);
+
     // User authentication methods
     Task<User?> GetUserByEmailAsync(string email);
     Task UpdateUserLastLoginAsync(string userId, string tenantId);

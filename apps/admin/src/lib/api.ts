@@ -1,4 +1,4 @@
-import { LoginRequest, LoginResponse, UserInfo, Page, Tenant, TenantInfo } from 'pumpkin-ts-models'
+import { LoginRequest, LoginResponse, UserInfo, Page, Tenant, TenantInfo, Theme } from 'pumpkin-ts-models'
 
 export interface DashboardStats {
   totalPages: number
@@ -276,6 +276,101 @@ class ApiClient {
           'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(page),
+      }
+    )
+  }
+
+  // ===== THEME METHODS =====
+
+  // Get all themes for a tenant
+  async getThemes(token: string, tenantId: string): Promise<Theme[]> {
+    console.log('[API Client] Getting themes for tenant:', tenantId)
+    const response = await this.request<{ themes: Theme[]; count: number; tenantId: string }>(
+      `/api/admin/themes/${encodeURIComponent(tenantId)}`,
+      {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      }
+    )
+    console.log('[API Client] Themes response:', response)
+    return response.themes
+  }
+
+  // Get a specific theme by ID
+  async getTheme(token: string, tenantId: string, themeId: string): Promise<Theme> {
+    console.log('[API Client] Getting theme:', { tenantId, themeId })
+    return this.request<Theme>(
+      `/api/admin/themes/${encodeURIComponent(tenantId)}/${encodeURIComponent(themeId)}`,
+      {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      }
+    )
+  }
+
+  // Get the active theme for a tenant
+  async getActiveTheme(token: string, tenantId: string): Promise<Theme | null> {
+    console.log('[API Client] Getting active theme for tenant:', tenantId)
+    try {
+      return await this.request<Theme>(
+        `/api/admin/themes/${encodeURIComponent(tenantId)}/active`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        }
+      )
+    } catch (err: any) {
+      if (err.status === 404) return null
+      throw err
+    }
+  }
+
+  // Create a new theme
+  async createTheme(token: string, tenantId: string, theme: Theme): Promise<Theme> {
+    console.log('[API Client] Creating theme:', { tenantId, themeId: theme.themeId })
+    return this.request<Theme>(
+      `/api/admin/themes/${encodeURIComponent(tenantId)}`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(theme),
+      }
+    )
+  }
+
+  // Update an existing theme
+  async updateTheme(token: string, tenantId: string, themeId: string, theme: Theme): Promise<Theme> {
+    console.log('[API Client] Updating theme:', { tenantId, themeId })
+    return this.request<Theme>(
+      `/api/admin/themes/${encodeURIComponent(tenantId)}/${encodeURIComponent(themeId)}`,
+      {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(theme),
+      }
+    )
+  }
+
+  // Delete a theme
+  async deleteTheme(token: string, tenantId: string, themeId: string): Promise<{ message: string; tenantId: string; themeId: string }> {
+    console.log('[API Client] Deleting theme:', { tenantId, themeId })
+    return this.request<{ message: string; tenantId: string; themeId: string }>(
+      `/api/admin/themes/${encodeURIComponent(tenantId)}/${encodeURIComponent(themeId)}`,
+      {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
       }
     )
   }

@@ -1129,6 +1129,267 @@ public class CosmosDataConnection : IDataConnection, IDisposable
         }
     }
 
+    // ===== THEME METHODS =====
+
+    // Content serving: Get theme by ID (API key required)
+    public async Task<Theme?> GetThemeAsync(string apiKey, string tenantId, string themeId)
+    {
+        try
+        {
+            // Validate API key
+            var isValid = await ValidateTenantApiKeyAsync(apiKey, tenantId);
+            if (!isValid)
+            {
+                throw new UnauthorizedAccessException("Invalid API key");
+            }
+
+            return await GetThemeAdminAsync(tenantId, themeId);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            throw;
+        }
+        catch (CosmosException ex)
+        {
+            _logger.LogError(ex, "GetThemeAsync error - TenantId: {TenantId}, ThemeId: {ThemeId}", tenantId, themeId);
+            throw;
+        }
+    }
+
+    // Content serving: Get the active theme for a tenant (API key required)
+    public async Task<Theme?> GetActiveThemeAsync(string apiKey, string tenantId)
+    {
+        try
+        {
+            // Validate API key
+            var isValid = await ValidateTenantApiKeyAsync(apiKey, tenantId);
+            if (!isValid)
+            {
+                throw new UnauthorizedAccessException("Invalid API key");
+            }
+
+            return await GetActiveThemeAdminAsync(tenantId);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            throw;
+        }
+        catch (CosmosException ex)
+        {
+            _logger.LogError(ex, "GetActiveThemeAsync error - TenantId: {TenantId}", tenantId);
+            throw;
+        }
+    }
+
+    // Admin: Get theme by ID (JWT auth, no API key)
+    public async Task<Theme?> GetThemeAdminAsync(string tenantId, string themeId)
+    {
+        try
+        {
+            var themeContainer = _database.GetContainer("Theme");
+            var query = "SELECT * FROM c WHERE c.tenantId = @tenantId AND c.themeId = @themeId";
+            var queryDefinition = new QueryDefinition(query)
+                .WithParameter("@tenantId", tenantId)
+                .WithParameter("@themeId", themeId);
+
+            using var iterator = themeContainer.GetItemQueryIterator<Theme>(queryDefinition, requestOptions: new QueryRequestOptions
+            {
+                PartitionKey = new PartitionKey(tenantId)
+            });
+
+            if (iterator.HasMoreResults)
+            {
+                var response = await iterator.ReadNextAsync();
+                var theme = response.FirstOrDefault();
+                if (theme != null)
+                {
+                    _logger.LogInformation("GetThemeAdminAsync - Found theme - ThemeId: {ThemeId}, TenantId: {TenantId}, RU: {RU}",
+                        themeId, tenantId, response.RequestCharge);
+                }
+                return theme;
+            }
+
+            return null;
+        }
+        catch (CosmosException ex)
+        {
+            _logger.LogError(ex, "GetThemeAdminAsync error - ThemeId: {ThemeId}, TenantId: {TenantId}", themeId, tenantId);
+            throw;
+        }
+    }
+
+    // Admin: Get the active theme for a tenant (JWT auth, no API key)
+    public async Task<Theme?> GetActiveThemeAdminAsync(string tenantId)
+    {
+        try
+        {
+            var themeContainer = _database.GetContainer("Theme");
+            var query = "SELECT * FROM c WHERE c.tenantId = @tenantId AND c.isActive = true";
+            var queryDefinition = new QueryDefinition(query)
+                .WithParameter("@tenantId", tenantId);
+
+            using var iterator = themeContainer.GetItemQueryIterator<Theme>(queryDefinition, requestOptions: new QueryRequestOptions
+            {
+                PartitionKey = new PartitionKey(tenantId)
+            });
+
+            if (iterator.HasMoreResults)
+            {
+                var response = await iterator.ReadNextAsync();
+                var theme = response.FirstOrDefault();
+                if (theme != null)
+                {
+                    _logger.LogInformation("GetActiveThemeAdminAsync - Found active theme - ThemeId: {ThemeId}, TenantId: {TenantId}, RU: {RU}",
+                        theme.ThemeId, tenantId, response.RequestCharge);
+                }
+                return theme;
+            }
+
+            return null;
+        }
+        catch (CosmosException ex)
+        {
+            _logger.LogError(ex, "GetActiveThemeAdminAsync error - TenantId: {TenantId}", tenantId);
+            throw;
+        }
+    }
+
+    // Admin: Get all themes for a tenant
+    public async Task<List<Theme>> GetThemesByTenantAsync(string tenantId)
+    {
+        try
+        {
+            var themeContainer = _database.GetContainer("Theme");
+            var query = "SELECT * FROM c WHERE c.tenantId = @tenantId ORDER BY c.updatedAt DESC";
+            var queryDefinition = new QueryDefinition(query)
+                .WithParameter("@tenantId", tenantId);
+
+            var themes = new List<Theme>();
+            using var iterator = themeContainer.GetItemQueryIterator<Theme>(queryDefinition);
+
+            while (iterator.HasMoreResults)
+            {
+                var response = await iterator.ReadNextAsync();
+                themes.AddRange(response);
+                _logger.LogInformation("GetThemesByTenant - Retrieved {Count} themes, RU Cost: {RequestCharge}",
+                    response.Count, response.RequestCharge);
+            }
+
+            _logger.LogInformation("GetThemesByTenant - Total themes: {TotalCount}, TenantId: {TenantId}",
+                themes.Count, tenantId);
+            return themes;
+        }
+        catch (CosmosException ex)
+        {
+            _logger.LogError(ex, "Error retrieving themes by tenant: {TenantId}", tenantId);
+            throw;
+        }
+    }
+
+    // Admin: Create a new theme
+    public async Task<Theme> CreateThemeAsync(string tenantId, Theme theme)
+    {
+        try
+        {
+            var themeContainer = _database.GetContainer("Theme");
+
+            // Check for existing theme with same ID
+            var existing = await GetThemeAdminAsync(tenantId, theme.ThemeId);
+            if (existing != null)
+            {
+                throw new InvalidOperationException($"Theme with ID '{theme.ThemeId}' already exists for tenant '{tenantId}'");
+            }
+
+            theme.TenantId = tenantId;
+            theme.Id = theme.ThemeId;
+            theme.CreatedAt = DateTime.UtcNow;
+            theme.UpdatedAt = DateTime.UtcNow;
+
+            var response = await themeContainer.CreateItemAsync(theme, new PartitionKey(tenantId));
+
+            _logger.LogInformation("CreateThemeAsync - Theme created - ThemeId: {ThemeId}, TenantId: {TenantId}, RU: {RU}",
+                theme.ThemeId, tenantId, response.RequestCharge);
+
+            return response.Resource;
+        }
+        catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.Conflict)
+        {
+            throw new InvalidOperationException($"Theme with ID '{theme.ThemeId}' already exists", ex);
+        }
+        catch (CosmosException ex)
+        {
+            _logger.LogError(ex, "CreateThemeAsync error - ThemeId: {ThemeId}, TenantId: {TenantId}", theme.ThemeId, tenantId);
+            throw;
+        }
+    }
+
+    // Admin: Update an existing theme
+    public async Task<Theme> UpdateThemeAsync(string tenantId, string themeId, Theme theme)
+    {
+        try
+        {
+            var themeContainer = _database.GetContainer("Theme");
+
+            var existing = await GetThemeAdminAsync(tenantId, themeId);
+            if (existing == null)
+            {
+                throw new KeyNotFoundException($"Theme with ID '{themeId}' not found for tenant '{tenantId}'");
+            }
+
+            theme.ThemeId = themeId;
+            theme.TenantId = tenantId;
+            theme.Id = themeId;
+            theme.CreatedAt = existing.CreatedAt;
+            theme.UpdatedAt = DateTime.UtcNow;
+
+            var response = await themeContainer.ReplaceItemAsync(theme, themeId, new PartitionKey(tenantId));
+
+            _logger.LogInformation("UpdateThemeAsync - Theme updated - ThemeId: {ThemeId}, TenantId: {TenantId}, RU: {RU}",
+                themeId, tenantId, response.RequestCharge);
+
+            return response.Resource;
+        }
+        catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+        {
+            throw new KeyNotFoundException($"Theme with ID '{themeId}' not found", ex);
+        }
+        catch (CosmosException ex)
+        {
+            _logger.LogError(ex, "UpdateThemeAsync error - ThemeId: {ThemeId}, TenantId: {TenantId}", themeId, tenantId);
+            throw;
+        }
+    }
+
+    // Admin: Delete a theme
+    public async Task<bool> DeleteThemeAsync(string tenantId, string themeId)
+    {
+        try
+        {
+            var themeContainer = _database.GetContainer("Theme");
+
+            var existing = await GetThemeAdminAsync(tenantId, themeId);
+            if (existing == null)
+            {
+                return false;
+            }
+
+            await themeContainer.DeleteItemAsync<Theme>(themeId, new PartitionKey(tenantId));
+
+            _logger.LogInformation("DeleteThemeAsync - Theme deleted - ThemeId: {ThemeId}, TenantId: {TenantId}", themeId, tenantId);
+            return true;
+        }
+        catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+        {
+            _logger.LogWarning("DeleteThemeAsync - Theme not found - ThemeId: {ThemeId}, TenantId: {TenantId}", themeId, tenantId);
+            return false;
+        }
+        catch (CosmosException ex)
+        {
+            _logger.LogError(ex, "DeleteThemeAsync error - ThemeId: {ThemeId}, TenantId: {TenantId}", themeId, tenantId);
+            throw;
+        }
+    }
+
     /// <summary>
     /// Get user by email address for authentication
     /// </summary>

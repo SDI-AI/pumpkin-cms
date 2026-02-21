@@ -127,6 +127,15 @@ export {
   createGenericBlock
 } from './models/HtmlBlockTypes';
 
+// Theme models
+export type {
+  Theme,
+  ThemeHeader,
+  ThemeFooter,
+  BlockStyleMap,
+  MenuItem
+} from './models/Theme';
+
 // JSON converter
 export { PageJsonConverter } from './PageJsonConverter';
 export type { JsonConverterOptions } from './PageJsonConverter';

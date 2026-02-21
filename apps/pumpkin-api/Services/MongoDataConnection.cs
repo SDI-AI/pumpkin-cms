@@ -756,6 +756,125 @@ public class MongoDataConnection : IDataConnection, IDisposable
         }
     }
 
+    // ===== THEME METHODS =====
+
+    // Content serving: Get theme by ID (API key required)
+    public async Task<Theme?> GetThemeAsync(string apiKey, string tenantId, string themeId)
+    {
+        var isValid = await ValidateTenantApiKeyAsync(apiKey, tenantId);
+        if (!isValid)
+            throw new UnauthorizedAccessException("Invalid API key");
+
+        return await GetThemeAdminAsync(tenantId, themeId);
+    }
+
+    // Content serving: Get active theme (API key required)
+    public async Task<Theme?> GetActiveThemeAsync(string apiKey, string tenantId)
+    {
+        var isValid = await ValidateTenantApiKeyAsync(apiKey, tenantId);
+        if (!isValid)
+            throw new UnauthorizedAccessException("Invalid API key");
+
+        return await GetActiveThemeAdminAsync(tenantId);
+    }
+
+    // Admin: Get theme by ID (JWT auth, no API key)
+    public async Task<Theme?> GetThemeAdminAsync(string tenantId, string themeId)
+    {
+        var themeCollection = _database.GetCollection<Theme>("Theme");
+        var filter = Builders<Theme>.Filter.And(
+            Builders<Theme>.Filter.Eq(t => t.TenantId, tenantId),
+            Builders<Theme>.Filter.Eq(t => t.ThemeId, themeId)
+        );
+        return await themeCollection.Find(filter).FirstOrDefaultAsync();
+    }
+
+    // Admin: Get active theme (JWT auth, no API key)
+    public async Task<Theme?> GetActiveThemeAdminAsync(string tenantId)
+    {
+        var themeCollection = _database.GetCollection<Theme>("Theme");
+        var filter = Builders<Theme>.Filter.And(
+            Builders<Theme>.Filter.Eq(t => t.TenantId, tenantId),
+            Builders<Theme>.Filter.Eq(t => t.IsActive, true)
+        );
+        return await themeCollection.Find(filter).FirstOrDefaultAsync();
+    }
+
+    // Admin: Get all themes for a tenant
+    public async Task<List<Theme>> GetThemesByTenantAsync(string tenantId)
+    {
+        var themeCollection = _database.GetCollection<Theme>("Theme");
+        var filter = Builders<Theme>.Filter.Eq(t => t.TenantId, tenantId);
+        var sort = Builders<Theme>.Sort.Descending(t => t.UpdatedAt);
+        return await themeCollection.Find(filter).Sort(sort).ToListAsync();
+    }
+
+    // Admin: Create a new theme
+    public async Task<Theme> CreateThemeAsync(string tenantId, Theme theme)
+    {
+        var themeCollection = _database.GetCollection<Theme>("Theme");
+
+        var existing = await GetThemeAdminAsync(tenantId, theme.ThemeId);
+        if (existing != null)
+            throw new InvalidOperationException($"Theme with ID '{theme.ThemeId}' already exists for tenant '{tenantId}'");
+
+        theme.TenantId = tenantId;
+        theme.Id = theme.ThemeId;
+        theme.CreatedAt = DateTime.UtcNow;
+        theme.UpdatedAt = DateTime.UtcNow;
+
+        await themeCollection.InsertOneAsync(theme);
+        _logger.LogInformation("CreateThemeAsync - Theme created - ThemeId: {ThemeId}, TenantId: {TenantId}", theme.ThemeId, tenantId);
+
+        return theme;
+    }
+
+    // Admin: Update an existing theme
+    public async Task<Theme> UpdateThemeAsync(string tenantId, string themeId, Theme theme)
+    {
+        var themeCollection = _database.GetCollection<Theme>("Theme");
+
+        var filter = Builders<Theme>.Filter.And(
+            Builders<Theme>.Filter.Eq(t => t.TenantId, tenantId),
+            Builders<Theme>.Filter.Eq(t => t.ThemeId, themeId)
+        );
+        var existing = await themeCollection.Find(filter).FirstOrDefaultAsync();
+
+        if (existing == null)
+            throw new KeyNotFoundException($"Theme with ID '{themeId}' not found for tenant '{tenantId}'");
+
+        theme.ThemeId = themeId;
+        theme.TenantId = tenantId;
+        theme.Id = themeId;
+        theme.CreatedAt = existing.CreatedAt;
+        theme.UpdatedAt = DateTime.UtcNow;
+
+        await themeCollection.ReplaceOneAsync(filter, theme);
+        _logger.LogInformation("UpdateThemeAsync - Theme updated - ThemeId: {ThemeId}, TenantId: {TenantId}", themeId, tenantId);
+
+        return theme;
+    }
+
+    // Admin: Delete a theme
+    public async Task<bool> DeleteThemeAsync(string tenantId, string themeId)
+    {
+        var themeCollection = _database.GetCollection<Theme>("Theme");
+        var filter = Builders<Theme>.Filter.And(
+            Builders<Theme>.Filter.Eq(t => t.TenantId, tenantId),
+            Builders<Theme>.Filter.Eq(t => t.ThemeId, themeId)
+        );
+
+        var result = await themeCollection.DeleteOneAsync(filter);
+
+        if (result.DeletedCount > 0)
+        {
+            _logger.LogInformation("DeleteThemeAsync - Theme deleted - ThemeId: {ThemeId}, TenantId: {TenantId}", themeId, tenantId);
+            return true;
+        }
+
+        return false;
+    }
+
     public async Task<User?> GetUserByEmailAsync(string email)
     {
         var collection = _database.GetCollection<User>("User");
@@ -896,6 +1015,46 @@ public class MongoDataConnection : IDataConnection, IDisposable
     }
 
     public Task UpdateUserLastLoginAsync(string userId, string tenantId)
+    {
+        throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
+    }
+
+    public Task<Theme?> GetThemeAsync(string apiKey, string tenantId, string themeId)
+    {
+        throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
+    }
+
+    public Task<Theme?> GetActiveThemeAsync(string apiKey, string tenantId)
+    {
+        throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
+    }
+
+    public Task<Theme?> GetThemeAdminAsync(string tenantId, string themeId)
+    {
+        throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
+    }
+
+    public Task<Theme?> GetActiveThemeAdminAsync(string tenantId)
+    {
+        throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
+    }
+
+    public Task<List<Theme>> GetThemesByTenantAsync(string tenantId)
+    {
+        throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
+    }
+
+    public Task<Theme> CreateThemeAsync(string tenantId, Theme theme)
+    {
+        throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
+    }
+
+    public Task<Theme> UpdateThemeAsync(string tenantId, string themeId, Theme theme)
+    {
+        throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
+    }
+
+    public Task<bool> DeleteThemeAsync(string tenantId, string themeId)
     {
         throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
     }

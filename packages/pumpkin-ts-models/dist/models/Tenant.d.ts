@@ -27,6 +27,7 @@ export interface ApiKeyMeta {
  * Tenant settings and configuration
  */
 export interface TenantSettings {
+    /** References Theme.themeId for the active site theme. */
     theme: string;
     language: string;
     maxUsers: number;

@@ -398,4 +398,205 @@ public static class PumpkinManager
             return Results.Problem($"Error retrieving content hierarchy: {ex.Message}");
         }
     }
+
+    // ===== THEME METHODS (Content Serving - API Key) =====
+
+    public static async Task<IResult> GetThemeAsync(IDatabaseService databaseService, string apiKey, string tenantId, string themeId, ILogger? logger = null)
+    {
+        try
+        {
+            logger?.LogInformation("GetThemeAsync called - TenantId: {TenantId}, ThemeId: {ThemeId}", tenantId, themeId);
+
+            if (string.IsNullOrEmpty(apiKey))
+                return Results.BadRequest("API key is required");
+            if (string.IsNullOrEmpty(tenantId))
+                return Results.BadRequest("Tenant ID is required");
+            if (string.IsNullOrEmpty(themeId))
+                return Results.BadRequest("Theme ID is required");
+
+            var theme = await databaseService.GetThemeAsync(apiKey, tenantId, themeId);
+
+            if (theme == null)
+            {
+                logger?.LogWarning("GetThemeAsync - Theme not found or access denied - TenantId: {TenantId}, ThemeId: {ThemeId}", tenantId, themeId);
+                return Results.NotFound("Theme not found or access denied");
+            }
+
+            return Results.Ok(theme);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Results.Unauthorized();
+        }
+        catch (Exception ex)
+        {
+            logger?.LogError(ex, "GetThemeAsync - Error - TenantId: {TenantId}, ThemeId: {ThemeId}", tenantId, themeId);
+            return Results.Problem($"Error retrieving theme: {ex.Message}");
+        }
+    }
+
+    public static async Task<IResult> GetActiveThemeAsync(IDatabaseService databaseService, string apiKey, string tenantId, ILogger? logger = null)
+    {
+        try
+        {
+            logger?.LogInformation("GetActiveThemeAsync called - TenantId: {TenantId}", tenantId);
+
+            if (string.IsNullOrEmpty(apiKey))
+                return Results.BadRequest("API key is required");
+            if (string.IsNullOrEmpty(tenantId))
+                return Results.BadRequest("Tenant ID is required");
+
+            var theme = await databaseService.GetActiveThemeAsync(apiKey, tenantId);
+
+            if (theme == null)
+            {
+                logger?.LogWarning("GetActiveThemeAsync - No active theme - TenantId: {TenantId}", tenantId);
+                return Results.NotFound("No active theme found for this tenant");
+            }
+
+            return Results.Ok(theme);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Results.Unauthorized();
+        }
+        catch (Exception ex)
+        {
+            logger?.LogError(ex, "GetActiveThemeAsync - Error - TenantId: {TenantId}", tenantId);
+            return Results.Problem($"Error retrieving active theme: {ex.Message}");
+        }
+    }
+
+    // ===== THEME ADMIN METHODS (JWT Authentication) =====
+
+    public static async Task<IResult> GetThemeAdminAsync(IDatabaseService databaseService, string tenantId, string themeId)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(tenantId))
+                return Results.BadRequest("Tenant ID is required");
+            if (string.IsNullOrEmpty(themeId))
+                return Results.BadRequest("Theme ID is required");
+
+            var theme = await databaseService.GetThemeAdminAsync(tenantId, themeId);
+
+            if (theme == null)
+                return Results.NotFound("Theme not found");
+
+            return Results.Ok(theme);
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Error retrieving theme: {ex.Message}");
+        }
+    }
+
+    public static async Task<IResult> GetActiveThemeAdminAsync(IDatabaseService databaseService, string tenantId)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(tenantId))
+                return Results.BadRequest("Tenant ID is required");
+
+            var theme = await databaseService.GetActiveThemeAdminAsync(tenantId);
+
+            if (theme == null)
+                return Results.NotFound("No active theme found for this tenant");
+
+            return Results.Ok(theme);
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Error retrieving active theme: {ex.Message}");
+        }
+    }
+
+    public static async Task<IResult> GetThemesByTenantAsync(IDatabaseService databaseService, string tenantId)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(tenantId))
+                return Results.BadRequest("Tenant ID is required");
+
+            var themes = await databaseService.GetThemesByTenantAsync(tenantId);
+
+            return Results.Ok(new { themes, count = themes.Count, tenantId });
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Error retrieving themes: {ex.Message}");
+        }
+    }
+
+    public static async Task<IResult> CreateThemeAsync(IDatabaseService databaseService, string tenantId, Theme theme)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(tenantId))
+                return Results.BadRequest("Tenant ID is required");
+            if (theme == null)
+                return Results.BadRequest("Theme data is required");
+            if (string.IsNullOrEmpty(theme.ThemeId))
+                return Results.BadRequest("Theme ID is required");
+
+            var created = await databaseService.CreateThemeAsync(tenantId, theme);
+
+            return Results.Created($"/api/admin/themes/{tenantId}/{created.ThemeId}", created);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Results.Conflict(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Error creating theme: {ex.Message}");
+        }
+    }
+
+    public static async Task<IResult> UpdateThemeAsync(IDatabaseService databaseService, string tenantId, string themeId, Theme theme)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(tenantId))
+                return Results.BadRequest("Tenant ID is required");
+            if (string.IsNullOrEmpty(themeId))
+                return Results.BadRequest("Theme ID is required");
+            if (theme == null)
+                return Results.BadRequest("Theme data is required");
+
+            var updated = await databaseService.UpdateThemeAsync(tenantId, themeId, theme);
+
+            return Results.Ok(updated);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return Results.NotFound(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Error updating theme: {ex.Message}");
+        }
+    }
+
+    public static async Task<IResult> DeleteThemeAsync(IDatabaseService databaseService, string tenantId, string themeId)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(tenantId))
+                return Results.BadRequest("Tenant ID is required");
+            if (string.IsNullOrEmpty(themeId))
+                return Results.BadRequest("Theme ID is required");
+
+            var deleted = await databaseService.DeleteThemeAsync(tenantId, themeId);
+
+            if (deleted)
+                return Results.Ok(new { message = "Theme deleted successfully", tenantId, themeId });
+
+            return Results.NotFound("Theme not found");
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Error deleting theme: {ex.Message}");
+        }
+    }
 }

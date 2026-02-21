@@ -55,6 +55,7 @@ public class ApiKeyMeta
 
 public class TenantSettings
 {
+    /// <summary>References <see cref="Models.Theme.ThemeId"/> for the active site theme.</summary>
     [JsonPropertyName("theme")]
     public string Theme { get; set; } = string.Empty;
 

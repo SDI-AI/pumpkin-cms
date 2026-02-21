@@ -524,6 +524,31 @@ internal class TestDatabaseService : IDatabaseService, IDisposable
     public Task UpdateUserLastLoginAsync(string userId, string tenantId)
         => _connection.UpdateUserLastLoginAsync(userId, tenantId);
 
+    // Theme methods
+    public Task<Theme?> GetThemeAsync(string apiKey, string tenantId, string themeId)
+        => _connection.GetThemeAsync(apiKey, tenantId, themeId);
+
+    public Task<Theme?> GetActiveThemeAsync(string apiKey, string tenantId)
+        => _connection.GetActiveThemeAsync(apiKey, tenantId);
+
+    public Task<Theme?> GetThemeAdminAsync(string tenantId, string themeId)
+        => _connection.GetThemeAdminAsync(tenantId, themeId);
+
+    public Task<Theme?> GetActiveThemeAdminAsync(string tenantId)
+        => _connection.GetActiveThemeAdminAsync(tenantId);
+
+    public Task<List<Theme>> GetThemesByTenantAsync(string tenantId)
+        => _connection.GetThemesByTenantAsync(tenantId);
+
+    public Task<Theme> CreateThemeAsync(string tenantId, Theme theme)
+        => _connection.CreateThemeAsync(tenantId, theme);
+
+    public Task<Theme> UpdateThemeAsync(string tenantId, string themeId, Theme theme)
+        => _connection.UpdateThemeAsync(tenantId, themeId, theme);
+
+    public Task<bool> DeleteThemeAsync(string tenantId, string themeId)
+        => _connection.DeleteThemeAsync(tenantId, themeId);
+
     public void Dispose()
     {
         if (_connection is IDisposable disposable)

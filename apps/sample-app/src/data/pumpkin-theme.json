@@ -1,0 +1,363 @@
+{
+  "id": "pumpkin-default",
+  "themeId": "pumpkin-default",
+  "tenantId": "pumpkin",
+  "name": "Pumpkin Default",
+  "description": "The default Pumpkin CMS branded theme with pumpkin/bark/vine colour scales, sticky header, four-column footer, and full block-style overrides for all 14 block types.",
+  "isActive": true,
+
+  "header": {
+    "logoUrl": "🎃",
+    "logoAlt": "Pumpkin CMS logo",
+    "sticky": true,
+    "ctaText": "Get Started",
+    "ctaUrl": "#contact",
+    "ctaTarget": "_self",
+    "classNames": {
+      "root": "sticky top-0 z-50 w-full border-b border-neutral-200 bg-white/80 backdrop-blur-md",
+      "container": "max-w-6xl mx-auto px-8 flex items-center justify-between h-16",
+      "logoWrapper": "flex items-center gap-2.5 group",
+      "logoIcon": "text-2xl",
+      "logoText": "text-lg font-extrabold text-neutral-900 tracking-tight group-hover:text-pumpkin-600 transition-colors",
+      "nav": "hidden md:flex items-center gap-8 text-sm font-medium text-neutral-600",
+      "navLink": "hover:text-pumpkin-600 transition-colors",
+      "ctaButton": "hidden md:inline-flex items-center gap-2 px-5 py-2 bg-pumpkin-500 text-white text-sm font-bold rounded-full hover:bg-pumpkin-600 transition-all shadow-sm"
+    }
+  },
+
+  "footer": {
+    "copyright": "© {year} Pumpkin CMS. MIT License.",
+    "description": "An open-source, API-first content management system built for modern web teams.",
+    "classNames": {
+      "root": "w-full border-t border-neutral-200 bg-neutral-50",
+      "container": "max-w-6xl mx-auto px-8 py-12 grid grid-cols-1 md:grid-cols-4 gap-8",
+      "brandSection": "md:col-span-2",
+      "brandLogoWrapper": "flex items-center gap-2",
+      "brandLogoIcon": "text-2xl",
+      "brandLogoText": "text-lg font-extrabold text-neutral-900",
+      "brandDescription": "text-sm text-neutral-500 mt-2 max-w-sm",
+      "columnTitle": "text-xs font-bold uppercase tracking-widest text-neutral-400 mb-3",
+      "columnList": "space-y-2 text-sm text-neutral-600",
+      "columnLink": "hover:text-pumpkin-600 transition-colors",
+      "bottomBar": "border-t border-neutral-200",
+      "bottomBarInner": "max-w-6xl mx-auto px-8 py-4 flex items-center justify-between text-xs text-neutral-400",
+      "builtWith": "underline hover:text-pumpkin-600 transition-colors"
+    }
+  },
+
+  "blockStyles": {
+    "Hero": {
+      "root": "relative w-full min-h-[480px] flex items-center bg-gradient-to-br from-pumpkin-900 via-pumpkin-700 to-pumpkin-500 overflow-hidden",
+      "overlay": "absolute inset-0 bg-black/20",
+      "container": "relative z-10 max-w-6xl mx-auto px-8 py-20 grid grid-cols-1 md:grid-cols-2 gap-12 items-center",
+      "headline": "text-4xl md:text-5xl lg:text-6xl font-extrabold text-white leading-tight tracking-tight",
+      "subheadline": "text-lg md:text-xl text-pumpkin-100 mt-4 max-w-xl leading-relaxed",
+      "mainImage": "mt-8 md:mt-0 rounded-2xl shadow-2xl max-w-full h-auto border-4 border-white/10",
+      "button": "inline-flex items-center mt-8 px-8 py-3.5 bg-white text-pumpkin-700 font-bold rounded-full hover:bg-pumpkin-50 transition-all shadow-lg hover:shadow-xl"
+    },
+    "PrimaryCTA": {
+      "root": "relative w-full bg-gradient-to-r from-pumpkin-600 to-pumpkin-500 overflow-hidden",
+      "overlay": "absolute inset-0 bg-neutral-900/10",
+      "container": "relative z-10 max-w-5xl mx-auto px-8 py-20 flex flex-col md:flex-row items-center gap-12",
+      "textWrapper": "flex-1 text-center md:text-left",
+      "title": "text-3xl md:text-4xl font-extrabold text-white tracking-tight",
+      "description": "text-lg text-white/90 mt-4 max-w-lg",
+      "button": "inline-flex items-center mt-8 px-8 py-3.5 bg-white text-pumpkin-700 font-bold rounded-full hover:bg-pumpkin-50 transition-all shadow-lg",
+      "secondaryWrapper": "mt-4 text-sm text-white/80",
+      "secondaryLink": "underline decoration-white/40 hover:decoration-white hover:text-white transition-all",
+      "mainImage": "flex-shrink-0 rounded-2xl shadow-2xl max-w-xs h-auto"
+    },
+    "SecondaryCTA": {
+      "root": "w-full bg-bark-50 py-16 border-y border-bark-200",
+      "container": "max-w-3xl mx-auto px-8 text-center",
+      "title": "text-2xl md:text-3xl font-bold text-bark-900",
+      "description": "text-base text-bark-600 mt-3 max-w-xl mx-auto",
+      "button": "inline-flex items-center mt-8 px-8 py-3 bg-pumpkin-500 text-white font-bold rounded-full hover:bg-pumpkin-600 transition-all shadow-md hover:shadow-lg"
+    },
+    "CardGrid": {
+      "root": "w-full py-20 bg-white",
+      "container": "max-w-6xl mx-auto px-8",
+      "header": "text-center mb-14",
+      "title": "text-3xl md:text-4xl font-extrabold text-neutral-900 tracking-tight",
+      "subtitle": "text-lg text-neutral-500 mt-3 max-w-2xl mx-auto",
+      "grid": "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8",
+      "card": "bg-white rounded-2xl border border-neutral-200 p-6 hover:border-pumpkin-300 hover:shadow-lg transition-all duration-200 group",
+      "cardImage": "w-full h-48 object-cover rounded-xl",
+      "cardBody": "mt-4",
+      "cardIcon": "text-3xl mb-3 group-hover:scale-110 transition-transform",
+      "cardTitle": "text-lg font-bold text-neutral-900",
+      "cardDescription": "text-sm text-neutral-600 mt-2 leading-relaxed",
+      "cardLink": "inline-flex items-center mt-4 text-sm font-semibold text-pumpkin-600 hover:text-pumpkin-700 transition-colors"
+    },
+    "FAQ": {
+      "root": "w-full py-20 bg-pumpkin-50/30",
+      "container": "max-w-3xl mx-auto px-8",
+      "header": "text-center mb-12",
+      "title": "text-3xl md:text-4xl font-extrabold text-neutral-900 tracking-tight",
+      "subtitle": "text-lg text-neutral-500 mt-3",
+      "list": "space-y-3",
+      "item": "border border-neutral-200 rounded-xl overflow-hidden bg-white shadow-sm",
+      "question": "w-full flex items-center justify-between px-6 py-5 text-left font-semibold text-neutral-900 hover:bg-pumpkin-50/50 transition-colors cursor-pointer",
+      "questionIcon": "ml-4 text-pumpkin-400 shrink-0 transition-transform",
+      "answer": "px-6 pb-5 text-sm text-neutral-600 leading-relaxed"
+    },
+    "Breadcrumbs": {
+      "root": "w-full py-3 bg-neutral-50 border-b border-neutral-200",
+      "container": "max-w-6xl mx-auto px-8",
+      "list": "flex items-center flex-wrap gap-1 text-sm",
+      "item": "text-neutral-500 hover:text-pumpkin-600 transition-colors",
+      "itemCurrent": "text-pumpkin-700 font-semibold",
+      "separator": "text-neutral-300 mx-1.5",
+      "link": "hover:underline decoration-pumpkin-300"
+    },
+    "TrustBar": {
+      "root": "w-full py-10 bg-white border-y border-neutral-100",
+      "container": "max-w-6xl mx-auto px-8",
+      "grid": "grid grid-cols-2 md:grid-cols-4 gap-8",
+      "item": "flex flex-col items-center text-center group",
+      "icon": "w-12 h-12 mb-3 text-4xl group-hover:scale-110 transition-transform",
+      "itemTitle": "text-sm font-bold text-neutral-900",
+      "itemText": "text-xs text-neutral-500 mt-1"
+    },
+    "HowItWorks": {
+      "root": "w-full py-20 bg-white",
+      "container": "max-w-5xl mx-auto px-8",
+      "title": "text-3xl md:text-4xl font-extrabold text-neutral-900 text-center mb-14 tracking-tight",
+      "steps": "grid grid-cols-1 md:grid-cols-3 gap-10",
+      "step": "flex flex-col items-center text-center",
+      "stepImage": "w-24 h-24 rounded-full object-cover mb-5 border-4 border-pumpkin-200",
+      "stepNumber": "w-10 h-10 rounded-full bg-pumpkin-500 text-white text-base font-bold flex items-center justify-center mb-4 shadow-md",
+      "stepTitle": "text-lg font-bold text-neutral-900",
+      "stepText": "text-sm text-neutral-600 mt-2 leading-relaxed max-w-xs"
+    },
+    "ServiceAreaMap": {
+      "root": "w-full py-20 bg-neutral-50",
+      "container": "max-w-5xl mx-auto px-8",
+      "header": "text-center mb-10",
+      "title": "text-3xl md:text-4xl font-extrabold text-neutral-900 tracking-tight",
+      "subtitle": "text-lg text-neutral-500 mt-3",
+      "mapWrapper": "w-full rounded-2xl overflow-hidden shadow-lg border border-neutral-200",
+      "mapIframe": "w-full h-80 md:h-[450px] border-0",
+      "lists": "mt-10 grid grid-cols-1 md:grid-cols-3 gap-8",
+      "listSection": "",
+      "listTitle": "text-xs font-bold uppercase tracking-widest text-pumpkin-600 mb-3",
+      "listItems": "flex flex-wrap gap-2",
+      "listItem": "text-sm bg-white text-neutral-700 px-4 py-1.5 rounded-full border border-neutral-200 shadow-sm hover:border-pumpkin-300 transition-colors"
+    },
+    "LocalProTips": {
+      "root": "w-full py-20 bg-white",
+      "container": "max-w-5xl mx-auto px-8",
+      "title": "text-3xl md:text-4xl font-extrabold text-neutral-900 text-center mb-14 tracking-tight",
+      "grid": "grid grid-cols-1 md:grid-cols-2 gap-8",
+      "item": "bg-white rounded-2xl border border-neutral-200 p-6 flex gap-5 hover:border-pumpkin-300 hover:shadow-md transition-all",
+      "itemImage": "w-16 h-16 rounded-xl object-cover shrink-0",
+      "itemIcon": "text-3xl shrink-0",
+      "itemBody": "flex-1",
+      "itemTitle": "text-base font-bold text-neutral-900",
+      "itemText": "text-sm text-neutral-600 mt-1 leading-relaxed"
+    },
+    "Gallery": {
+      "root": "w-full py-20 bg-neutral-50",
+      "container": "max-w-6xl mx-auto px-8",
+      "header": "text-center mb-14",
+      "title": "text-3xl md:text-4xl font-extrabold text-neutral-900 tracking-tight",
+      "subtitle": "text-lg text-neutral-500 mt-3",
+      "grid": "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5",
+      "imageWrapper": "relative rounded-2xl overflow-hidden shadow-md group cursor-pointer border border-neutral-200 hover:border-pumpkin-300 transition-colors",
+      "image": "w-full h-52 object-cover group-hover:scale-105 transition-transform duration-300",
+      "caption": "absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 to-transparent px-4 py-3 text-sm text-white opacity-0 group-hover:opacity-100 transition-opacity"
+    },
+    "Testimonials": {
+      "root": "w-full py-20 bg-pumpkin-50/30",
+      "container": "max-w-5xl mx-auto px-8",
+      "header": "text-center mb-14",
+      "title": "text-3xl md:text-4xl font-extrabold text-neutral-900 tracking-tight",
+      "subtitle": "text-lg text-neutral-500 mt-3",
+      "grid": "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8",
+      "card": "bg-white rounded-2xl border border-neutral-200 p-8 shadow-sm hover:shadow-md transition-shadow",
+      "quote": "text-sm text-neutral-700 italic leading-relaxed",
+      "stars": "flex gap-0.5 mt-4",
+      "star": "w-5 h-5 text-pumpkin-400",
+      "starEmpty": "w-5 h-5 text-neutral-200",
+      "author": "mt-5 text-sm font-bold text-neutral-900",
+      "eventType": "text-xs text-pumpkin-600 font-medium"
+    },
+    "Contact": {
+      "root": "w-full py-20 bg-white",
+      "container": "max-w-5xl mx-auto px-8 grid grid-cols-1 md:grid-cols-2 gap-14",
+      "infoSection": "space-y-6",
+      "title": "text-3xl md:text-4xl font-extrabold text-neutral-900 tracking-tight",
+      "subtitle": "text-lg text-neutral-500",
+      "infoItem": "flex items-start gap-3",
+      "infoLabel": "text-sm font-bold text-neutral-900",
+      "infoValue": "text-sm text-neutral-600",
+      "socialLinks": "flex gap-3 mt-6",
+      "socialLink": "w-10 h-10 rounded-full bg-neutral-100 flex items-center justify-center text-neutral-600 hover:bg-pumpkin-500 hover:text-white transition-all",
+      "form": "space-y-5",
+      "fieldWrapper": "",
+      "fieldLabel": "block text-sm font-semibold text-neutral-700 mb-1.5",
+      "fieldInput": "w-full px-4 py-2.5 text-sm border border-neutral-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-pumpkin-400 focus:border-pumpkin-400 transition-all",
+      "fieldTextarea": "w-full px-4 py-2.5 text-sm border border-neutral-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-pumpkin-400 focus:border-pumpkin-400 transition-all min-h-[120px] resize-y",
+      "submitButton": "w-full px-8 py-3 bg-pumpkin-500 text-white font-bold rounded-full hover:bg-pumpkin-600 transition-all shadow-md hover:shadow-lg"
+    },
+    "Blog": {
+      "root": "w-full py-20 bg-white",
+      "container": "max-w-3xl mx-auto px-8",
+      "featuredImage": "w-full rounded-2xl shadow-lg mb-10 object-cover max-h-[420px]",
+      "header": "mb-10",
+      "title": "text-3xl md:text-4xl font-extrabold text-neutral-900 leading-tight tracking-tight",
+      "subtitle": "text-lg text-neutral-500 mt-3",
+      "meta": "flex flex-wrap items-center gap-4 mt-5 text-sm text-neutral-500",
+      "authorWrapper": "flex items-center gap-2",
+      "authorImage": "w-9 h-9 rounded-full object-cover border-2 border-pumpkin-200",
+      "authorName": "font-semibold text-neutral-800",
+      "date": "",
+      "readingTime": "text-pumpkin-600 font-medium",
+      "tags": "flex flex-wrap gap-2 mt-5",
+      "tag": "text-xs bg-pumpkin-100 text-pumpkin-700 px-3 py-1 rounded-full font-medium",
+      "body": "prose prose-neutral max-w-none",
+      "relatedSection": "mt-16 pt-10 border-t border-neutral-200",
+      "relatedTitle": "text-xl font-extrabold text-neutral-900 mb-8",
+      "relatedGrid": "grid grid-cols-1 sm:grid-cols-2 gap-8",
+      "relatedCard": "bg-white rounded-2xl border border-neutral-200 overflow-hidden hover:border-pumpkin-300 hover:shadow-md transition-all",
+      "relatedCardImage": "w-full h-40 object-cover",
+      "relatedCardBody": "p-5",
+      "relatedCardTitle": "text-sm font-bold text-neutral-900",
+      "relatedCardExcerpt": "text-xs text-neutral-500 mt-1.5 line-clamp-2"
+    }
+  },
+
+  "menu": [
+    {
+      "label": "Features",
+      "url": "#features",
+      "target": "_self",
+      "icon": "",
+      "order": 1,
+      "isVisible": true,
+      "children": []
+    },
+    {
+      "label": "How It Works",
+      "url": "#how-it-works",
+      "target": "_self",
+      "icon": "",
+      "order": 2,
+      "isVisible": true,
+      "children": []
+    },
+    {
+      "label": "FAQ",
+      "url": "#faq",
+      "target": "_self",
+      "icon": "",
+      "order": 3,
+      "isVisible": true,
+      "children": []
+    },
+    {
+      "label": "Blog",
+      "url": "#blog",
+      "target": "_self",
+      "icon": "",
+      "order": 4,
+      "isVisible": true,
+      "children": []
+    },
+    {
+      "label": "Contact",
+      "url": "#contact",
+      "target": "_self",
+      "icon": "",
+      "order": 5,
+      "isVisible": true,
+      "children": []
+    },
+    {
+      "label": "Star on GitHub",
+      "url": "https://github.com/pumpkin-cms/pumpkin",
+      "target": "_blank",
+      "icon": "github",
+      "order": 6,
+      "isVisible": true,
+      "children": []
+    },
+    {
+      "label": "Resources",
+      "url": "#",
+      "target": "_self",
+      "icon": "",
+      "order": 7,
+      "isVisible": true,
+      "children": [
+        {
+          "label": "GitHub",
+          "url": "https://github.com/pumpkin-cms/pumpkin",
+          "target": "_blank",
+          "icon": "github",
+          "order": 1,
+          "isVisible": true,
+          "children": []
+        },
+        {
+          "label": "Documentation",
+          "url": "/docs",
+          "target": "_self",
+          "icon": "",
+          "order": 2,
+          "isVisible": true,
+          "children": []
+        },
+        {
+          "label": "Blog",
+          "url": "/blog",
+          "target": "_self",
+          "icon": "",
+          "order": 3,
+          "isVisible": true,
+          "children": []
+        }
+      ]
+    },
+    {
+      "label": "Community",
+      "url": "#",
+      "target": "_self",
+      "icon": "",
+      "order": 8,
+      "isVisible": true,
+      "children": [
+        {
+          "label": "Discord",
+          "url": "https://discord.gg/pumpkincms",
+          "target": "_blank",
+          "icon": "discord",
+          "order": 1,
+          "isVisible": true,
+          "children": []
+        },
+        {
+          "label": "Twitter",
+          "url": "https://twitter.com/pumpkincms",
+          "target": "_blank",
+          "icon": "twitter",
+          "order": 2,
+          "isVisible": true,
+          "children": []
+        },
+        {
+          "label": "Contributing",
+          "url": "https://github.com/pumpkin-cms/pumpkin/blob/main/CONTRIBUTING.md",
+          "target": "_blank",
+          "icon": "",
+          "order": 3,
+          "isVisible": true,
+          "children": []
+        }
+      ]
+    }
+  ],
+
+  "createdAt": "2026-02-21T00:00:00Z",
+  "updatedAt": "2026-02-21T00:00:00Z"
+}

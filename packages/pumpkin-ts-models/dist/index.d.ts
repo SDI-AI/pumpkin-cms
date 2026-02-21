@@ -13,6 +13,7 @@ export type { GalleryImage, GalleryContent, GalleryBlock, TestimonialItem, Testi
 export type { RelatedPost, BlogContent, BlogBlock } from './models/BlogBlocks';
 export type { HtmlBlock } from './models/HtmlBlockTypes';
 export { BLOCK_TYPE_MAP, SUPPORTED_BLOCK_TYPES, isBlockOfType, isHtmlBlock, createGenericBlock } from './models/HtmlBlockTypes';
+export type { Theme, ThemeHeader, ThemeFooter, BlockStyleMap, MenuItem } from './models/Theme';
 export { PageJsonConverter } from './PageJsonConverter';
 export type { JsonConverterOptions } from './PageJsonConverter';
 //# sourceMappingURL=index.d.ts.map

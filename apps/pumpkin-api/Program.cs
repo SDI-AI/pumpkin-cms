@@ -273,6 +273,46 @@ app.MapGet("/api/tenant/{tenantId}/sitemap",
     .WithDescription("Returns a list of all published page slugs where isPublished=true and includeInSitemap=true. Useful for generating XML sitemaps. Requires API key authentication via Authorization header (Bearer {apiKey})")
     .RequireCors("TenantCors");
 
+// ===== CONTENT SERVING: THEME ENDPOINTS =====
+
+// Get the active theme for a tenant (public, API key required)
+app.MapGet("/api/themes/{tenantId}",
+    async (IDatabaseService databaseService, string tenantId, HttpContext context, ILogger<Program> logger) =>
+    {
+        var authHeader = context.Request.Headers.Authorization.FirstOrDefault();
+        var apiKey = string.Empty;
+        if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+        {
+            apiKey = authHeader.Substring("Bearer ".Length).Trim();
+        }
+
+        return await PumpkinManager.GetActiveThemeAsync(databaseService, apiKey, tenantId, logger);
+    })
+    .WithTags("Themes")
+    .WithName("GetActiveTheme")
+    .WithSummary("Get the active theme for a tenant")
+    .WithDescription("Retrieves the active theme including header blocks, footer blocks, block styles, and navigation menu. Requires API key authentication via Authorization header (Bearer {apiKey})")
+    .RequireCors("TenantCors");
+
+// Get a specific theme by ID (public, API key required)
+app.MapGet("/api/themes/{tenantId}/{themeId}",
+    async (IDatabaseService databaseService, string tenantId, string themeId, HttpContext context, ILogger<Program> logger) =>
+    {
+        var authHeader = context.Request.Headers.Authorization.FirstOrDefault();
+        var apiKey = string.Empty;
+        if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+        {
+            apiKey = authHeader.Substring("Bearer ".Length).Trim();
+        }
+
+        return await PumpkinManager.GetThemeAsync(databaseService, apiKey, tenantId, themeId, logger);
+    })
+    .WithTags("Themes")
+    .WithName("GetTheme")
+    .WithSummary("Get a specific theme by ID")
+    .WithDescription("Retrieves a specific theme by its ID for a tenant. Requires API key authentication via Authorization header (Bearer {apiKey})")
+    .RequireCors("TenantCors");
+
 // ===== AUTHENTICATION ENDPOINTS =====
 
 // Login endpoint
@@ -944,5 +984,151 @@ app.MapGet("/api/admin/tenants/{tenantId}/content-hierarchy",
     .WithName("GetContentHierarchy")
     .WithSummary("Get complete content hierarchy visualization")
     .WithDescription("Retrieves a comprehensive view of the content architecture including hubs, spokes, clusters, and orphan pages. Perfect for visualizing internal linking structure. Requires JWT authentication via Bearer token.");
+
+// ===== ADMIN: THEME ENDPOINTS =====
+
+// Admin: Get all themes for a tenant
+app.MapGet("/api/admin/themes/{tenantId}",
+    async (IDatabaseService databaseService, string tenantId, HttpContext context) =>
+    {
+        if (context.User?.Identity?.IsAuthenticated != true)
+            return Results.Unauthorized();
+
+        var userTenantId = context.User.FindFirst("tenantId")?.Value;
+        var userRole = context.User.FindFirst(ClaimTypes.Role)?.Value;
+
+        if (string.IsNullOrEmpty(userTenantId))
+            return Results.BadRequest("User tenant ID not found in token");
+
+        if (tenantId != userTenantId && userRole != "SuperAdmin")
+            return Results.Forbid();
+
+        return await PumpkinManager.GetThemesByTenantAsync(databaseService, tenantId);
+    })
+    .RequireAuthorization()
+    .WithTags("Admin - Themes")
+    .WithName("GetThemesByTenant")
+    .WithSummary("Get all themes for a tenant")
+    .WithDescription("Retrieves all themes for a specific tenant. Requires JWT authentication.");
+
+// Admin: Get the active theme for a tenant
+app.MapGet("/api/admin/themes/{tenantId}/active",
+    async (IDatabaseService databaseService, string tenantId, HttpContext context) =>
+    {
+        if (context.User?.Identity?.IsAuthenticated != true)
+            return Results.Unauthorized();
+
+        var userTenantId = context.User.FindFirst("tenantId")?.Value;
+        var userRole = context.User.FindFirst(ClaimTypes.Role)?.Value;
+
+        if (string.IsNullOrEmpty(userTenantId))
+            return Results.BadRequest("User tenant ID not found in token");
+
+        if (tenantId != userTenantId && userRole != "SuperAdmin")
+            return Results.Forbid();
+
+        return await PumpkinManager.GetActiveThemeAdminAsync(databaseService, tenantId);
+    })
+    .RequireAuthorization()
+    .WithTags("Admin - Themes")
+    .WithName("GetActiveThemeAdmin")
+    .WithSummary("Get the active theme for a tenant (admin)")
+    .WithDescription("Retrieves the active theme for a tenant. Requires JWT authentication.");
+
+// Admin: Get a specific theme by ID
+app.MapGet("/api/admin/themes/{tenantId}/{themeId}",
+    async (IDatabaseService databaseService, string tenantId, string themeId, HttpContext context) =>
+    {
+        if (context.User?.Identity?.IsAuthenticated != true)
+            return Results.Unauthorized();
+
+        var userTenantId = context.User.FindFirst("tenantId")?.Value;
+        var userRole = context.User.FindFirst(ClaimTypes.Role)?.Value;
+
+        if (string.IsNullOrEmpty(userTenantId))
+            return Results.BadRequest("User tenant ID not found in token");
+
+        if (tenantId != userTenantId && userRole != "SuperAdmin")
+            return Results.Forbid();
+
+        return await PumpkinManager.GetThemeAdminAsync(databaseService, tenantId, themeId);
+    })
+    .RequireAuthorization()
+    .WithTags("Admin - Themes")
+    .WithName("GetThemeAdmin")
+    .WithSummary("Get a specific theme by ID (admin)")
+    .WithDescription("Retrieves a specific theme by its ID. Returns full theme including header, footer, block styles, and menu. Requires JWT authentication.");
+
+// Admin: Create a new theme
+app.MapPost("/api/admin/themes/{tenantId}",
+    async (IDatabaseService databaseService, string tenantId, Theme theme, HttpContext context) =>
+    {
+        if (context.User?.Identity?.IsAuthenticated != true)
+            return Results.Unauthorized();
+
+        var userTenantId = context.User.FindFirst("tenantId")?.Value;
+        var userRole = context.User.FindFirst(ClaimTypes.Role)?.Value;
+
+        if (string.IsNullOrEmpty(userTenantId))
+            return Results.BadRequest("User tenant ID not found in token");
+
+        if (tenantId != userTenantId && userRole != "SuperAdmin")
+            return Results.Forbid();
+
+        return await PumpkinManager.CreateThemeAsync(databaseService, tenantId, theme);
+    })
+    .RequireAuthorization()
+    .WithTags("Admin - Themes")
+    .WithName("CreateTheme")
+    .WithSummary("Create a new theme")
+    .WithDescription("Creates a new theme for a specific tenant. Requires JWT authentication.");
+
+// Admin: Update an existing theme
+app.MapPut("/api/admin/themes/{tenantId}/{themeId}",
+    async (IDatabaseService databaseService, string tenantId, string themeId, Theme theme, HttpContext context) =>
+    {
+        if (context.User?.Identity?.IsAuthenticated != true)
+            return Results.Unauthorized();
+
+        var userTenantId = context.User.FindFirst("tenantId")?.Value;
+        var userRole = context.User.FindFirst(ClaimTypes.Role)?.Value;
+
+        if (string.IsNullOrEmpty(userTenantId))
+            return Results.BadRequest("User tenant ID not found in token");
+
+        if (tenantId != userTenantId && userRole != "SuperAdmin")
+            return Results.Forbid();
+
+        return await PumpkinManager.UpdateThemeAsync(databaseService, tenantId, themeId, theme);
+    })
+    .RequireAuthorization()
+    .WithTags("Admin - Themes")
+    .WithName("UpdateTheme")
+    .WithSummary("Update an existing theme")
+    .WithDescription("Updates a theme by ID for a specific tenant. Requires JWT authentication.");
+
+// Admin: Delete a theme
+app.MapDelete("/api/admin/themes/{tenantId}/{themeId}",
+    async (IDatabaseService databaseService, string tenantId, string themeId, HttpContext context) =>
+    {
+        if (context.User?.Identity?.IsAuthenticated != true)
+            return Results.Unauthorized();
+
+        var userTenantId = context.User.FindFirst("tenantId")?.Value;
+        var userRole = context.User.FindFirst(ClaimTypes.Role)?.Value;
+
+        if (string.IsNullOrEmpty(userTenantId))
+            return Results.BadRequest("User tenant ID not found in token");
+
+        if (tenantId != userTenantId && userRole != "SuperAdmin")
+            return Results.Forbid();
+
+        return await PumpkinManager.DeleteThemeAsync(databaseService, tenantId, themeId);
+    })
+    .RequireAuthorization()
+    .WithTags("Admin - Themes")
+    .WithName("DeleteTheme")
+    .WithSummary("Delete a theme")
+    .WithDescription("Deletes a theme by ID for a specific tenant. Requires JWT authentication.");
 
 app.Run();
