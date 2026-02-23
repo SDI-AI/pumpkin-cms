@@ -8,6 +8,9 @@ obj/
 .vscode/
 *.code-workspace
 
+# Private folder
+private/
+
 # User-specific files
 *.suo
 *.user
