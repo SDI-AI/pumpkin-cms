@@ -25,7 +25,7 @@ builder.Services.AddSwaggerGen(options =>
     options.SwaggerDoc("v1", new OpenApiInfo
     {
         Title = "Pumpkin CMS API",
-        Version = "v0.2",
+        Version = "v1",
         Description = "A flexible, headless CMS API for managing pages, forms, and content with multi-tenant support",
         Contact = new OpenApiContact
         {

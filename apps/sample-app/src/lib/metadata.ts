@@ -31,9 +31,8 @@ export function buildMetadata(page: Page): Metadata {
     openGraph: buildOpenGraph(seo.openGraph, seo),
     twitter: buildTwitter(seo.twitterCard),
 
-    other: seo.structuredData
-      ? { 'script:ld+json': seo.structuredData }
-      : undefined,
+    // Note: structuredData is now an array and should be rendered using the
+    // <StructuredData> component in your page/layout, not via metadata.other
   };
 }
 

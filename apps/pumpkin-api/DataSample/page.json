@@ -516,7 +516,9 @@
                 "href": "https://pumpkincms.dev/pa/philadelphia/pumpkin-cms"
             }
         ],
-        "structuredData": "{\"@context\":\"https://schema.org\",\"@type\":\"SoftwareApplication\",\"name\":\"Pumpkin CMS\",\"applicationCategory\":\"DeveloperApplication\",\"operatingSystem\":\"Web\",\"offers\":{\"@type\":\"Offer\",\"price\":\"0\",\"priceCurrency\":\"USD\"},\"aggregateRating\":{\"@type\":\"AggregateRating\",\"ratingValue\":\"4.8\",\"ratingCount\":\"127\"},\"description\":\"Open-source headless CMS for modern web development\"}",
+        "structuredData": [
+            "{\"@context\":\"https://schema.org\",\"@type\":\"SoftwareApplication\",\"name\":\"Pumpkin CMS\",\"applicationCategory\":\"DeveloperApplication\",\"operatingSystem\":\"Web\",\"offers\":{\"@type\":\"Offer\",\"price\":\"0\",\"priceCurrency\":\"USD\"},\"aggregateRating\":{\"@type\":\"AggregateRating\",\"ratingValue\":\"4.8\",\"ratingCount\":\"127\"},\"description\":\"Open-source headless CMS for modern web development\"}"
+        ],
         "openGraph": {
             "og:title": "Pumpkin CMS | Open-Source Headless CMS – Philadelphia",
             "og:description": "Fast, free, developer-first headless CMS. Perfect for Philly agencies, startups, and enterprises.",

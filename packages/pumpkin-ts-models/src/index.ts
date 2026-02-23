@@ -47,7 +47,9 @@ export type {
   SeoData,
   AlternateUrl,
   OpenGraphData,
-  TwitterCardData
+  TwitterCardData,
+  ContentRelationships,
+  NodePosition
 } from './models/Page';
 
 // Hero blocks

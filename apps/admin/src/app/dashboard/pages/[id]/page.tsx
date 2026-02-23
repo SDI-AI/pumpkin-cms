@@ -7,6 +7,7 @@ import { apiClient } from '@/lib/api'
 import { Page } from 'pumpkin-ts-models'
 import type { IHtmlBlock } from 'pumpkin-ts-models'
 import { ContentBlocksEditor } from '@/components/blocks'
+import { StructuredDataModal } from '@/components/StructuredDataModal'
 
 export default function PageEditorPage() {
   const params = useParams()
@@ -67,7 +68,7 @@ export default function PageEditorPage() {
       robots: 'index, follow',
       canonicalUrl: '',
       alternateUrls: [],
-      structuredData: '',
+      structuredData: [],
       openGraph: {
         'og:title': '',
         'og:description': '',
@@ -104,6 +105,13 @@ export default function PageEditorPage() {
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  
+  // Structured data modal state
+  const [structuredDataModal, setStructuredDataModal] = useState({
+    isOpen: false,
+    index: -1,
+    value: ''
+  })
 
   // Load page data when editing existing page
   useEffect(() => {
@@ -147,6 +155,16 @@ export default function PageEditorPage() {
       
       // Update timestamps
       newData.MetaData.updatedAt = new Date().toISOString()
+      
+      // If toggling isPublished, update publishedAt timestamp
+      if (path === 'isPublished') {
+        if (value === true && !newData.publishedAt) {
+          newData.publishedAt = new Date().toISOString()
+        } else if (value === false) {
+          // Keep the original published date when unpublishing
+          // User can see when it was last published
+        }
+      }
       
       return newData
     })
@@ -240,18 +258,25 @@ export default function PageEditorPage() {
           </div>
         </div>
         <div className="flex items-center space-x-3">
-          <button
-            type="button"
-            onClick={() => updateField('isPublished', !formData.isPublished)}
-            className={`px-4 py-2 rounded-md text-sm font-medium ${
-              formData.isPublished
-                ? 'bg-green-100 text-green-800'
-                : 'bg-yellow-100 text-yellow-800'
-            }`}
-            disabled={loading || saving}
-          >
-            {formData.isPublished ? 'Published' : 'Draft'}
-          </button>
+          <div className="text-right">
+            <button
+              type="button"
+              onClick={() => updateField('isPublished', !formData.isPublished)}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                formData.isPublished
+                  ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                  : 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
+              }`}
+              disabled={loading || saving}
+            >
+              {formData.isPublished ? '✓ Published' : '○ Draft'}
+            </button>
+            {formData.publishedAt && (
+              <p className="text-xs text-neutral-500 mt-1">
+                Published: {new Date(formData.publishedAt).toLocaleDateString()}
+              </p>
+            )}
+          </div>
           <button
             type="button"
             onClick={handleSubmit}
@@ -762,6 +787,90 @@ export default function PageEditorPage() {
                       />
                     </div>
                   </div>
+
+                  {/* Structured Data */}
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <h3 className="text-sm font-medium text-neutral-900">Structured Data (Schema.org JSON-LD)</h3>
+                        <p className="text-xs text-neutral-500 mt-0.5">Add multiple schema.org markup entries for enhanced search results</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setStructuredDataModal({ isOpen: true, index: -1, value: '' })}
+                        className="text-xs px-3 py-1.5 bg-primary-600 hover:bg-primary-700 text-white rounded font-medium"
+                      >
+                        + Add Schema
+                      </button>
+                    </div>
+
+                    {/* List of structured data entries */}
+                    {formData.seo.structuredData.length === 0 ? (
+                      <div className="text-center py-8 px-4 bg-neutral-50 rounded-lg border-2 border-dashed border-neutral-300">
+                        <svg className="w-12 h-12 mx-auto text-neutral-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <p className="text-sm text-neutral-600 font-medium">No structured data added yet</p>
+                        <p className="text-xs text-neutral-500 mt-1">Click "Add Schema" to create your first schema.org entry</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {formData.seo.structuredData.map((schema, index) => {
+                          // Parse to get @type for display
+                          let schemaType = 'JSON-LD'
+                          let schemaPreview = ''
+                          try {
+                            const parsed = JSON.parse(schema)
+                            schemaType = parsed['@type'] || 'JSON-LD'
+                            schemaPreview = parsed.headline || parsed.name || parsed.title || ''
+                          } catch (e) {
+                            schemaType = 'Invalid JSON'
+                          }
+
+                          return (
+                            <div
+                              key={index}
+                              className="flex items-center gap-3 p-3 bg-white border border-neutral-200 rounded-lg hover:border-primary-300 transition-colors"
+                            >
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm font-medium text-neutral-900">{schemaType}</span>
+                                  {schemaPreview && (
+                                    <span className="text-xs text-neutral-500">· {schemaPreview}</span>
+                                  )}
+                                </div>
+                                <div className="text-xs text-neutral-500 mt-0.5 font-mono truncate">
+                                  {schema.substring(0, 100)}{schema.length > 100 ? '...' : ''}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => setStructuredDataModal({ isOpen: true, index, value: schema })}
+                                  className="px-3 py-1.5 text-xs font-medium text-primary-700 bg-primary-50 hover:bg-primary-100 rounded"
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (confirm('Are you sure you want to delete this structured data entry?')) {
+                                      const newData = [...formData.seo.structuredData]
+                                      newData.splice(index, 1)
+                                      updateField('seo.structuredData', newData)
+                                    }
+                                  }}
+                                  className="px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 hover:bg-red-100 rounded"
+                                >
+                                  Delete
+                                </button>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </section>
@@ -824,6 +933,23 @@ export default function PageEditorPage() {
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
                         Hub Settings
                       </h3>
+
+                      {/* Parent Hub (optional for hierarchical structures) */}
+                      <div>
+                        <label className="block text-sm font-medium text-neutral-700 mb-1">
+                          Parent Hub Page Slug <span className="text-xs text-neutral-400">(optional)</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.contentRelationships.hubPageSlug || ''}
+                          onChange={(e) => updateField('contentRelationships.hubPageSlug', e.target.value)}
+                          className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 font-mono text-sm"
+                          placeholder="parent-hub-slug"
+                        />
+                        <p className="mt-1 text-xs text-neutral-500">
+                          For hierarchical content structures, specify a parent hub this hub belongs to
+                        </p>
+                      </div>
 
                       {/* Related Hubs */}
                       <div>
@@ -922,6 +1048,25 @@ export default function PageEditorPage() {
         </div>
       </div>
       )}
+
+      {/* Structured Data Modal */}
+      <StructuredDataModal
+        isOpen={structuredDataModal.isOpen}
+        onClose={() => setStructuredDataModal({ isOpen: false, index: -1, value: '' })}
+        onSave={(value) => {
+          const newData = [...formData.seo.structuredData]
+          if (structuredDataModal.index === -1) {
+            // Adding new entry
+            newData.push(value)
+          } else {
+            // Editing existing entry
+            newData[structuredDataModal.index] = value
+          }
+          updateField('seo.structuredData', newData)
+        }}
+        initialValue={structuredDataModal.value}
+        title={structuredDataModal.index === -1 ? 'Add Structured Data' : 'Edit Structured Data'}
+      />
     </div>
   )
 }

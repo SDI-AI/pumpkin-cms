@@ -1,5 +1,12 @@
 import { IHtmlBlock } from './IHtmlBlock';
 /**
+ * Node position for XYFlow layout persistence
+ */
+export interface NodePosition {
+    x: number;
+    y: number;
+}
+/**
  * Main page model representing a complete page structure
  */
 export interface Page {
@@ -20,6 +27,10 @@ export interface Page {
     isPublished: boolean;
     publishedAt: string | null;
     includeInSitemap: boolean;
+    /**
+     * Saved XYFlow node positions for page relationship visualization
+     */
+    layoutPositions?: Record<string, NodePosition>;
 }
 /**
  * Page metadata containing basic page information
@@ -66,7 +77,7 @@ export interface SeoData {
     robots: string;
     canonicalUrl: string;
     alternateUrls: AlternateUrl[];
-    structuredData: string;
+    structuredData: string[];
     openGraph: OpenGraphData;
     twitterCard: TwitterCardData;
 }

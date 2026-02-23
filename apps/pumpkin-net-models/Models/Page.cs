@@ -79,6 +79,18 @@ public class Page
 
     [JsonPropertyName("includeInSitemap")]
     public bool IncludeInSitemap { get; set; } = true;
+
+    [JsonPropertyName("layoutPositions")]
+    public Dictionary<string, NodePosition>? LayoutPositions { get; set; }
+}
+
+public class NodePosition
+{
+    [JsonPropertyName("x")]
+    public double X { get; set; }
+
+    [JsonPropertyName("y")]
+    public double Y { get; set; }
 }
 
 public class PageMetaData
@@ -171,7 +183,7 @@ public class SeoData
     public List<AlternateUrl> AlternateUrls { get; set; } = new();
 
     [JsonPropertyName("structuredData")]
-    public string StructuredData { get; set; } = string.Empty;
+    public List<string> StructuredData { get; set; } = new();
 
     [JsonPropertyName("openGraph")]
     public OpenGraphData OpenGraph { get; set; } = new();

@@ -1,11 +1,11 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { apiClient } from '@/lib/api'
 import AddSpokeModal from '@/components/AddSpokeModal'
-import type { Page } from 'pumpkin-ts-models'
+import type { Page, NodePosition } from 'pumpkin-ts-models'
 import {
   ReactFlow,
   Background,
@@ -76,10 +76,96 @@ export default function PageMapPage() {
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([])
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([])
   const [addSpokeHub, setAddSpokeHub] = useState<string | null>(null)
+  const [savedPositions, setSavedPositions] = useState<Record<string, NodePosition>>({})
+  const [savingLayout, setSavingLayout] = useState(false)
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   const handleAddSpoke = useCallback((hubSlug: string) => {
     setAddSpokeHub(hubSlug)
   }, [])
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current)
+      }
+    }
+  }, [])
+
+  // Save node positions to ALL pages' layoutPositions field for reliability
+  const saveLayoutPositions = useCallback(async (currentNodes: Node[]) => {
+    if (!token || !currentTenant || savingLayout || currentNodes.length === 0) return
+
+    console.log('[Page Map] saveLayoutPositions called with', currentNodes.length, 'nodes')
+    console.log('[Page Map] First 3 nodes:', currentNodes.slice(0, 3).map(n => ({ id: n.id, pos: n.position })))
+
+    setSavingLayout(true)
+    try {
+      // Build position map
+      const positions: Record<string, NodePosition> = {}
+      currentNodes.forEach(node => {
+        positions[node.id] = { x: node.position.x, y: node.position.y }
+      })
+
+      console.log('[Page Map] Saving positions for nodes:', Object.keys(positions))
+      console.log('[Page Map] Position details:', JSON.stringify(positions, null, 2))
+
+      // Save to ALL pages so layout persists regardless of hub/published status
+      const updatePromises = pages.map(page => {
+        const updatedPage = {
+          ...page,
+          layoutPositions: positions,
+          MetaData: {
+            ...page.MetaData,
+            updatedAt: new Date().toISOString(),
+          },
+        }
+        return apiClient.updatePage(token, currentTenant.tenantId, page.pageSlug, updatedPage)
+      })
+
+      await Promise.all(updatePromises)
+      setSavedPositions(positions)
+      console.log('[Page Map] ✓ Saved layout positions to all', pages.length, 'pages')
+    } catch (err) {
+      console.error('[Page Map] Failed to save layout positions:', err)
+    } finally {
+      setSavingLayout(false)
+    }
+  }, [token, currentTenant, pages, savingLayout])
+
+  // Reset layout to use Dagre auto-layout
+  const resetLayout = useCallback(() => {
+    if (!confirm('Reset layout to automatic positioning?')) return
+
+    const { nodes: rawNodes, edges: flowEdges } = buildFlowGraph(pages)
+    const layoutNodes = applyDagreLayout(rawNodes, flowEdges)
+    setNodes(layoutNodes)
+    setSavedPositions({})
+    
+    // Save the new layout
+    saveLayoutPositions(layoutNodes)
+  }, [pages, saveLayoutPositions])
+
+  // Handle node drag end to save positions with debounce
+  const handleNodeDragStop = useCallback(
+    (_event: React.MouseEvent, draggedNode: Node) => {
+      console.log('[Page Map] Node drag stopped:', draggedNode.id, 'at position', draggedNode.position)
+      
+      // Clear any pending save
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current)
+      }
+      
+      // Debounce the save by 500ms to batch multiple drags
+      saveTimeoutRef.current = setTimeout(() => {
+        console.log('[Page Map] Debounced save triggered, current nodes state:', nodes.length)
+        // Use the current nodes from state (they're updated by ReactFlow via onNodesChange)
+        saveLayoutPositions(nodes)
+      }, 500)
+    },
+    [nodes, saveLayoutPositions]
+  )
 
   const handleConfirmAddSpoke = useCallback((slug: string) => {
     const hubSlug = addSpokeHub
@@ -112,12 +198,43 @@ export default function PageMapPage() {
           return
         }
         
+        // Check if any page has saved layout positions (check all pages, use first found)
+        const savedLayout = fetchedPages.find(p => p.layoutPositions && Object.keys(p.layoutPositions).length > 0)?.layoutPositions
+        
+        if (savedLayout) {
+          console.log('[Page Map] Found saved layout with', Object.keys(savedLayout).length, 'positions')
+          console.log('[Page Map] Saved layout node IDs:', Object.keys(savedLayout))
+        }
+        
         const { nodes: rawNodes, edges: flowEdges } = buildFlowGraph(fetchedPages)
         console.log('[Page Map] Built graph — nodes:', rawNodes.length, 'edges:', flowEdges.length)
-        // Let dagre compute non-overlapping positions
-        const layoutNodes = applyDagreLayout(rawNodes, flowEdges)
-        console.log('[Page Map] Dagre layout applied — positioned nodes:', layoutNodes.length)
-        setNodes(layoutNodes)
+        console.log('[Page Map] Raw node IDs:', rawNodes.map(n => n.id))
+        
+        let finalNodes: Node[]
+        if (savedLayout && Object.keys(savedLayout).length > 0) {
+          // Apply saved positions
+          console.log('[Page Map] Applying saved layout positions')
+          finalNodes = rawNodes.map(node => {
+            const savedPos = savedLayout[node.id]
+            if (savedPos) {
+              console.log(`[Page Map] Node ${node.id}: Applying saved position (${savedPos.x}, ${savedPos.y})`)
+            } else {
+              console.warn(`[Page Map] Node ${node.id}: No saved position found, using default (${node.position.x}, ${node.position.y})`)
+            }
+            return {
+              ...node,
+              position: savedPos || node.position
+            }
+          })
+          setSavedPositions(savedLayout)
+        } else {
+          // Let dagre compute non-overlapping positions
+          console.log('[Page Map] No saved layout, using Dagre auto-layout')
+          finalNodes = applyDagreLayout(rawNodes, flowEdges)
+        }
+        
+        console.log('[Page Map] Final positioned nodes:', finalNodes.length)
+        setNodes(finalNodes)
         setEdges(flowEdges)
       } catch (err: any) {
         console.error('[Page Map] Failed to load pages:', err)
@@ -142,11 +259,11 @@ export default function PageMapPage() {
     const hubs = pages.filter(p => p.contentRelationships?.isHub)
 
     hubs.forEach((hub) => {
-      renderedPageIds.add(hub.id)
+      renderedPageIds.add(hub.pageSlug)
 
-      // Hub node
+      // Hub node (use pageSlug as ID for stability)
       flowNodes.push({
-        id: hub.id,
+        id: hub.pageSlug,
         type: 'default',
         position: { x: 0, y: 0 }, // dagre will reposition
         width: HUB_WIDTH,
@@ -185,17 +302,17 @@ export default function PageMapPage() {
         },
       })
 
-      // Spokes for this hub
+      // Spokes for this hub (non-hub pages only)
       const spokes = pages.filter(p =>
         p.contentRelationships?.hubPageSlug === hub.pageSlug &&
         !p.contentRelationships?.isHub
       )
 
       spokes.forEach((spoke) => {
-        renderedPageIds.add(spoke.id)
+        renderedPageIds.add(spoke.pageSlug)
 
         flowNodes.push({
-          id: spoke.id,
+          id: spoke.pageSlug,
           type: 'default',
           position: { x: 0, y: 0 },
           width: SPOKE_WIDTH,
@@ -226,9 +343,9 @@ export default function PageMapPage() {
         })
 
         flowEdges.push({
-          id: `hub-spoke-${hub.id}-${spoke.id}`,
-          source: hub.id,
-          target: spoke.id,
+          id: `hub-spoke-${hub.pageSlug}-${spoke.pageSlug}`,
+          source: hub.pageSlug,
+          target: spoke.pageSlug,
           type: 'default',
           animated: true,
           markerEnd: { type: MarkerType.ArrowClosed, color: '#f97316', width: 16, height: 16 },
@@ -237,19 +354,46 @@ export default function PageMapPage() {
       })
     })
 
+    // Hub-to-hub hierarchical edges (after all hubs are processed)
+    hubs.forEach(hub => {
+      const childHubs = pages.filter(p =>
+        p.contentRelationships?.hubPageSlug === hub.pageSlug &&
+        p.contentRelationships?.isHub
+      )
+
+      childHubs.forEach((childHub) => {
+        if (renderedPageIds.has(childHub.pageSlug)) {
+          flowEdges.push({
+            id: `hub-hub-${hub.pageSlug}-${childHub.pageSlug}`,
+            source: hub.pageSlug,
+            target: childHub.pageSlug,
+            type: 'default',
+            animated: true,
+            label: 'sub-hub',
+            labelStyle: { fontSize: 9, fill: '#dc2626', fontWeight: 600 },
+            labelBgStyle: { fill: '#fef2f2', fillOpacity: 0.95 },
+            labelBgPadding: [4, 2] as [number, number],
+            labelBgBorderRadius: 4,
+            markerEnd: { type: MarkerType.ArrowClosed, color: '#dc2626', width: 18, height: 18 },
+            style: { stroke: '#dc2626', strokeWidth: 3 },
+          })
+        }
+      })
+    })
+
     // Related-hub edges (blue dashed)
     const addedRelatedEdges = new Set<string>()
     hubs.forEach(hub => {
       (hub.contentRelationships?.relatedHubs || []).forEach(slug => {
         const rel = pageBySlug.get(slug)
-        if (rel && renderedPageIds.has(rel.id)) {
-          const key = [hub.id, rel.id].sort().join('|')
+        if (rel && renderedPageIds.has(rel.pageSlug)) {
+          const key = [hub.pageSlug, rel.pageSlug].sort().join('|')
           if (!addedRelatedEdges.has(key)) {
             addedRelatedEdges.add(key)
             flowEdges.push({
               id: `related-${key}`,
-              source: hub.id,
-              target: rel.id,
+              source: hub.pageSlug,
+              target: rel.pageSlug,
               type: 'default',
               animated: false,
               label: 'related',
@@ -266,10 +410,10 @@ export default function PageMapPage() {
     })
 
     // Orphaned pages — no edges, dagre will still position them
-    const orphaned = pages.filter(p => !renderedPageIds.has(p.id))
+    const orphaned = pages.filter(p => !renderedPageIds.has(p.pageSlug))
     orphaned.forEach((orphan) => {
       flowNodes.push({
-        id: orphan.id,
+        id: orphan.pageSlug,
         type: 'default',
         position: { x: 0, y: 0 },
         width: ORPHAN_WIDTH,
@@ -350,6 +494,7 @@ export default function PageMapPage() {
           edges={edges}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
+          onNodeDragStop={handleNodeDragStop}
           fitView
           fitViewOptions={{ padding: 0.15, maxZoom: 1.2 }}
           minZoom={0.1}
@@ -377,6 +522,19 @@ export default function PageMapPage() {
               zoomable
             />
           )}
+
+          {/* Reset Layout Button */}
+          <Panel position="top-right">
+            <div className="flex gap-2">
+              <button
+                onClick={resetLayout}
+                disabled={savingLayout || loading}
+                className="bg-white/95 backdrop-blur-sm hover:bg-white rounded-lg shadow-lg border border-neutral-200 px-4 py-2 text-sm font-medium text-neutral-700 hover:text-neutral-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {savingLayout ? 'Saving...' : '🔄 Reset Layout'}
+              </button>
+            </div>
+          </Panel>
 
           {/* Legend as floating panel — always visible */}
           <Panel position="top-left">
@@ -409,6 +567,10 @@ export default function PageMapPage() {
                   <span className="text-xs text-neutral-600">Hub → Spoke</span>
                 </div>
                 <div className="flex items-center gap-2">
+                  <svg className="w-5 h-2.5 shrink-0" viewBox="0 0 20 10"><line x1="0" y1="5" x2="20" y2="5" stroke="#dc2626" strokeWidth="3" /></svg>
+                  <span className="text-xs text-neutral-600">Hub → Sub-Hub</span>
+                </div>
+                <div className="flex items-center gap-2 col-span-2">
                   <svg className="w-5 h-2.5 shrink-0" viewBox="0 0 20 10"><line x1="0" y1="5" x2="20" y2="5" stroke="#3b82f6" strokeWidth="2" strokeDasharray="5 3" /></svg>
                   <span className="text-xs text-neutral-600">Related Hubs</span>
                 </div>
