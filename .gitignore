@@ -50,6 +50,12 @@ yarn-error.log*
 
 # TypeScript
 *.tsbuildinfo
+dist/
+**/dist/
+
+# Package lock files (only root lock file is tracked)
+packages/**/package-lock.json
+apps/**/package-lock.json
 
 # Environment variables
 .env
