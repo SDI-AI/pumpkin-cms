@@ -1,0 +1,41 @@
+{
+  "name": "pumpkin-block-views",
+  "version": "1.0.0",
+  "description": "React view components for Pumpkin CMS content blocks. Ships with Tailwind CSS defaults but fully overridable via classNames props.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rimraf dist"
+  },
+  "keywords": [
+    "pumpkin-cms",
+    "react",
+    "components",
+    "content-blocks",
+    "cms",
+    "tailwind"
+  ],
+  "author": "Pumpkin CMS Team",
+  "license": "MIT",
+  "peerDependencies": {
+    "react": "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0",
+    "pumpkin-ts-models": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.25",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "pumpkin-ts-models": "file:../pumpkin-ts-models",
+    "rimraf": "^5.0.10",
+    "typescript": "^5.9.3"
+  },
+  "files": [
+    "dist/**/*",
+    "README.md"
+  ]
+}

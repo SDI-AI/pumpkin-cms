@@ -1,0 +1,27 @@
+export const blogDefaults = {
+  root: 'w-full py-12',
+  container: 'max-w-3xl mx-auto px-6',
+  featuredImage: 'w-full rounded-xl shadow-md mb-8 object-cover max-h-[400px]',
+  header: 'mb-8',
+  title: 'text-3xl md:text-4xl font-bold text-neutral-900 leading-tight',
+  subtitle: 'text-lg text-neutral-600 mt-2',
+  meta: 'flex flex-wrap items-center gap-4 mt-4 text-sm text-neutral-500',
+  authorWrapper: 'flex items-center gap-2',
+  authorImage: 'w-8 h-8 rounded-full object-cover',
+  authorName: 'font-medium text-neutral-700',
+  date: '',
+  readingTime: '',
+  tags: 'flex flex-wrap gap-2 mt-4',
+  tag: 'text-xs bg-neutral-100 text-neutral-600 px-2.5 py-1 rounded-full',
+  body: 'prose prose-neutral max-w-none',
+  relatedSection: 'mt-12 pt-8 border-t border-neutral-200',
+  relatedTitle: 'text-xl font-bold text-neutral-900 mb-6',
+  relatedGrid: 'grid grid-cols-1 sm:grid-cols-2 gap-6',
+  relatedCard: 'bg-white rounded-lg shadow-sm border border-neutral-200 overflow-hidden hover:shadow-md transition-shadow',
+  relatedCardImage: 'w-full h-36 object-cover',
+  relatedCardBody: 'p-4',
+  relatedCardTitle: 'text-sm font-semibold text-neutral-900',
+  relatedCardExcerpt: 'text-xs text-neutral-500 mt-1 line-clamp-2',
+};
+
+export type BlogClassNames = Partial<typeof blogDefaults>;

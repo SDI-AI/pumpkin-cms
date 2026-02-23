@@ -1,0 +1,16 @@
+export { heroDefaults, type HeroClassNames } from './hero';
+export { primaryCtaDefaults, type PrimaryCtaClassNames } from './primaryCta';
+export { secondaryCtaDefaults, type SecondaryCtaClassNames } from './secondaryCta';
+export { cardGridDefaults, type CardGridClassNames } from './cardGrid';
+export { faqDefaults, type FaqClassNames } from './faq';
+export { breadcrumbsDefaults, type BreadcrumbsClassNames } from './breadcrumbs';
+export { trustBarDefaults, type TrustBarClassNames } from './trustBar';
+export { howItWorksDefaults, type HowItWorksClassNames } from './howItWorks';
+export { serviceAreaMapDefaults, type ServiceAreaMapClassNames } from './serviceAreaMap';
+export { localProTipsDefaults, type LocalProTipsClassNames } from './localProTips';
+export { galleryDefaults, type GalleryClassNames } from './gallery';
+export { testimonialsDefaults, type TestimonialsClassNames } from './testimonials';
+export { contactDefaults, type ContactClassNames } from './contact';
+export { blogDefaults, type BlogClassNames } from './blog';
+export { headerDefaults, type HeaderClassNames } from './header';
+export { footerDefaults, type FooterClassNames } from './footer';
