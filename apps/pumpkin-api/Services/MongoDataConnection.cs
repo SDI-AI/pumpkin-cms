@@ -343,7 +343,7 @@ public class MongoDataConnection : IDataConnection, IDisposable
         }
     }
 
-    public async Task<List<string>> GetSitemapPagesAsync(string apiKey, string tenantId)
+    public async Task<List<SitemapEntry>> GetSitemapPagesAsync(string apiKey, string tenantId)
     {
         try
         {
@@ -354,7 +354,7 @@ public class MongoDataConnection : IDataConnection, IDisposable
             if (!isValidTenant)
             {
                 _logger.LogWarning("Invalid API key for tenant - TenantId: {TenantId}", tenantId);
-                return new List<string>();
+                return new List<SitemapEntry>();
             }
 
             var pagesCollection = _database.GetCollection<Page>("Page");
@@ -366,13 +366,23 @@ public class MongoDataConnection : IDataConnection, IDisposable
                 Builders<Page>.Filter.Eq(p => p.IncludeInSitemap, true)
             );
 
-            var projection = Builders<Page>.Projection.Include(p => p.PageSlug);
+            // Project necessary fields for sitemap: pageSlug, publishedAt, and updatedAt
+            var projection = Builders<Page>.Projection
+                .Include(p => p.PageSlug)
+                .Include(p => p.PublishedAt)
+                .Include("MetaData.updatedAt");
+                
             var pages = await pagesCollection.Find(filter).Project<Page>(projection).ToListAsync();
             
-            var pageSlugs = pages.Select(p => p.PageSlug).ToList();
+            var sitemapEntries = pages.Select(p => new SitemapEntry
+            {
+                PageSlug = p.PageSlug,
+                // Use publishedAt if available, otherwise updatedAt
+                LastModified = p.PublishedAt ?? p.MetaData?.UpdatedAt ?? DateTime.UtcNow
+            }).ToList();
             
-            _logger.LogInformation("Retrieved {Count} sitemap pages for tenant - TenantId: {TenantId}", pageSlugs.Count, tenantId);
-            return pageSlugs;
+            _logger.LogInformation("Retrieved {Count} sitemap entries for tenant - TenantId: {TenantId}", sitemapEntries.Count, tenantId);
+            return sitemapEntries;
         }
         catch (MongoException ex)
         {
@@ -934,7 +944,7 @@ public class MongoDataConnection : IDataConnection, IDisposable
         throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
     }
 
-    public Task<List<string>> GetSitemapPagesAsync(string apiKey, string tenantId)
+    public Task<List<SitemapEntry>> GetSitemapPagesAsync(string apiKey, string tenantId)
     {
         throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
     }

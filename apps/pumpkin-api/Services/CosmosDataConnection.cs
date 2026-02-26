@@ -379,7 +379,7 @@ public class CosmosDataConnection : IDataConnection, IDisposable
         }
     }
 
-    public async Task<List<string>> GetSitemapPagesAsync(string apiKey, string tenantId)
+    public async Task<List<SitemapEntry>> GetSitemapPagesAsync(string apiKey, string tenantId)
     {
         try
         {
@@ -390,17 +390,17 @@ public class CosmosDataConnection : IDataConnection, IDisposable
             if (!isValidTenant)
             {
                 _logger.LogWarning("Invalid API key for tenant - TenantId: {TenantId}", tenantId);
-                return new List<string>();
+                return new List<SitemapEntry>();
             }
 
             var pagesContainer = _database.GetContainer("Page");
             
-            // Query for published pages with includeInSitemap = true
-            var query = "SELECT c.pageSlug FROM c WHERE c.tenantId = @tenantId AND c.isPublished = true AND c.includeInSitemap = true";
+            // Query for published pages with includeInSitemap = true, including date fields for lastmod
+            var query = "SELECT c.pageSlug, c.publishedAt, c.MetaData.updatedAt FROM c WHERE c.tenantId = @tenantId AND c.isPublished = true AND c.includeInSitemap = true";
             var queryDefinition = new QueryDefinition(query)
                 .WithParameter("@tenantId", tenantId);
 
-            var pageSlugs = new List<string>();
+            var sitemapEntries = new List<SitemapEntry>();
             using var iterator = pagesContainer.GetItemQueryIterator<System.Text.Json.JsonElement>(queryDefinition, requestOptions: new QueryRequestOptions
             {
                 PartitionKey = new PartitionKey(tenantId)
@@ -416,17 +416,35 @@ public class CosmosDataConnection : IDataConnection, IDisposable
                         var pageSlug = pageSlugProperty.GetString();
                         if (!string.IsNullOrEmpty(pageSlug))
                         {
-                            pageSlugs.Add(pageSlug);
+                            // Determine last modified date: use publishedAt if available, otherwise updatedAt
+                            DateTime lastModified = DateTime.UtcNow;
+                            
+                            if (item.TryGetProperty("publishedAt", out var publishedAtProperty) && 
+                                publishedAtProperty.ValueKind != System.Text.Json.JsonValueKind.Null)
+                            {
+                                lastModified = publishedAtProperty.GetDateTime();
+                            }
+                            else if (item.TryGetProperty("updatedAt", out var updatedAtProperty) && 
+                                     updatedAtProperty.ValueKind != System.Text.Json.JsonValueKind.Null)
+                            {
+                                lastModified = updatedAtProperty.GetDateTime();
+                            }
+                            
+                            sitemapEntries.Add(new SitemapEntry
+                            {
+                                PageSlug = pageSlug,
+                                LastModified = lastModified
+                            });
                         }
                     }
                 }
                 
-                _logger.LogInformation("Retrieved {Count} sitemap pages for tenant - TenantId: {TenantId}, RU Cost: {RequestCharge}", 
+                _logger.LogInformation("Retrieved {Count} sitemap entries for tenant - TenantId: {TenantId}, RU Cost: {RequestCharge}", 
                     response.Count(), tenantId, response.RequestCharge);
             }
             
-            _logger.LogInformation("Total sitemap pages retrieved: {Count} - TenantId: {TenantId}", pageSlugs.Count, tenantId);
-            return pageSlugs;
+            _logger.LogInformation("Total sitemap entries retrieved: {Count} - TenantId: {TenantId}", sitemapEntries.Count, tenantId);
+            return sitemapEntries;
         }
         catch (CosmosException ex)
         {

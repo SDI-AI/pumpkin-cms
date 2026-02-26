@@ -213,9 +213,9 @@ public static class PumpkinManager
             if (string.IsNullOrEmpty(tenantId))
                 return Results.BadRequest("Tenant ID is required");
 
-            var pageSlugs = await databaseService.GetSitemapPagesAsync(apiKey, tenantId);
+            var sitemapEntries = await databaseService.GetSitemapPagesAsync(apiKey, tenantId);
             
-            return Results.Ok(new { tenantId, pages = pageSlugs, count = pageSlugs.Count });
+            return Results.Ok(new { tenantId, pages = sitemapEntries, count = sitemapEntries.Count });
         }
         catch (UnauthorizedAccessException)
         {

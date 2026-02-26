@@ -471,7 +471,7 @@ internal class TestDatabaseService : IDatabaseService, IDisposable
     public Task<FormEntry> SaveFormEntryAsync(string apiKey, string tenantId, FormEntry formEntry)
         => _connection.SaveFormEntryAsync(apiKey, tenantId, formEntry);
 
-    public Task<List<string>> GetSitemapPagesAsync(string apiKey, string tenantId)
+    public Task<List<SitemapEntry>> GetSitemapPagesAsync(string apiKey, string tenantId)
         => _connection.GetSitemapPagesAsync(apiKey, tenantId);
 
     // Admin methods
