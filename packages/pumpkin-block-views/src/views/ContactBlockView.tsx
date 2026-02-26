@@ -2,6 +2,7 @@ import React from 'react';
 import type { ContactBlock } from 'pumpkin-ts-models';
 import { contactDefaults, type ContactClassNames } from '../defaults/contact';
 import { mergeClasses } from '../utils/mergeClasses';
+import { Icon } from '../components/Icon';
 
 export interface ContactBlockViewProps {
   block: ContactBlock;
@@ -58,7 +59,7 @@ export function ContactBlockView({ block, classNames, onSubmit }: ContactBlockVi
             <div className={cx.socialLinks}>
               {content.socialLinks.map((link, i) => (
                 <a key={i} href={link.url} className={cx.socialLink} aria-label={link.platform} target="_blank" rel="noopener noreferrer">
-                  {link.icon ? <img src={link.icon} alt={link.platform} className="w-4 h-4" /> : link.platform}
+                  {link.icon ? <Icon name={link.icon} size={20} /> : link.platform}
                 </a>
               ))}
             </div>

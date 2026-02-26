@@ -13,6 +13,7 @@
     "@dagrejs/dagre": "^2.0.4",
     "@types/dagre": "^0.7.53",
     "@xyflow/react": "^12.10.0",
+    "lucide-react": "^0.468.0",
     "next": "^14.2.0",
     "pumpkin-ts-models": "file:../../packages/pumpkin-ts-models",
     "react": "^18.3.0",

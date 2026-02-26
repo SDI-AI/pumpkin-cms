@@ -2,6 +2,7 @@ import React from 'react';
 import type { TrustBarBlock } from 'pumpkin-ts-models';
 import { trustBarDefaults, type TrustBarClassNames } from '../defaults/trustBar';
 import { mergeClasses } from '../utils/mergeClasses';
+import { Icon } from '../components/Icon';
 
 export interface TrustBarBlockViewProps {
   block: TrustBarBlock;
@@ -18,7 +19,7 @@ export function TrustBarBlockView({ block, classNames }: TrustBarBlockViewProps)
         <div className={cx.grid}>
           {content.items.map((item, i) => (
             <div key={i} className={cx.item}>
-              {item.icon && <img src={item.icon} alt={item.alt || ''} className={cx.icon} />}
+              {item.icon && <Icon name={item.icon} size={24} className={cx.icon} />}
               <h3 className={cx.itemTitle}>{item.title}</h3>
               {item.text && <p className={cx.itemText}>{item.text}</p>}
             </div>

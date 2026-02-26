@@ -277,7 +277,7 @@
       "label": "Star on GitHub",
       "url": "https://github.com/pumpkin-cms/pumpkin",
       "target": "_blank",
-      "icon": "github",
+      "icon": "Github",
       "order": 6,
       "isVisible": true,
       "children": []
@@ -294,7 +294,7 @@
           "label": "GitHub",
           "url": "https://github.com/pumpkin-cms/pumpkin",
           "target": "_blank",
-          "icon": "github",
+          "icon": "Github",
           "order": 1,
           "isVisible": true,
           "children": []
@@ -331,7 +331,7 @@
           "label": "Discord",
           "url": "https://discord.gg/pumpkincms",
           "target": "_blank",
-          "icon": "discord",
+          "icon": "MessageCircle",
           "order": 1,
           "isVisible": true,
           "children": []
@@ -340,7 +340,7 @@
           "label": "Twitter",
           "url": "https://twitter.com/pumpkincms",
           "target": "_blank",
-          "icon": "twitter",
+          "icon": "Twitter",
           "order": 2,
           "isVisible": true,
           "children": []

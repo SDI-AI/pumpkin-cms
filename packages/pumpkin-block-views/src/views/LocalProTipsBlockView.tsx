@@ -2,6 +2,7 @@ import React from 'react';
 import type { LocalProTipsBlock } from 'pumpkin-ts-models';
 import { localProTipsDefaults, type LocalProTipsClassNames } from '../defaults/localProTips';
 import { mergeClasses } from '../utils/mergeClasses';
+import { Icon } from '../components/Icon';
 
 export interface LocalProTipsBlockViewProps {
   block: LocalProTipsBlock;
@@ -22,7 +23,9 @@ export function LocalProTipsBlockView({ block, classNames }: LocalProTipsBlockVi
               {item.image ? (
                 <img src={item.image} alt={item.title || ''} className={cx.itemImage} />
               ) : item.icon ? (
-                <div className={cx.itemIcon}>{item.icon}</div>
+                <div className={cx.itemIcon}>
+                  <Icon name={item.icon} size={28} />
+                </div>
               ) : null}
               <div className={cx.itemBody}>
                 <h3 className={cx.itemTitle}>{item.title}</h3>

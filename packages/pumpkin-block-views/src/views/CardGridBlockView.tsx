@@ -2,6 +2,7 @@ import React from 'react';
 import type { CardGridBlock } from 'pumpkin-ts-models';
 import { cardGridDefaults, type CardGridClassNames } from '../defaults/cardGrid';
 import { mergeClasses } from '../utils/mergeClasses';
+import { Icon } from '../components/Icon';
 
 export interface CardGridBlockViewProps {
   block: CardGridBlock;
@@ -28,7 +29,11 @@ export function CardGridBlockView({ block, classNames }: CardGridBlockViewProps)
                 <img src={card.image} alt={card['image-alt'] || card.alt || ''} className={cx.cardImage} />
               )}
               <div className={cx.cardBody}>
-                {card.icon && <div className={cx.cardIcon}>{card.icon}</div>}
+                {card.icon && (
+                  <div className={cx.cardIcon}>
+                    <Icon name={card.icon} size={32} />
+                  </div>
+                )}
                 <h3 className={cx.cardTitle}>{card.title}</h3>
                 {card.description && <p className={cx.cardDescription}>{card.description}</p>}
                 {card.link && <a href={card.link} className={cx.cardLink}>Learn more →</a>}

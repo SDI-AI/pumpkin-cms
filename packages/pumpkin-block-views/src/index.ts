@@ -1,3 +1,7 @@
+// ── Components ─────────────────────────────────────────────
+export { Icon } from './components/Icon';
+export type { IconProps } from './components/Icon';
+
 // ── Views ──────────────────────────────────────────────────
 export {
   HeroBlockView,

@@ -68,15 +68,17 @@ export const fallbackHomePage: Page = {
     robots: 'index, follow',
     canonicalUrl: 'https://pumpkincms.dev',
     alternateUrls: [],
-    structuredData: JSON.stringify({
-      '@context': 'https://schema.org',
-      '@type': 'SoftwareApplication',
-      name: 'Pumpkin CMS',
-      applicationCategory: 'DeveloperApplication',
-      operatingSystem: 'Cross-platform',
-      offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
-      description: 'Open-source headless CMS with block-based content and multi-tenant support.',
-    }),
+    structuredData: [
+      JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'SoftwareApplication',
+        name: 'Pumpkin CMS',
+        applicationCategory: 'DeveloperApplication',
+        operatingSystem: 'Cross-platform',
+        offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+        description: 'Open-source headless CMS with block-based content and multi-tenant support.',
+      }),
+    ],
     openGraph: {
       'og:title': 'Pumpkin CMS — Open-Source Headless CMS',
       'og:description':
