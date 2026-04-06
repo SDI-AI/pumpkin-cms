@@ -188,6 +188,59 @@ public class DatabaseService : IDatabaseService, IDisposable
         return _dataConnection.UpdateUserLastLoginAsync(userId, tenantId);
     }
 
+    // FormDefinition content serving (API key required)
+    public Task<FormDefinition?> GetFormDefinitionPublicAsync(string apiKey, string tenantId, string type)
+    {
+        return _dataConnection.GetFormDefinitionPublicAsync(apiKey, tenantId, type);
+    }
+
+    // FormDefinition admin (JWT required)
+    public Task<FormDefinition?> GetFormDefinitionAsync(string tenantId, string formDefinitionId)
+    {
+        return _dataConnection.GetFormDefinitionAsync(tenantId, formDefinitionId);
+    }
+
+    public Task<FormDefinition?> GetFormDefinitionByTypeAsync(string tenantId, string type)
+    {
+        return _dataConnection.GetFormDefinitionByTypeAsync(tenantId, type);
+    }
+
+    public Task<List<FormDefinition>> GetFormDefinitionsByTenantAsync(string tenantId)
+    {
+        return _dataConnection.GetFormDefinitionsByTenantAsync(tenantId);
+    }
+
+    public Task<FormDefinition> CreateFormDefinitionAsync(string tenantId, FormDefinition formDefinition)
+    {
+        return _dataConnection.CreateFormDefinitionAsync(tenantId, formDefinition);
+    }
+
+    public Task<FormDefinition> UpdateFormDefinitionAsync(string tenantId, string formDefinitionId, FormDefinition formDefinition)
+    {
+        return _dataConnection.UpdateFormDefinitionAsync(tenantId, formDefinitionId, formDefinition);
+    }
+
+    public Task<bool> DeleteFormDefinitionAsync(string tenantId, string formDefinitionId)
+    {
+        return _dataConnection.DeleteFormDefinitionAsync(tenantId, formDefinitionId);
+    }
+
+    // FormEntry admin (JWT required)
+    public Task<List<FormEntry>> GetFormEntriesByTenantAsync(string tenantId, string? type = null)
+    {
+        return _dataConnection.GetFormEntriesByTenantAsync(tenantId, type);
+    }
+
+    public Task<FormEntry?> GetFormEntryAsync(string tenantId, string entryId)
+    {
+        return _dataConnection.GetFormEntryAsync(tenantId, entryId);
+    }
+
+    public Task<FormEntry> UpdateFormEntryStatusAsync(string tenantId, string entryId, string status)
+    {
+        return _dataConnection.UpdateFormEntryStatusAsync(tenantId, entryId, status);
+    }
+
     public void Dispose()
     {
         if (_dataConnection is IDisposable disposable)

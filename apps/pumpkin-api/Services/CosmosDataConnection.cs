@@ -357,8 +357,8 @@ public class CosmosDataConnection : IDataConnection, IDisposable
             // Create the form entry
             var response = await formEntryContainer.CreateItemAsync(formEntry, new PartitionKey(tenantId));
 
-            _logger.LogInformation("Form entry created successfully - FormEntryId: {FormEntryId}, FormId: {FormId}, TenantId: {TenantId}, RU Cost: {RequestCharge}",
-                formEntry.Id, formEntry.FormId, tenantId, response.RequestCharge);
+            _logger.LogInformation("Form entry created successfully - FormEntryId: {FormEntryId}, FormDefinitionId: {FormDefinitionId}, TenantId: {TenantId}, RU Cost: {RequestCharge}",
+                formEntry.Id, formEntry.FormDefinitionId, tenantId, response.RequestCharge);
 
             return response.Resource;
         }
@@ -1487,6 +1487,62 @@ public class CosmosDataConnection : IDataConnection, IDisposable
                 userId, tenantId);
             throw;
         }
+    }
+
+    // ===== FORM DEFINITION — content serving (API key) =====
+
+    public Task<FormDefinition?> GetFormDefinitionPublicAsync(string apiKey, string tenantId, string type)
+    {
+        throw new NotImplementedException("FormDefinition data layer not yet implemented for Cosmos DB.");
+    }
+
+    // ===== FORM DEFINITION — admin (JWT) =====
+
+    public Task<FormDefinition?> GetFormDefinitionAsync(string tenantId, string formDefinitionId)
+    {
+        throw new NotImplementedException("FormDefinition data layer not yet implemented for Cosmos DB.");
+    }
+
+    public Task<FormDefinition?> GetFormDefinitionByTypeAsync(string tenantId, string type)
+    {
+        throw new NotImplementedException("FormDefinition data layer not yet implemented for Cosmos DB.");
+    }
+
+    public Task<List<FormDefinition>> GetFormDefinitionsByTenantAsync(string tenantId)
+    {
+        throw new NotImplementedException("FormDefinition data layer not yet implemented for Cosmos DB.");
+    }
+
+    public Task<FormDefinition> CreateFormDefinitionAsync(string tenantId, FormDefinition formDefinition)
+    {
+        throw new NotImplementedException("FormDefinition data layer not yet implemented for Cosmos DB.");
+    }
+
+    public Task<FormDefinition> UpdateFormDefinitionAsync(string tenantId, string formDefinitionId, FormDefinition formDefinition)
+    {
+        throw new NotImplementedException("FormDefinition data layer not yet implemented for Cosmos DB.");
+    }
+
+    public Task<bool> DeleteFormDefinitionAsync(string tenantId, string formDefinitionId)
+    {
+        throw new NotImplementedException("FormDefinition data layer not yet implemented for Cosmos DB.");
+    }
+
+    // ===== FORM ENTRY — admin (JWT) =====
+
+    public Task<List<FormEntry>> GetFormEntriesByTenantAsync(string tenantId, string? type = null)
+    {
+        throw new NotImplementedException("FormEntry admin queries not yet implemented for Cosmos DB.");
+    }
+
+    public Task<FormEntry?> GetFormEntryAsync(string tenantId, string entryId)
+    {
+        throw new NotImplementedException("FormEntry admin queries not yet implemented for Cosmos DB.");
+    }
+
+    public Task<FormEntry> UpdateFormEntryStatusAsync(string tenantId, string entryId, string status)
+    {
+        throw new NotImplementedException("FormEntry admin queries not yet implemented for Cosmos DB.");
     }
 
     public void Dispose()

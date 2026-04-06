@@ -49,4 +49,20 @@ public interface IDataConnection
     // User authentication methods
     Task<User?> GetUserByEmailAsync(string email);
     Task UpdateUserLastLoginAsync(string userId, string tenantId);
+
+    // FormDefinition content serving (API key required)
+    Task<FormDefinition?> GetFormDefinitionPublicAsync(string apiKey, string tenantId, string type);
+
+    // FormDefinition admin (JWT required)
+    Task<FormDefinition?> GetFormDefinitionAsync(string tenantId, string formDefinitionId);
+    Task<FormDefinition?> GetFormDefinitionByTypeAsync(string tenantId, string type);
+    Task<List<FormDefinition>> GetFormDefinitionsByTenantAsync(string tenantId);
+    Task<FormDefinition> CreateFormDefinitionAsync(string tenantId, FormDefinition formDefinition);
+    Task<FormDefinition> UpdateFormDefinitionAsync(string tenantId, string formDefinitionId, FormDefinition formDefinition);
+    Task<bool> DeleteFormDefinitionAsync(string tenantId, string formDefinitionId);
+
+    // FormEntry admin (JWT required)
+    Task<List<FormEntry>> GetFormEntriesByTenantAsync(string tenantId, string? type = null);
+    Task<FormEntry?> GetFormEntryAsync(string tenantId, string entryId);
+    Task<FormEntry> UpdateFormEntryStatusAsync(string tenantId, string entryId, string status);
 }

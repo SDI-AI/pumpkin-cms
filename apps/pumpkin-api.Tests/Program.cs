@@ -549,6 +549,39 @@ internal class TestDatabaseService : IDatabaseService, IDisposable
     public Task<bool> DeleteThemeAsync(string tenantId, string themeId)
         => _connection.DeleteThemeAsync(tenantId, themeId);
 
+    // FormDefinition content serving (API key)
+    public Task<FormDefinition?> GetFormDefinitionPublicAsync(string apiKey, string tenantId, string type)
+        => _connection.GetFormDefinitionPublicAsync(apiKey, tenantId, type);
+
+    // FormDefinition admin (JWT)
+    public Task<FormDefinition?> GetFormDefinitionAsync(string tenantId, string formDefinitionId)
+        => _connection.GetFormDefinitionAsync(tenantId, formDefinitionId);
+
+    public Task<FormDefinition?> GetFormDefinitionByTypeAsync(string tenantId, string type)
+        => _connection.GetFormDefinitionByTypeAsync(tenantId, type);
+
+    public Task<List<FormDefinition>> GetFormDefinitionsByTenantAsync(string tenantId)
+        => _connection.GetFormDefinitionsByTenantAsync(tenantId);
+
+    public Task<FormDefinition> CreateFormDefinitionAsync(string tenantId, FormDefinition formDefinition)
+        => _connection.CreateFormDefinitionAsync(tenantId, formDefinition);
+
+    public Task<FormDefinition> UpdateFormDefinitionAsync(string tenantId, string formDefinitionId, FormDefinition formDefinition)
+        => _connection.UpdateFormDefinitionAsync(tenantId, formDefinitionId, formDefinition);
+
+    public Task<bool> DeleteFormDefinitionAsync(string tenantId, string formDefinitionId)
+        => _connection.DeleteFormDefinitionAsync(tenantId, formDefinitionId);
+
+    // FormEntry admin (JWT)
+    public Task<List<FormEntry>> GetFormEntriesByTenantAsync(string tenantId, string? type = null)
+        => _connection.GetFormEntriesByTenantAsync(tenantId, type);
+
+    public Task<FormEntry?> GetFormEntryAsync(string tenantId, string entryId)
+        => _connection.GetFormEntryAsync(tenantId, entryId);
+
+    public Task<FormEntry> UpdateFormEntryStatusAsync(string tenantId, string entryId, string status)
+        => _connection.UpdateFormEntryStatusAsync(tenantId, entryId, status);
+
     public void Dispose()
     {
         if (_connection is IDisposable disposable)

@@ -326,8 +326,8 @@ public class MongoDataConnection : IDataConnection, IDisposable
             // Insert the form entry
             await formEntryCollection.InsertOneAsync(formEntry);
 
-            _logger.LogInformation("Form entry created successfully - FormEntryId: {FormEntryId}, FormId: {FormId}, TenantId: {TenantId}",
-                formEntry.Id, formEntry.FormId, tenantId);
+            _logger.LogInformation("Form entry created successfully - FormEntryId: {FormEntryId}, FormDefinitionId: {FormDefinitionId}, TenantId: {TenantId}",
+                formEntry.Id, formEntry.FormDefinitionId, tenantId);
 
             return formEntry;
         }
@@ -1065,6 +1065,62 @@ public class MongoDataConnection : IDataConnection, IDisposable
     }
 
     public Task<bool> DeleteThemeAsync(string tenantId, string themeId)
+    {
+        throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
+    }
+
+    // ===== FORM DEFINITION — content serving (API key) =====
+
+    public Task<FormDefinition?> GetFormDefinitionPublicAsync(string apiKey, string tenantId, string type)
+    {
+        throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
+    }
+
+    // ===== FORM DEFINITION — admin (JWT) =====
+
+    public Task<FormDefinition?> GetFormDefinitionAsync(string tenantId, string formDefinitionId)
+    {
+        throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
+    }
+
+    public Task<FormDefinition?> GetFormDefinitionByTypeAsync(string tenantId, string type)
+    {
+        throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
+    }
+
+    public Task<List<FormDefinition>> GetFormDefinitionsByTenantAsync(string tenantId)
+    {
+        throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
+    }
+
+    public Task<FormDefinition> CreateFormDefinitionAsync(string tenantId, FormDefinition formDefinition)
+    {
+        throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
+    }
+
+    public Task<FormDefinition> UpdateFormDefinitionAsync(string tenantId, string formDefinitionId, FormDefinition formDefinition)
+    {
+        throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
+    }
+
+    public Task<bool> DeleteFormDefinitionAsync(string tenantId, string formDefinitionId)
+    {
+        throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
+    }
+
+    // ===== FORM ENTRY — admin (JWT) =====
+
+    public Task<List<FormEntry>> GetFormEntriesByTenantAsync(string tenantId, string? type = null)
+    {
+        throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
+    }
+
+    public Task<FormEntry?> GetFormEntryAsync(string tenantId, string entryId)
+    {
+        throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
+    }
+
+    public Task<FormEntry> UpdateFormEntryStatusAsync(string tenantId, string entryId, string status)
     {
         throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
     }

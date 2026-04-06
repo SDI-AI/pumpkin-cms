@@ -1,8 +1,7 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
-import { fetchTheme } from '@/lib/api';
-import { fallbackTheme } from '@/data';
+import { siteTheme } from '@/data';
 import { SiteHeader } from '@/components/SiteHeader';
 import { SiteFooter } from '@/components/SiteFooter';
 import type { HeaderClassNames, FooterClassNames } from 'pumpkin-block-views';
@@ -26,21 +25,19 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const theme = (await fetchTheme()) ?? fallbackTheme;
-
   return (
     <html lang="en" className={inter.variable}>
       <body className="min-h-screen bg-white">
         {/* ── Site Header ──────────────────────────────── */}
         <SiteHeader
-          header={theme.header}
-          menu={theme.menu}
-          classNames={theme.header.classNames as HeaderClassNames}
+          header={siteTheme.header}
+          menu={siteTheme.menu}
+          classNames={siteTheme.header.classNames as HeaderClassNames}
         />
 
         {/* ── Main Content ─────────────────────────────── */}
@@ -48,11 +45,11 @@ export default async function RootLayout({
 
         {/* ── Site Footer ──────────────────────────────── */}
         <SiteFooter
-          footer={theme.footer}
-          menu={theme.menu}
-          logoUrl={theme.header.logoUrl}
-          logoAlt={theme.header.logoAlt}
-          classNames={theme.footer.classNames as FooterClassNames}
+          footer={siteTheme.footer}
+          menu={siteTheme.menu}
+          logoUrl={siteTheme.header.logoUrl}
+          logoAlt={siteTheme.header.logoAlt}
+          classNames={siteTheme.footer.classNames as FooterClassNames}
         />
       </body>
     </html>

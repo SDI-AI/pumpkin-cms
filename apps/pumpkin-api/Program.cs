@@ -231,25 +231,60 @@ app.MapDelete("/api/pages/{tenantId}/{**pageSlug}",
     .WithDescription("Deletes a page by its slug for a specific tenant. Requires API key authentication via Authorization header (Bearer {apiKey})")
     .RequireCors("TenantCors");
 
-// Save a form entry
+// Save a form entry (low-level — full FormEntry body required)
 app.MapPost("/api/forms/{tenantId}/entries",
     async (IDatabaseService databaseService, string tenantId, FormEntry formEntry, HttpContext context) =>
     {
         // Extract API key from Authorization header (Bearer token format)
         var authHeader = context.Request.Headers.Authorization.FirstOrDefault();
         var apiKey = string.Empty;
-        
+
         if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
         {
             apiKey = authHeader.Substring("Bearer ".Length).Trim();
         }
-        
+
         return await PumpkinManager.SaveFormEntryAsync(databaseService, apiKey, tenantId, formEntry);
     })
     .WithTags("Forms")
     .WithName("SaveFormEntry")
-    .WithSummary("Submit a form entry")
+    .WithSummary("Submit a form entry (low-level)")
     .WithDescription("Submits a new form entry for a specific tenant. Requires API key authentication via Authorization header (Bearer {apiKey})")
+    .RequireCors("TenantCors");
+
+// Get form definition by type (for frontend dynamic form rendering)
+app.MapGet("/api/forms/{tenantId}/definitions/{type}",
+    async (IDatabaseService databaseService, string tenantId, string type, HttpContext context) =>
+    {
+        var authHeader = context.Request.Headers.Authorization.FirstOrDefault();
+        var apiKey = string.Empty;
+        if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+            apiKey = authHeader.Substring("Bearer ".Length).Trim();
+
+        return await PumpkinManager.GetFormDefinitionPublicAsync(databaseService, apiKey, tenantId, type);
+    })
+    .WithTags("Forms")
+    .WithName("GetFormDefinition")
+    .WithSummary("Get form definition by type")
+    .WithDescription("Returns the form schema for the given type so the frontend can render the form dynamically. Requires API key authentication via Authorization header (Bearer {apiKey})")
+    .RequireCors("TenantCors");
+
+// Submit a form using a flat field dictionary (ergonomic frontend endpoint)
+app.MapPost("/api/forms/{tenantId}/submit/{type}",
+    async (IDatabaseService databaseService, string tenantId, string type,
+           Dictionary<string, object?> formData, HttpContext context) =>
+    {
+        var authHeader = context.Request.Headers.Authorization.FirstOrDefault();
+        var apiKey = string.Empty;
+        if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+            apiKey = authHeader.Substring("Bearer ".Length).Trim();
+
+        return await PumpkinManager.SubmitFormAsync(databaseService, apiKey, tenantId, type, formData, context);
+    })
+    .WithTags("Forms")
+    .WithName("SubmitForm")
+    .WithSummary("Submit a filled form by type")
+    .WithDescription("Accepts a flat field dictionary, validates required fields against the FormDefinition, and saves a FormEntry. Server sets ipAddress, userAgent, submittedAt, status, and source automatically. Requires API key authentication via Authorization header (Bearer {apiKey})")
     .RequireCors("TenantCors");
 
 // Get sitemap pages
@@ -1131,4 +1166,205 @@ app.MapDelete("/api/admin/themes/{tenantId}/{themeId}",
     .WithSummary("Delete a theme")
     .WithDescription("Deletes a theme by ID for a specific tenant. Requires JWT authentication.");
 
+// ===== ADMIN: FORM DEFINITION ENDPOINTS =====
+
+// Admin: List all form definitions for a tenant
+app.MapGet("/api/admin/forms/{tenantId}/definitions",
+    async (IDatabaseService databaseService, string tenantId, HttpContext context) =>
+    {
+        if (context.User?.Identity?.IsAuthenticated != true)
+            return Results.Unauthorized();
+
+        var userTenantId = context.User.FindFirst("tenantId")?.Value;
+        var userRole = context.User.FindFirst(ClaimTypes.Role)?.Value;
+
+        if (string.IsNullOrEmpty(userTenantId))
+            return Results.BadRequest("User tenant ID not found in token");
+
+        if (tenantId != userTenantId && userRole != "SuperAdmin")
+            return Results.Forbid();
+
+        return await PumpkinManager.GetFormDefinitionsByTenantAsync(databaseService, tenantId);
+    })
+    .RequireAuthorization()
+    .WithTags("Admin - Forms")
+    .WithName("GetFormDefinitionsByTenant")
+    .WithSummary("List all form definitions for a tenant")
+    .WithDescription("Retrieves all form definitions for a specific tenant. Requires JWT authentication.");
+
+// Admin: Get a single form definition
+app.MapGet("/api/admin/forms/{tenantId}/definitions/{formDefinitionId}",
+    async (IDatabaseService databaseService, string tenantId, string formDefinitionId, HttpContext context) =>
+    {
+        if (context.User?.Identity?.IsAuthenticated != true)
+            return Results.Unauthorized();
+
+        var userTenantId = context.User.FindFirst("tenantId")?.Value;
+        var userRole = context.User.FindFirst(ClaimTypes.Role)?.Value;
+
+        if (string.IsNullOrEmpty(userTenantId))
+            return Results.BadRequest("User tenant ID not found in token");
+
+        if (tenantId != userTenantId && userRole != "SuperAdmin")
+            return Results.Forbid();
+
+        return await PumpkinManager.GetFormDefinitionAsync(databaseService, tenantId, formDefinitionId);
+    })
+    .RequireAuthorization()
+    .WithTags("Admin - Forms")
+    .WithName("GetFormDefinition_Admin")
+    .WithSummary("Get a form definition by ID")
+    .WithDescription("Retrieves a form definition by ID for a specific tenant. Requires JWT authentication.");
+
+// Admin: Create a form definition
+app.MapPost("/api/admin/forms/{tenantId}/definitions",
+    async (IDatabaseService databaseService, string tenantId, FormDefinition formDefinition, HttpContext context) =>
+    {
+        if (context.User?.Identity?.IsAuthenticated != true)
+            return Results.Unauthorized();
+
+        var userTenantId = context.User.FindFirst("tenantId")?.Value;
+        var userRole = context.User.FindFirst(ClaimTypes.Role)?.Value;
+
+        if (string.IsNullOrEmpty(userTenantId))
+            return Results.BadRequest("User tenant ID not found in token");
+
+        if (tenantId != userTenantId && userRole != "SuperAdmin")
+            return Results.Forbid();
+
+        return await PumpkinManager.CreateFormDefinitionAsync(databaseService, tenantId, formDefinition);
+    })
+    .RequireAuthorization()
+    .WithTags("Admin - Forms")
+    .WithName("CreateFormDefinition")
+    .WithSummary("Create a form definition")
+    .WithDescription("Creates a new form definition for a specific tenant. Requires JWT authentication.");
+
+// Admin: Update a form definition
+app.MapPut("/api/admin/forms/{tenantId}/definitions/{formDefinitionId}",
+    async (IDatabaseService databaseService, string tenantId, string formDefinitionId,
+           FormDefinition formDefinition, HttpContext context) =>
+    {
+        if (context.User?.Identity?.IsAuthenticated != true)
+            return Results.Unauthorized();
+
+        var userTenantId = context.User.FindFirst("tenantId")?.Value;
+        var userRole = context.User.FindFirst(ClaimTypes.Role)?.Value;
+
+        if (string.IsNullOrEmpty(userTenantId))
+            return Results.BadRequest("User tenant ID not found in token");
+
+        if (tenantId != userTenantId && userRole != "SuperAdmin")
+            return Results.Forbid();
+
+        return await PumpkinManager.UpdateFormDefinitionAsync(databaseService, tenantId, formDefinitionId, formDefinition);
+    })
+    .RequireAuthorization()
+    .WithTags("Admin - Forms")
+    .WithName("UpdateFormDefinition")
+    .WithSummary("Update a form definition")
+    .WithDescription("Updates a form definition by ID for a specific tenant. Requires JWT authentication.");
+
+// Admin: Delete a form definition
+app.MapDelete("/api/admin/forms/{tenantId}/definitions/{formDefinitionId}",
+    async (IDatabaseService databaseService, string tenantId, string formDefinitionId, HttpContext context) =>
+    {
+        if (context.User?.Identity?.IsAuthenticated != true)
+            return Results.Unauthorized();
+
+        var userTenantId = context.User.FindFirst("tenantId")?.Value;
+        var userRole = context.User.FindFirst(ClaimTypes.Role)?.Value;
+
+        if (string.IsNullOrEmpty(userTenantId))
+            return Results.BadRequest("User tenant ID not found in token");
+
+        if (tenantId != userTenantId && userRole != "SuperAdmin")
+            return Results.Forbid();
+
+        return await PumpkinManager.DeleteFormDefinitionAsync(databaseService, tenantId, formDefinitionId);
+    })
+    .RequireAuthorization()
+    .WithTags("Admin - Forms")
+    .WithName("DeleteFormDefinition")
+    .WithSummary("Delete a form definition")
+    .WithDescription("Deletes a form definition by ID for a specific tenant. Requires JWT authentication.");
+
+// ===== ADMIN: FORM ENTRY ENDPOINTS =====
+
+// Admin: List form entries for a tenant (optionally filtered by type)
+app.MapGet("/api/admin/forms/{tenantId}/entries",
+    async (IDatabaseService databaseService, string tenantId, HttpContext context, string? type = null) =>
+    {
+        if (context.User?.Identity?.IsAuthenticated != true)
+            return Results.Unauthorized();
+
+        var userTenantId = context.User.FindFirst("tenantId")?.Value;
+        var userRole = context.User.FindFirst(ClaimTypes.Role)?.Value;
+
+        if (string.IsNullOrEmpty(userTenantId))
+            return Results.BadRequest("User tenant ID not found in token");
+
+        if (tenantId != userTenantId && userRole != "SuperAdmin")
+            return Results.Forbid();
+
+        return await PumpkinManager.GetFormEntriesByTenantAsync(databaseService, tenantId, type);
+    })
+    .RequireAuthorization()
+    .WithTags("Admin - Forms")
+    .WithName("GetFormEntries")
+    .WithSummary("List form entries for a tenant")
+    .WithDescription("Retrieves all form entries for a tenant. Optional ?type= query parameter filters by form type. Requires JWT authentication.");
+
+// Admin: Get a single form entry
+app.MapGet("/api/admin/forms/{tenantId}/entries/{entryId}",
+    async (IDatabaseService databaseService, string tenantId, string entryId, HttpContext context) =>
+    {
+        if (context.User?.Identity?.IsAuthenticated != true)
+            return Results.Unauthorized();
+
+        var userTenantId = context.User.FindFirst("tenantId")?.Value;
+        var userRole = context.User.FindFirst(ClaimTypes.Role)?.Value;
+
+        if (string.IsNullOrEmpty(userTenantId))
+            return Results.BadRequest("User tenant ID not found in token");
+
+        if (tenantId != userTenantId && userRole != "SuperAdmin")
+            return Results.Forbid();
+
+        return await PumpkinManager.GetFormEntryAsync(databaseService, tenantId, entryId);
+    })
+    .RequireAuthorization()
+    .WithTags("Admin - Forms")
+    .WithName("GetFormEntry")
+    .WithSummary("Get a single form entry")
+    .WithDescription("Retrieves a single form entry by ID for a specific tenant. Requires JWT authentication.");
+
+// Admin: Update form entry status
+app.MapPut("/api/admin/forms/{tenantId}/entries/{entryId}/status",
+    async (IDatabaseService databaseService, string tenantId, string entryId,
+           StatusUpdateRequest request, HttpContext context) =>
+    {
+        if (context.User?.Identity?.IsAuthenticated != true)
+            return Results.Unauthorized();
+
+        var userTenantId = context.User.FindFirst("tenantId")?.Value;
+        var userRole = context.User.FindFirst(ClaimTypes.Role)?.Value;
+
+        if (string.IsNullOrEmpty(userTenantId))
+            return Results.BadRequest("User tenant ID not found in token");
+
+        if (tenantId != userTenantId && userRole != "SuperAdmin")
+            return Results.Forbid();
+
+        return await PumpkinManager.UpdateFormEntryStatusAsync(databaseService, tenantId, entryId, request.Status);
+    })
+    .RequireAuthorization()
+    .WithTags("Admin - Forms")
+    .WithName("UpdateFormEntryStatus")
+    .WithSummary("Update the status of a form entry")
+    .WithDescription("Updates the status of a form entry (e.g. new → read → actioned → archived). Requires JWT authentication.");
+
 app.Run();
+
+/// <summary>Request body for updating a form entry's status.</summary>
+record StatusUpdateRequest(string Status);

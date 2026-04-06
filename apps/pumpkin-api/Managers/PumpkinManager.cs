@@ -181,8 +181,8 @@ public static class PumpkinManager
             if (formEntry == null)
                 return Results.BadRequest("Form entry data is required");
             
-            if (string.IsNullOrEmpty(formEntry.FormId))
-                return Results.BadRequest("Form ID is required");
+            if (string.IsNullOrEmpty(formEntry.FormDefinitionId))
+                return Results.BadRequest("Form definition ID is required");
 
             var savedFormEntry = await databaseService.SaveFormEntryAsync(apiKey, tenantId, formEntry);
             
@@ -597,6 +597,317 @@ public static class PumpkinManager
         catch (Exception ex)
         {
             return Results.Problem($"Error deleting theme: {ex.Message}");
+        }
+    }
+
+    // ===== FORM DEFINITION — content serving (API key) =====
+
+    /// <summary>
+    /// Returns the active FormDefinition for the given type so the frontend can render the form.
+    /// </summary>
+    public static async Task<IResult> GetFormDefinitionPublicAsync(
+        IDatabaseService databaseService, string apiKey, string tenantId, string type)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(apiKey))
+                return Results.BadRequest("API key is required");
+            if (string.IsNullOrEmpty(tenantId))
+                return Results.BadRequest("Tenant ID is required");
+            if (string.IsNullOrEmpty(type))
+                return Results.BadRequest("Form type is required");
+
+            var definition = await databaseService.GetFormDefinitionPublicAsync(apiKey, tenantId, type);
+
+            if (definition == null)
+                return Results.NotFound("Form definition not found or access denied");
+
+            return Results.Ok(definition);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Results.Unauthorized();
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Error retrieving form definition: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Accepts a flat field dictionary from the frontend, looks up the FormDefinition,
+    /// validates required fields, then saves a FormEntry.
+    /// ipAddress, userAgent, submittedAt, status, and source are set server-side.
+    /// </summary>
+    public static async Task<IResult> SubmitFormAsync(
+        IDatabaseService databaseService,
+        string apiKey,
+        string tenantId,
+        string type,
+        Dictionary<string, object?> formData,
+        HttpContext httpContext)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(apiKey))
+                return Results.BadRequest("API key is required");
+            if (string.IsNullOrEmpty(tenantId))
+                return Results.BadRequest("Tenant ID is required");
+            if (string.IsNullOrEmpty(type))
+                return Results.BadRequest("Form type is required");
+            if (formData == null)
+                return Results.BadRequest("Form data is required");
+
+            // Fetch the definition to validate required fields
+            var definition = await databaseService.GetFormDefinitionPublicAsync(apiKey, tenantId, type);
+
+            if (definition == null)
+                return Results.NotFound("Form definition not found or access denied");
+
+            if (!definition.IsActive)
+                return Results.BadRequest("This form is not currently accepting submissions");
+
+            // Validate required fields
+            var missingFields = definition.Fields
+                .Where(f => f.Required && !f.Hidden)
+                .Where(f => !formData.ContainsKey(f.Name) ||
+                            formData[f.Name] == null ||
+                            string.IsNullOrWhiteSpace(formData[f.Name]?.ToString()))
+                .Select(f => f.Label)
+                .ToList();
+
+            if (missingFields.Any())
+                return Results.BadRequest($"Required fields missing: {string.Join(", ", missingFields)}");
+
+            // Build the FormEntry
+            var ipAddress = httpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty;
+            var port = httpContext.Connection.RemotePort;
+            var fullIp = port > 0 ? $"{ipAddress}:{port}" : ipAddress;
+
+            var entry = new FormEntry
+            {
+                Id = $"{type}-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}-{Guid.NewGuid():N}",
+                Type = type,
+                TenantId = tenantId,
+                FormDefinitionId = definition.FormDefinitionId,
+                FormData = formData,
+                SubmittedAt = DateTime.UtcNow,
+                Status = "new",
+                Source = "website_form",
+                IpAddress = fullIp,
+                UserAgent = httpContext.Request.Headers.UserAgent.FirstOrDefault() ?? string.Empty,
+                Metadata = new FormEntryMetadata
+                {
+                    Referrer = httpContext.Request.Headers.Referer.FirstOrDefault() ?? string.Empty
+                }
+            };
+
+            var saved = await databaseService.SaveFormEntryAsync(apiKey, tenantId, entry);
+
+            return Results.Created($"/api/forms/{tenantId}/entries/{saved.Id}", saved);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Results.Unauthorized();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Results.Conflict(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Error submitting form: {ex.Message}");
+        }
+    }
+
+    // ===== FORM DEFINITION — admin (JWT) =====
+
+    public static async Task<IResult> GetFormDefinitionsByTenantAsync(
+        IDatabaseService databaseService, string tenantId)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(tenantId))
+                return Results.BadRequest("Tenant ID is required");
+
+            var definitions = await databaseService.GetFormDefinitionsByTenantAsync(tenantId);
+
+            return Results.Ok(new { definitions, count = definitions.Count, tenantId });
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Error retrieving form definitions: {ex.Message}");
+        }
+    }
+
+    public static async Task<IResult> GetFormDefinitionAsync(
+        IDatabaseService databaseService, string tenantId, string formDefinitionId)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(tenantId))
+                return Results.BadRequest("Tenant ID is required");
+            if (string.IsNullOrEmpty(formDefinitionId))
+                return Results.BadRequest("Form definition ID is required");
+
+            var definition = await databaseService.GetFormDefinitionAsync(tenantId, formDefinitionId);
+
+            if (definition == null)
+                return Results.NotFound("Form definition not found");
+
+            return Results.Ok(definition);
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Error retrieving form definition: {ex.Message}");
+        }
+    }
+
+    public static async Task<IResult> CreateFormDefinitionAsync(
+        IDatabaseService databaseService, string tenantId, FormDefinition formDefinition)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(tenantId))
+                return Results.BadRequest("Tenant ID is required");
+            if (formDefinition == null)
+                return Results.BadRequest("Form definition data is required");
+            if (string.IsNullOrEmpty(formDefinition.Type))
+                return Results.BadRequest("Form definition type is required");
+
+            formDefinition.TenantId = tenantId;
+            if (string.IsNullOrEmpty(formDefinition.FormDefinitionId))
+                formDefinition.FormDefinitionId = formDefinition.Id;
+
+            var created = await databaseService.CreateFormDefinitionAsync(tenantId, formDefinition);
+
+            return Results.Created($"/api/admin/forms/{tenantId}/definitions/{created.FormDefinitionId}", created);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Results.Conflict(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Error creating form definition: {ex.Message}");
+        }
+    }
+
+    public static async Task<IResult> UpdateFormDefinitionAsync(
+        IDatabaseService databaseService, string tenantId, string formDefinitionId, FormDefinition formDefinition)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(tenantId))
+                return Results.BadRequest("Tenant ID is required");
+            if (string.IsNullOrEmpty(formDefinitionId))
+                return Results.BadRequest("Form definition ID is required");
+            if (formDefinition == null)
+                return Results.BadRequest("Form definition data is required");
+
+            var updated = await databaseService.UpdateFormDefinitionAsync(tenantId, formDefinitionId, formDefinition);
+
+            return Results.Ok(updated);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return Results.NotFound(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Error updating form definition: {ex.Message}");
+        }
+    }
+
+    public static async Task<IResult> DeleteFormDefinitionAsync(
+        IDatabaseService databaseService, string tenantId, string formDefinitionId)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(tenantId))
+                return Results.BadRequest("Tenant ID is required");
+            if (string.IsNullOrEmpty(formDefinitionId))
+                return Results.BadRequest("Form definition ID is required");
+
+            var deleted = await databaseService.DeleteFormDefinitionAsync(tenantId, formDefinitionId);
+
+            if (deleted)
+                return Results.Ok(new { message = "Form definition deleted successfully", tenantId, formDefinitionId });
+
+            return Results.NotFound("Form definition not found");
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Error deleting form definition: {ex.Message}");
+        }
+    }
+
+    // ===== FORM ENTRY — admin (JWT) =====
+
+    public static async Task<IResult> GetFormEntriesByTenantAsync(
+        IDatabaseService databaseService, string tenantId, string? type = null)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(tenantId))
+                return Results.BadRequest("Tenant ID is required");
+
+            var entries = await databaseService.GetFormEntriesByTenantAsync(tenantId, type);
+
+            return Results.Ok(new { entries, count = entries.Count, tenantId, type = type ?? "all" });
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Error retrieving form entries: {ex.Message}");
+        }
+    }
+
+    public static async Task<IResult> GetFormEntryAsync(
+        IDatabaseService databaseService, string tenantId, string entryId)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(tenantId))
+                return Results.BadRequest("Tenant ID is required");
+            if (string.IsNullOrEmpty(entryId))
+                return Results.BadRequest("Entry ID is required");
+
+            var entry = await databaseService.GetFormEntryAsync(tenantId, entryId);
+
+            if (entry == null)
+                return Results.NotFound("Form entry not found");
+
+            return Results.Ok(entry);
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Error retrieving form entry: {ex.Message}");
+        }
+    }
+
+    public static async Task<IResult> UpdateFormEntryStatusAsync(
+        IDatabaseService databaseService, string tenantId, string entryId, string status)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(tenantId))
+                return Results.BadRequest("Tenant ID is required");
+            if (string.IsNullOrEmpty(entryId))
+                return Results.BadRequest("Entry ID is required");
+            if (string.IsNullOrEmpty(status))
+                return Results.BadRequest("Status is required");
+
+            var updated = await databaseService.UpdateFormEntryStatusAsync(tenantId, entryId, status);
+
+            return Results.Ok(updated);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return Results.NotFound(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Error updating form entry status: {ex.Message}");
         }
     }
 }

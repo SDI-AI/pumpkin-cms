@@ -125,6 +125,60 @@ export default function ThemeEditorPage() {
     setTheme(prev => prev ? { ...prev, footer: { ...prev.footer, ...updates } } : prev)
   }, [])
 
+  /**
+   * Parse the three JSON editors and merge with current theme state.
+   * Returns null and sets validation errors if any JSON is invalid.
+   */
+  const buildThemeToSave = useCallback((): Theme | null => {
+    if (!theme || !currentTenant) return null
+
+    let parsedBlockStyles = theme.blockStyles
+    try {
+      parsedBlockStyles = JSON.parse(blockStylesJson)
+      setBlockStylesError(null)
+    } catch {
+      setBlockStylesError('Invalid JSON in block styles')
+      setActiveTab('styles')
+      return null
+    }
+
+    let parsedHeaderClassNames = theme.header.classNames
+    try {
+      parsedHeaderClassNames = JSON.parse(headerClassNamesJson)
+      setHeaderClassNamesError(null)
+    } catch {
+      setHeaderClassNamesError('Invalid JSON in header class names')
+      setActiveTab('header')
+      return null
+    }
+
+    let parsedFooterClassNames = theme.footer.classNames
+    try {
+      parsedFooterClassNames = JSON.parse(footerClassNamesJson)
+      setFooterClassNamesError(null)
+    } catch {
+      setFooterClassNamesError('Invalid JSON in footer class names')
+      setActiveTab('footer')
+      return null
+    }
+
+    const built: Theme = {
+      ...theme,
+      blockStyles: parsedBlockStyles,
+      header: { ...theme.header, classNames: parsedHeaderClassNames },
+      footer: { ...theme.footer, classNames: parsedFooterClassNames },
+      tenantId: currentTenant.tenantId,
+      updatedAt: new Date().toISOString(),
+    }
+
+    if (isNew) {
+      built.id = built.themeId
+      built.createdAt = new Date().toISOString()
+    }
+
+    return built
+  }, [theme, currentTenant, blockStylesJson, headerClassNamesJson, footerClassNamesJson, isNew])
+
   const handleSave = async () => {
     if (!theme || !token || !currentTenant) return
 
@@ -140,52 +194,8 @@ export default function ThemeEditorPage() {
       return
     }
 
-    // Parse blockStyles JSON
-    let parsedBlockStyles = theme.blockStyles
-    try {
-      parsedBlockStyles = JSON.parse(blockStylesJson)
-      setBlockStylesError(null)
-    } catch {
-      setBlockStylesError('Invalid JSON in block styles')
-      setActiveTab('styles')
-      return
-    }
-
-    // Parse header classNames JSON
-    let parsedHeaderClassNames = theme.header.classNames
-    try {
-      parsedHeaderClassNames = JSON.parse(headerClassNamesJson)
-      setHeaderClassNamesError(null)
-    } catch {
-      setHeaderClassNamesError('Invalid JSON in header class names')
-      setActiveTab('header')
-      return
-    }
-
-    // Parse footer classNames JSON
-    let parsedFooterClassNames = theme.footer.classNames
-    try {
-      parsedFooterClassNames = JSON.parse(footerClassNamesJson)
-      setFooterClassNamesError(null)
-    } catch {
-      setFooterClassNamesError('Invalid JSON in footer class names')
-      setActiveTab('footer')
-      return
-    }
-
-    const themeToSave: Theme = {
-      ...theme,
-      blockStyles: parsedBlockStyles,
-      header: { ...theme.header, classNames: parsedHeaderClassNames },
-      footer: { ...theme.footer, classNames: parsedFooterClassNames },
-      tenantId: currentTenant.tenantId,
-      updatedAt: new Date().toISOString(),
-    }
-
-    if (isNew) {
-      themeToSave.id = themeToSave.themeId
-      themeToSave.createdAt = new Date().toISOString()
-    }
+    const themeToSave = buildThemeToSave()
+    if (!themeToSave) return // JSON validation failed — errors already set
 
     try {
       setSaving(true)
@@ -212,6 +222,21 @@ export default function ThemeEditorPage() {
     } finally {
       setSaving(false)
     }
+  }
+
+  const handleExportJson = () => {
+    const themeToExport = buildThemeToSave()
+    if (!themeToExport) return // JSON validation failed — errors already set
+
+    const blob = new Blob([JSON.stringify(themeToExport, null, 2)], {
+      type: 'application/json',
+    })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${themeToExport.themeId}-theme.json`
+    a.click()
+    URL.revokeObjectURL(url)
   }
 
   if (!user || !token) {
@@ -264,25 +289,39 @@ export default function ThemeEditorPage() {
             )}
           </div>
         </div>
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="btn btn-primary flex items-center space-x-2 disabled:opacity-50"
-        >
-          {saving ? (
-            <>
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-              <span>Saving...</span>
-            </>
-          ) : (
-            <>
+        <div className="flex items-center space-x-3">
+          {!isNew && (
+            <button
+              onClick={handleExportJson}
+              className="btn btn-secondary flex items-center space-x-2"
+              title="Download theme as JSON — drop it into src/data/ and set PUMPKIN_THEME_FILE"
+            >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
               </svg>
-              <span>{isNew ? 'Create Theme' : 'Save Changes'}</span>
-            </>
+              <span>Export JSON</span>
+            </button>
           )}
-        </button>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="btn btn-primary flex items-center space-x-2 disabled:opacity-50"
+          >
+            {saving ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <span>Saving...</span>
+              </>
+            ) : (
+              <>
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span>{isNew ? 'Create Theme' : 'Save Changes'}</span>
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Status Messages */}

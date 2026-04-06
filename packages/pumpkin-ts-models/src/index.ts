@@ -38,6 +38,14 @@ export type {
   FormEntryMetadata
 } from './models/FormEntry';
 
+// Form Definition models
+export type {
+  FormDefinition,
+  FormFieldDefinition,
+  FormFieldOption,
+  FormFieldType
+} from './models/FormDefinition';
+
 // Page models
 export type {
   Page,

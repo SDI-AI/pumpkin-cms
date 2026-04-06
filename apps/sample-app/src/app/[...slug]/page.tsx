@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
-import { fetchPage, fetchTheme } from '@/lib/api';
+import { fetchPage } from '@/lib/api';
 import { buildMetadata } from '@/lib/metadata';
-import { fallbackTheme } from '@/data';
+import { siteTheme } from '@/data';
 import { PageRenderer } from '@/components/PageRenderer';
 import { notFound } from 'next/navigation';
 
@@ -25,10 +25,7 @@ export async function generateMetadata({ params }: SlugPageProps): Promise<Metad
  */
 export default async function SlugPage({ params }: SlugPageProps) {
   const slug = params.slug.join('/');
-  const [page, theme] = await Promise.all([
-    fetchPage(slug),
-    fetchTheme(),
-  ]);
+  const page = await fetchPage(slug);
 
   if (!page) {
     notFound();
@@ -37,7 +34,7 @@ export default async function SlugPage({ params }: SlugPageProps) {
   return (
     <PageRenderer
       page={page}
-      blockStyles={(theme ?? fallbackTheme).blockStyles}
+      blockStyles={siteTheme.blockStyles}
     />
   );
 }
