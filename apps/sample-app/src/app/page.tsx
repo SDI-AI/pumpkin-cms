@@ -1,8 +1,7 @@
 import type { Metadata } from 'next';
 import { fetchPage } from '@/lib/api';
-import { fetchTheme } from '@/lib/api';
 import { buildMetadata } from '@/lib/metadata';
-import { fallbackHomePage, fallbackTheme } from '@/data';
+import { fallbackHomePage, siteTheme } from '@/data';
 import { PageRenderer } from '@/components/PageRenderer';
 
 /**
@@ -20,15 +19,12 @@ export async function generateMetadata(): Promise<Metadata> {
  * renders the built-in fallback page so the site always has a home.
  */
 export default async function HomePage() {
-  const [page, theme] = await Promise.all([
-    fetchPage('home'),
-    fetchTheme(),
-  ]);
+  const page = await fetchPage('home');
 
   return (
     <PageRenderer
       page={page ?? fallbackHomePage}
-      blockStyles={(theme ?? fallbackTheme).blockStyles}
+      blockStyles={siteTheme.blockStyles}
     />
   );
 }

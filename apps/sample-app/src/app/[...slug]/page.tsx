@@ -6,11 +6,12 @@ import { PageRenderer } from '@/components/PageRenderer';
 import { notFound } from 'next/navigation';
 
 interface SlugPageProps {
-  params: { slug: string[] };
+  params: Promise<{ slug: string[] }>;
 }
 
 export async function generateMetadata({ params }: SlugPageProps): Promise<Metadata> {
-  const slug = params.slug.join('/');
+  const { slug: slugParts } = await params;
+  const slug = slugParts.join('/');
   const page = await fetchPage(slug);
   if (!page) return { title: 'Page Not Found' };
   return buildMetadata(page);
@@ -24,7 +25,8 @@ export async function generateMetadata({ params }: SlugPageProps): Promise<Metad
  * sample data automatically so the app still works for local dev.
  */
 export default async function SlugPage({ params }: SlugPageProps) {
-  const slug = params.slug.join('/');
+  const { slug: slugParts } = await params;
+  const slug = slugParts.join('/');
   const page = await fetchPage(slug);
 
   if (!page) {

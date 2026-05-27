@@ -30,16 +30,46 @@ Open [http://localhost:3001](http://localhost:3001) to see all 14 content blocks
 
 ## Connect to the Pumpkin CMS API
 
-1. Copy `.env.example` → `.env`
+The sample app uses a **static theme system** (theme loaded from JSON at build time) but fetches **dynamic content** (pages) from the API.
+
+### Configuration
+
+1. Copy `.env.example` → `.env.local`
 2. Set your values:
 
 ```env
-NEXT_PUBLIC_API_URL=https://localhost:7211
+NEXT_PUBLIC_API_URL=http://localhost:5064
 PUMPKIN_API_KEY=your-api-key-here
-PUMPKIN_TENANT_ID=your-tenant-id-here
+PUMPKIN_TENANT_ID=pumpkin
 ```
 
-3. Restart the dev server — the app will now fetch live content from the API.
+3. Restart the dev server — the app will fetch pages from the API, using fallback data when pages aren't found.
+
+### Static Theme + Dynamic Content
+
+- **Theme** (header, menu, footer, styles) → Static JSON file at build time
+- **Pages** (content blocks) → Fetched from API at runtime with ISR caching
+- **Sitemap** → Generated from API at runtime
+
+See [STATIC-THEME-WORKFLOW.md](./STATIC-THEME-WORKFLOW.md) for details on managing themes and menus.
+
+## Managing the Menu
+
+Use the visual menu builder tool:
+
+```bash
+# Open in browser
+open tools/menu-builder.html
+# or on Windows
+start tools/menu-builder.html
+```
+
+1. Build your menu structure visually
+2. Copy the generated JSON
+3. Paste into `src/data/pumpkin-theme.json` under `"menu": []`
+4. Rebuild the app
+
+See [tools/README.md](./tools/README.md) for full menu builder documentation.
 
 ## Project Structure
 
