@@ -1,0 +1,30 @@
+{
+  "name": "pumpkin-starter-app",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Blank Pumpkin CMS tenant starter app with phase-1 tenant setup",
+  "scripts": {
+    "dev": "next dev --port 3003",
+    "build": "next build",
+    "start": "next start --port 3003",
+    "lint": "next lint",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "lucide-react": "^0.468.0",
+    "next": "^14.2.0",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.0",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^8.57.0",
+    "eslint-config-next": "^14.2.0",
+    "postcss": "^8.4.48",
+    "tailwindcss": "^3.4.0",
+    "typescript": "^5.9.0"
+  }
+}

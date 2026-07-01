@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pumpkin CMS Menu Builder</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+      min-height: 100vh;
+      padding: 2rem;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+    }
+    .panel {
+      background: white;
+      border-radius: 12px;
+      padding: 2rem;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    }
+    h1 {
+      color: #7c2d12;
+      margin-bottom: 1.5rem;
+      font-size: 1.75rem;
+    }
+    h2 {
+      color: #9a3412;
+      margin-bottom: 1rem;
+      font-size: 1.25rem;
+    }
+    .menu-list {
+      list-style: none;
+      margin-bottom: 2rem;
+    }
+    .menu-item {
+      background: #fff8f0;
+      border: 2px solid #fed7aa;
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      position: relative;
+    }
+    .menu-item.has-children {
+      border-color: #fb923c;
+      background: #ffedd5;
+    }
+    .menu-item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+    }
+    .menu-item-label {
+      font-weight: 600;
+      color: #7c2d12;
+    }
+    .menu-item-url {
+      font-size: 0.875rem;
+      color: #9a3412;
+      font-family: monospace;
+    }
+    .menu-controls {
+      display: flex;
+      gap: 0.5rem;
+    }
+    .btn {
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-small {
+      padding: 0.25rem 0.5rem;
+      font-size: 0.75rem;
+    }
+    .btn-primary {
+      background: #f97316;
+      color: white;
+    }
+    .btn-primary:hover {
+      background: #ea580c;
+    }
+    .btn-danger {
+      background: #ef4444;
+      color: white;
+    }
+    .btn-danger:hover {
+      background: #dc2626;
+    }
+    .btn-secondary {
+      background: #d1d5db;
+      color: #374151;
+    }
+    .btn-secondary:hover {
+      background: #9ca3af;
+    }
+    .form-group {
+      margin-bottom: 1rem;
+    }
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: #374151;
+    }
+    input, select {
+      width: 100%;
+      padding: 0.75rem;
+      border: 2px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 1rem;
+    }
+    input:focus, select:focus {
+      outline: none;
+      border-color: #f97316;
+    }
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .checkbox-group input {
+      width: auto;
+    }
+    pre {
+      background: #1f2937;
+      color: #10b981;
+      padding: 1.5rem;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-size: 0.875rem;
+      line-height: 1.6;
+      max-height: 600px;
+      overflow-y: auto;
+    }
+    .children-list {
+      margin-top: 1rem;
+      padding-left: 1rem;
+      border-left: 3px solid #fb923c;
+    }
+    .child-item {
+      background: white;
+      border: 1px solid #fed7aa;
+      border-radius: 6px;
+      padding: 0.75rem;
+      margin-bottom: 0.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .copy-btn {
+      margin-top: 1rem;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 3rem;
+      color: #6b7280;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Left Panel: Menu Builder -->
+    <div class="panel">
+      <h1>🎃 Menu Builder</h1>
+      
+      <div id="menuList" class="menu-list"></div>
+      
+      <h2>Add Menu Item</h2>
+      <div class="form-group">
+        <label>Label</label>
+        <input type="text" id="label" placeholder="Features" />
+      </div>
+      
+      <div class="form-group">
+        <label>URL</label>
+        <input type="text" id="url" placeholder="/features" />
+      </div>
+      
+      <div class="form-group">
+        <label>Target</label>
+        <select id="target">
+          <option value="_self">Same Window (_self)</option>
+          <option value="_blank">New Tab (_blank)</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label>Order</label>
+        <input type="number" id="order" value="10" />
+      </div>
+      
+      <div class="form-group checkbox-group">
+        <input type="checkbox" id="isVisible" checked />
+        <label for="isVisible">Visible</label>
+      </div>
+      
+      <div class="form-group">
+        <label>Parent (optional)</label>
+        <select id="parent">
+          <option value="">Top Level</option>
+        </select>
+      </div>
+      
+      <button class="btn btn-primary" onclick="addMenuItem()">Add Menu Item</button>
+    </div>
+    
+    <!-- Right Panel: JSON Output -->
+    <div class="panel">
+      <h1>JSON Output</h1>
+      <p style="margin-bottom: 1rem; color: #6b7280;">Copy this into your theme JSON file under <code>"menu": []</code></p>
+      <pre id="jsonOutput">[]</pre>
+      <button class="btn btn-primary copy-btn" onclick="copyJSON()">📋 Copy to Clipboard</button>
+    </div>
+  </div>
+
+  <script>
+    let menuItems = [];
+    let nextId = 1;
+
+    function renderMenu() {
+      const container = document.getElementById('menuList');
+      const parentSelect = document.getElementById('parent');
+      
+      if (menuItems.length === 0) {
+        container.innerHTML = '<div class="empty-state">No menu items yet. Add one below!</div>';
+        parentSelect.innerHTML = '<option value="">Top Level</option>';
+        return;
+      }
+      
+      // Update parent dropdown
+      parentSelect.innerHTML = '<option value="">Top Level</option>';
+      menuItems.forEach(item => {
+        parentSelect.innerHTML += `<option value="${item.id}">${item.label}</option>`;
+      });
+      
+      // Render menu items
+      container.innerHTML = menuItems.map(item => {
+        const children = menuItems.filter(i => i.parentId === item.id);
+        const hasChildren = children.length > 0;
+        
+        return `
+          <div class="menu-item ${hasChildren ? 'has-children' : ''}">
+            <div class="menu-item-header">
+              <div>
+                <div class="menu-item-label">${item.label}</div>
+                <div class="menu-item-url">${item.url}</div>
+              </div>
+              <div class="menu-controls">
+                <button class="btn btn-small btn-secondary" onclick="moveUp(${item.id})">↑</button>
+                <button class="btn btn-small btn-secondary" onclick="moveDown(${item.id})">↓</button>
+                <button class="btn btn-small btn-danger" onclick="deleteItem(${item.id})">Delete</button>
+              </div>
+            </div>
+            ${hasChildren ? `
+              <div class="children-list">
+                ${children.map(child => `
+                  <div class="child-item">
+                    <div>
+                      <strong>${child.label}</strong> → ${child.url}
+                    </div>
+                    <button class="btn btn-small btn-danger" onclick="deleteItem(${child.id})">×</button>
+                  </div>
+                `).join('')}
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }).join('');
+      
+      updateJSON();
+    }
+
+    function addMenuItem() {
+      const label = document.getElementById('label').value;
+      const url = document.getElementById('url').value;
+      const target = document.getElementById('target').value;
+      const order = parseInt(document.getElementById('order').value);
+      const isVisible = document.getElementById('isVisible').checked;
+      const parentId = document.getElementById('parent').value;
+      
+      if (!label || !url) {
+        alert('Label and URL are required!');
+        return;
+      }
+      
+      menuItems.push({
+        id: nextId++,
+        label,
+        url,
+        target,
+        order,
+        isVisible,
+        icon: '',
+        parentId: parentId || null
+      });
+      
+      // Clear form
+      document.getElementById('label').value = '';
+      document.getElementById('url').value = '';
+      document.getElementById('order').value = (order + 10);
+      
+      renderMenu();
+    }
+
+    function deleteItem(id) {
+      // Also delete children
+      const toDelete = [id, ...menuItems.filter(i => i.parentId === id).map(i => i.id)];
+      menuItems = menuItems.filter(item => !toDelete.includes(item.id));
+      renderMenu();
+    }
+
+    function moveUp(id) {
+      const idx = menuItems.findIndex(i => i.id === id);
+      if (idx > 0) {
+        [menuItems[idx], menuItems[idx - 1]] = [menuItems[idx - 1], menuItems[idx]];
+        renderMenu();
+      }
+    }
+
+    function moveDown(id) {
+      const idx = menuItems.findIndex(i => i.id === id);
+      if (idx < menuItems.length - 1) {
+        [menuItems[idx], menuItems[idx + 1]] = [menuItems[idx + 1], menuItems[idx]];
+        renderMenu();
+      }
+    }
+
+    function buildMenuTree() {
+      // Build hierarchical structure
+      const topLevel = menuItems.filter(i => !i.parentId);
+      
+      return topLevel.map(item => {
+        const children = menuItems
+          .filter(i => i.parentId === item.id)
+          .sort((a, b) => a.order - b.order)
+          .map(child => ({
+            label: child.label,
+            url: child.url,
+            target: child.target,
+            icon: child.icon,
+            order: child.order,
+            isVisible: child.isVisible,
+            children: []
+          }));
+        
+        return {
+          label: item.label,
+          url: item.url,
+          target: item.target,
+          icon: item.icon,
+          order: item.order,
+          isVisible: item.isVisible,
+          children
+        };
+      }).sort((a, b) => a.order - b.order);
+    }
+
+    function updateJSON() {
+      const output = document.getElementById('jsonOutput');
+      const menuTree = buildMenuTree();
+      output.textContent = JSON.stringify(menuTree, null, 2);
+    }
+
+    function copyJSON() {
+      const output = document.getElementById('jsonOutput');
+      navigator.clipboard.writeText(output.textContent)
+        .then(() => alert('✅ JSON copied to clipboard!'))
+        .catch(() => alert('❌ Failed to copy. Please copy manually.'));
+    }
+
+    // Initialize
+    renderMenu();
+  </script>
+</body>
+</html>
