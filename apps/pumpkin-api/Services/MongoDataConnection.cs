@@ -825,6 +825,16 @@ public class MongoDataConnection : IDataConnection, IDisposable
     public async Task<Theme?> GetActiveThemeAdminAsync(string tenantId)
     {
         var themeCollection = _database.GetCollection<Theme>("Theme");
+        var tenant = await GetTenantAsync(tenantId);
+        if (!string.IsNullOrWhiteSpace(tenant?.Settings?.Theme))
+        {
+            var configuredTheme = await GetThemeAdminAsync(tenantId, tenant.Settings.Theme);
+            if (configuredTheme != null)
+            {
+                return configuredTheme;
+            }
+        }
+
         var filter = Builders<Theme>.Filter.And(
             Builders<Theme>.Filter.Eq(t => t.TenantId, tenantId),
             Builders<Theme>.Filter.Eq(t => t.IsActive, true)
@@ -856,6 +866,11 @@ public class MongoDataConnection : IDataConnection, IDisposable
         theme.UpdatedAt = DateTime.UtcNow;
 
         await themeCollection.InsertOneAsync(theme);
+        if (theme.IsActive)
+        {
+            return await ActivateThemeAsync(tenantId, theme.ThemeId);
+        }
+
         _logger.LogInformation("CreateThemeAsync - Theme created - ThemeId: {ThemeId}, TenantId: {TenantId}", theme.ThemeId, tenantId);
 
         return theme;
@@ -882,9 +897,50 @@ public class MongoDataConnection : IDataConnection, IDisposable
         theme.UpdatedAt = DateTime.UtcNow;
 
         await themeCollection.ReplaceOneAsync(filter, theme);
+        if (theme.IsActive)
+        {
+            return await ActivateThemeAsync(tenantId, themeId);
+        }
+
         _logger.LogInformation("UpdateThemeAsync - Theme updated - ThemeId: {ThemeId}, TenantId: {TenantId}", themeId, tenantId);
 
         return theme;
+    }
+
+    public async Task<Theme> ActivateThemeAsync(string tenantId, string themeId)
+    {
+        var themeCollection = _database.GetCollection<Theme>("Theme");
+        var target = await GetThemeAdminAsync(tenantId, themeId);
+        if (target == null)
+        {
+            throw new KeyNotFoundException($"Theme with ID '{themeId}' not found for tenant '{tenantId}'");
+        }
+
+        await themeCollection.UpdateManyAsync(
+            Builders<Theme>.Filter.Eq(t => t.TenantId, tenantId),
+            Builders<Theme>.Update.Set(t => t.IsActive, false));
+
+        target.IsActive = true;
+        target.UpdatedAt = DateTime.UtcNow;
+
+        var filter = Builders<Theme>.Filter.And(
+            Builders<Theme>.Filter.Eq(t => t.TenantId, tenantId),
+            Builders<Theme>.Filter.Eq(t => t.ThemeId, themeId));
+        await themeCollection.ReplaceOneAsync(filter, target);
+
+        var tenant = await GetTenantAsync(tenantId);
+        if (tenant != null)
+        {
+            var tenantCollection = _database.GetCollection<Tenant>("Tenant");
+            tenant.Settings ??= new TenantSettings();
+            tenant.Settings.Theme = themeId;
+            tenant.UpdatedAt = DateTime.UtcNow;
+            await tenantCollection.ReplaceOneAsync(
+                Builders<Tenant>.Filter.Eq(t => t.TenantId, tenantId),
+                tenant);
+        }
+
+        return target;
     }
 
     // Admin: Delete a theme
@@ -896,10 +952,23 @@ public class MongoDataConnection : IDataConnection, IDisposable
             Builders<Theme>.Filter.Eq(t => t.ThemeId, themeId)
         );
 
+        var existing = await GetThemeAdminAsync(tenantId, themeId);
         var result = await themeCollection.DeleteOneAsync(filter);
 
         if (result.DeletedCount > 0)
         {
+            var tenant = await GetTenantAsync(tenantId);
+            if (tenant != null && existing?.IsActive == true && tenant.Settings?.Theme == themeId)
+            {
+                var tenantCollection = _database.GetCollection<Tenant>("Tenant");
+                tenant.Settings ??= new TenantSettings();
+                tenant.Settings.Theme = string.Empty;
+                tenant.UpdatedAt = DateTime.UtcNow;
+                await tenantCollection.ReplaceOneAsync(
+                    Builders<Tenant>.Filter.Eq(t => t.TenantId, tenantId),
+                    tenant);
+            }
+
             _logger.LogInformation("DeleteThemeAsync - Theme deleted - ThemeId: {ThemeId}, TenantId: {TenantId}", themeId, tenantId);
             return true;
         }
@@ -1232,6 +1301,11 @@ public class MongoDataConnection : IDataConnection, IDisposable
     }
 
     public Task<Theme> UpdateThemeAsync(string tenantId, string themeId, Theme theme)
+    {
+        throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
+    }
+
+    public Task<Theme> ActivateThemeAsync(string tenantId, string themeId)
     {
         throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
     }

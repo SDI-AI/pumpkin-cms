@@ -46,6 +46,8 @@ This inventory reflects the current `pumpkin-api` minimal API surface.
 | GET | `/api/themes/{tenantId}` | tenant API key | Returns the active tenant theme. |
 | GET | `/api/themes/{tenantId}/{themeId}` | tenant API key | Returns a theme by ID. |
 
+Theme consumers that use ISR should cache the active-theme response with a tag like `tenant:{tenantId}:theme`. Theme activation changes the tenant active-theme pointer, so future sample-app revalidation should invalidate that tag and any tenant page tags that embed theme variables directly.
+
 ## Admin Tenants
 
 | Method | Route | Auth | Notes |
@@ -90,6 +92,7 @@ This inventory reflects the current `pumpkin-api` minimal API surface.
 | GET | `/api/admin/themes/{tenantId}/{themeId}` | JWT, content reader | Gets a theme by ID. |
 | POST | `/api/admin/themes/{tenantId}` | JWT, content owner | Creates a theme. |
 | PUT | `/api/admin/themes/{tenantId}/{themeId}` | JWT, content owner | Updates a theme. |
+| POST | `/api/admin/themes/{tenantId}/{themeId}/activate` | JWT, content owner | Activates one theme for the tenant and updates the tenant active-theme pointer. |
 | DELETE | `/api/admin/themes/{tenantId}/{themeId}` | JWT, content owner | Deletes a theme. |
 
 ## Admin Forms

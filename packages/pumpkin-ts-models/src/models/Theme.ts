@@ -43,6 +43,40 @@ export interface ThemeFooter {
   classNames: Record<string, string>;
 }
 
+export interface ThemePreview {
+  palette: string[];
+  background: string;
+  foreground: string;
+  primary: string;
+  accent: string;
+}
+
+export interface ThemeTypography {
+  fontSans: string;
+  fontSerif: string;
+  fontMono: string;
+  headingFont: string;
+  bodyFont: string;
+  baseFontSize: string;
+  lineHeight: string;
+  fontWeights: Record<string, string>;
+}
+
+export interface ThemeSpacing {
+  baseUnit: string;
+  scale: Record<string, string>;
+}
+
+export interface ThemeBorders {
+  radius: Record<string, string>;
+  width: Record<string, string>;
+  style: string;
+}
+
+export interface ThemeShadows {
+  scale: Record<string, string>;
+}
+
 // ─── Theme (top-level document) ──────────────────────────────
 
 /**
@@ -55,8 +89,22 @@ export interface Theme {
   themeId: string;
   tenantId: string;
   name: string;
+  label: string;
   description: string;
+  category: string;
+  tags: string[];
   isActive: boolean;
+  isSystem: boolean;
+  isCustom: boolean;
+  createdByUserId: string;
+  version: number;
+
+  preview: ThemePreview;
+  cssVariables: Record<string, string>;
+  typography: ThemeTypography;
+  spacing: ThemeSpacing;
+  borders: ThemeBorders;
+  shadows: ThemeShadows;
 
   header: ThemeHeader;
   footer: ThemeFooter;

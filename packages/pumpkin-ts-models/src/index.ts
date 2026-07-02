@@ -35,7 +35,8 @@ export {
 // Form Entry models
 export type {
   FormEntry,
-  FormEntryMetadata
+  FormEntryMetadata,
+  FormEntryStatus
 } from './models/FormEntry';
 
 // Form Definition models
@@ -43,7 +44,13 @@ export type {
   FormDefinition,
   FormFieldDefinition,
   FormFieldOption,
-  FormFieldType
+  FormFieldType,
+  FormFieldWidth,
+  FormFieldValidation,
+  FormSubmitBehavior,
+  FormNotificationSettings,
+  FormSpamProtection,
+  FormRateLimit
 } from './models/FormDefinition';
 
 // Page models
@@ -142,6 +149,11 @@ export type {
   Theme,
   ThemeHeader,
   ThemeFooter,
+  ThemePreview,
+  ThemeTypography,
+  ThemeSpacing,
+  ThemeBorders,
+  ThemeShadows,
   BlockStyleMap,
   MenuItem
 } from './models/Theme';

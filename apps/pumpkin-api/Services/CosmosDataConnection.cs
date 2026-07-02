@@ -341,10 +341,11 @@ public class CosmosDataConnection : IDataConnection, IDisposable
                 formEntry.Id = Guid.NewGuid().ToString();
             }
 
-            // Set tenant ID if not already set
-            if (string.IsNullOrEmpty(formEntry.TenantId))
+            formEntry.TenantId = tenantId;
+            formEntry.Status = FormEntryStatuses.New;
+            if (string.IsNullOrWhiteSpace(formEntry.Source))
             {
-                formEntry.TenantId = tenantId;
+                formEntry.Source = "website_form";
             }
 
             var formEntryContainer = _database.GetContainer("FormEntry");
@@ -1276,6 +1277,16 @@ public class CosmosDataConnection : IDataConnection, IDisposable
     {
         try
         {
+            var tenant = await GetTenantAsync(tenantId);
+            if (!string.IsNullOrWhiteSpace(tenant?.Settings?.Theme))
+            {
+                var configuredTheme = await GetThemeAdminAsync(tenantId, tenant.Settings.Theme);
+                if (configuredTheme != null)
+                {
+                    return configuredTheme;
+                }
+            }
+
             var themeContainer = _database.GetContainer("Theme");
             var query = "SELECT * FROM c WHERE c.tenantId = @tenantId AND c.isActive = true";
             var queryDefinition = new QueryDefinition(query)
@@ -1355,10 +1366,15 @@ public class CosmosDataConnection : IDataConnection, IDisposable
 
             theme.TenantId = tenantId;
             theme.Id = theme.ThemeId;
+            ApplyThemeDefaults(theme);
             theme.CreatedAt = DateTime.UtcNow;
             theme.UpdatedAt = DateTime.UtcNow;
 
             var response = await themeContainer.CreateItemAsync(theme, new PartitionKey(tenantId));
+            if (theme.IsActive)
+            {
+                return await ActivateThemeAsync(tenantId, theme.ThemeId);
+            }
 
             _logger.LogInformation("CreateThemeAsync - Theme created - ThemeId: {ThemeId}, TenantId: {TenantId}, RU: {RU}",
                 theme.ThemeId, tenantId, response.RequestCharge);
@@ -1392,10 +1408,15 @@ public class CosmosDataConnection : IDataConnection, IDisposable
             theme.ThemeId = themeId;
             theme.TenantId = tenantId;
             theme.Id = themeId;
+            ApplyThemeDefaults(theme);
             theme.CreatedAt = existing.CreatedAt;
             theme.UpdatedAt = DateTime.UtcNow;
 
             var response = await themeContainer.ReplaceItemAsync(theme, themeId, new PartitionKey(tenantId));
+            if (theme.IsActive)
+            {
+                return await ActivateThemeAsync(tenantId, themeId);
+            }
 
             _logger.LogInformation("UpdateThemeAsync - Theme updated - ThemeId: {ThemeId}, TenantId: {TenantId}, RU: {RU}",
                 themeId, tenantId, response.RequestCharge);
@@ -1413,6 +1434,58 @@ public class CosmosDataConnection : IDataConnection, IDisposable
         }
     }
 
+    public async Task<Theme> ActivateThemeAsync(string tenantId, string themeId)
+    {
+        var themeContainer = _database.GetContainer("Theme");
+        var activeTheme = await GetThemeAdminAsync(tenantId, themeId);
+        if (activeTheme == null)
+        {
+            throw new KeyNotFoundException($"Theme with ID '{themeId}' not found for tenant '{tenantId}'");
+        }
+
+        var themes = await GetThemesByTenantAsync(tenantId);
+        foreach (var theme in themes)
+        {
+            var shouldBeActive = theme.ThemeId == themeId;
+            if (theme.IsActive == shouldBeActive)
+            {
+                continue;
+            }
+
+            theme.IsActive = shouldBeActive;
+            theme.UpdatedAt = DateTime.UtcNow;
+            await themeContainer.ReplaceItemAsync(theme, theme.ThemeId, new PartitionKey(tenantId));
+
+            if (shouldBeActive)
+            {
+                activeTheme = theme;
+            }
+        }
+
+        if (!activeTheme.IsActive)
+        {
+            activeTheme.IsActive = true;
+            activeTheme.UpdatedAt = DateTime.UtcNow;
+            var response = await themeContainer.ReplaceItemAsync(activeTheme, activeTheme.ThemeId, new PartitionKey(tenantId));
+            activeTheme = response.Resource;
+        }
+
+        var tenant = await GetTenantAsync(tenantId);
+        if (tenant != null)
+        {
+            tenant.Settings ??= new TenantSettings();
+            tenant.Settings.Theme = themeId;
+            tenant.UpdatedAt = DateTime.UtcNow;
+            var tenantContainer = _database.GetContainer("Tenant");
+            await tenantContainer.ReplaceItemAsync(tenant, tenant.Id, new PartitionKey(tenantId));
+        }
+
+        _logger.LogInformation("ActivateThemeAsync - Theme activated - ThemeId: {ThemeId}, TenantId: {TenantId}",
+            themeId, tenantId);
+
+        return activeTheme;
+    }
+
     // Admin: Delete a theme
     public async Task<bool> DeleteThemeAsync(string tenantId, string themeId)
     {
@@ -1427,6 +1500,18 @@ public class CosmosDataConnection : IDataConnection, IDisposable
             }
 
             await themeContainer.DeleteItemAsync<Theme>(themeId, new PartitionKey(tenantId));
+            if (existing.IsActive)
+            {
+                var tenant = await GetTenantAsync(tenantId);
+                if (tenant != null && tenant.Settings?.Theme == themeId)
+                {
+                    tenant.Settings ??= new TenantSettings();
+                    tenant.Settings.Theme = string.Empty;
+                    tenant.UpdatedAt = DateTime.UtcNow;
+                    var tenantContainer = _database.GetContainer("Tenant");
+                    await tenantContainer.ReplaceItemAsync(tenant, tenant.Id, new PartitionKey(tenantId));
+                }
+            }
 
             _logger.LogInformation("DeleteThemeAsync - Theme deleted - ThemeId: {ThemeId}, TenantId: {TenantId}", themeId, tenantId);
             return true;
@@ -1440,6 +1525,37 @@ public class CosmosDataConnection : IDataConnection, IDisposable
         {
             _logger.LogError(ex, "DeleteThemeAsync error - ThemeId: {ThemeId}, TenantId: {TenantId}", themeId, tenantId);
             throw;
+        }
+    }
+
+    private static void ApplyThemeDefaults(Theme theme)
+    {
+        if (string.IsNullOrWhiteSpace(theme.Label))
+        {
+            theme.Label = theme.Name;
+        }
+
+        if (string.IsNullOrWhiteSpace(theme.Category))
+        {
+            theme.Category = theme.IsSystem ? "starter" : "custom";
+        }
+
+        theme.IsCustom = !theme.IsSystem || theme.IsCustom;
+
+        if (theme.Preview.Palette.Count == 0)
+        {
+            AddPreviewColor(theme, "--background");
+            AddPreviewColor(theme, "--foreground");
+            AddPreviewColor(theme, "--primary");
+            AddPreviewColor(theme, "--accent");
+        }
+    }
+
+    private static void AddPreviewColor(Theme theme, string variableName)
+    {
+        if (theme.CssVariables.TryGetValue(variableName, out var value) && !string.IsNullOrWhiteSpace(value))
+        {
+            theme.Preview.Palette.Add(value);
         }
     }
 
@@ -1736,10 +1852,11 @@ public class CosmosDataConnection : IDataConnection, IDisposable
             throw new ArgumentException("Form type is required", nameof(type));
         }
 
+        var normalizedType = NormalizeFormType(type);
         var query = new QueryDefinition(
                 "SELECT * FROM c WHERE c.tenantId = @tenantId AND c.type = @type AND c.isActive = true")
             .WithParameter("@tenantId", tenantId)
-            .WithParameter("@type", type.Trim());
+            .WithParameter("@type", normalizedType);
 
         return await QuerySingleAsync<FormDefinition>("FormDefinition", query, tenantId);
     }
@@ -1768,10 +1885,11 @@ public class CosmosDataConnection : IDataConnection, IDisposable
             throw new ArgumentException("Form type is required", nameof(type));
         }
 
+        var normalizedType = NormalizeFormType(type);
         var query = new QueryDefinition(
                 "SELECT * FROM c WHERE c.tenantId = @tenantId AND c.type = @type")
             .WithParameter("@tenantId", tenantId)
-            .WithParameter("@type", type.Trim());
+            .WithParameter("@type", normalizedType);
 
         return await QuerySingleAsync<FormDefinition>("FormDefinition", query, tenantId);
     }
@@ -1801,7 +1919,8 @@ public class CosmosDataConnection : IDataConnection, IDisposable
         }
 
         formDefinition.TenantId = tenantId;
-        formDefinition.Type = formDefinition.Type.Trim();
+        formDefinition.Type = NormalizeFormType(formDefinition.Type);
+        ValidateFormDefinition(formDefinition);
 
         if (string.IsNullOrWhiteSpace(formDefinition.FormDefinitionId))
         {
@@ -1859,6 +1978,9 @@ public class CosmosDataConnection : IDataConnection, IDisposable
         }
 
         var normalizedType = formDefinition.Type.Trim();
+        normalizedType = NormalizeFormType(normalizedType);
+        formDefinition.Type = normalizedType;
+        ValidateFormDefinition(formDefinition);
         var existingByType = await GetFormDefinitionByTypeAsync(tenantId, normalizedType);
         if (existingByType != null && existingByType.FormDefinitionId != existing.FormDefinitionId)
         {
@@ -1937,15 +2059,7 @@ public class CosmosDataConnection : IDataConnection, IDisposable
 
     public async Task<FormEntry> UpdateFormEntryStatusAsync(string tenantId, string entryId, string status)
     {
-        var allowedStatuses = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-        {
-            "new",
-            "read",
-            "actioned",
-            "archived"
-        };
-
-        if (string.IsNullOrWhiteSpace(status) || !allowedStatuses.Contains(status.Trim()))
+        if (string.IsNullOrWhiteSpace(status) || !FormEntryStatuses.All.Contains(status.Trim()))
         {
             throw new ArgumentException("Status must be one of: new, read, actioned, archived", nameof(status));
         }
@@ -1957,6 +2071,19 @@ public class CosmosDataConnection : IDataConnection, IDisposable
         }
 
         existing.Status = status.Trim().ToLowerInvariant();
+        var now = DateTime.UtcNow;
+        if (existing.Status == FormEntryStatuses.Read && existing.ReadAt == null)
+        {
+            existing.ReadAt = now;
+        }
+        else if (existing.Status == FormEntryStatuses.Actioned && existing.ActionedAt == null)
+        {
+            existing.ActionedAt = now;
+        }
+        else if (existing.Status == FormEntryStatuses.Archived && existing.ArchivedAt == null)
+        {
+            existing.ArchivedAt = now;
+        }
 
         var container = _database.GetContainer("FormEntry");
         var response = await container.ReplaceItemAsync(existing, existing.Id, new PartitionKey(tenantId));
@@ -1965,6 +2092,45 @@ public class CosmosDataConnection : IDataConnection, IDisposable
             entryId, existing.Status, tenantId, response.RequestCharge);
 
         return response.Resource;
+    }
+
+    private static string NormalizeFormType(string type)
+    {
+        return type.Trim().ToLowerInvariant();
+    }
+
+    private static void ValidateFormDefinition(FormDefinition formDefinition)
+    {
+        var duplicateFieldNames = formDefinition.Fields
+            .Where(field => !string.IsNullOrWhiteSpace(field.Name))
+            .GroupBy(field => field.Name.Trim(), StringComparer.OrdinalIgnoreCase)
+            .Where(group => group.Count() > 1)
+            .Select(group => group.Key)
+            .ToList();
+
+        if (duplicateFieldNames.Any())
+        {
+            throw new ArgumentException($"Duplicate field names are not allowed: {string.Join(", ", duplicateFieldNames)}");
+        }
+
+        foreach (var field in formDefinition.Fields)
+        {
+            field.Name = field.Name.Trim();
+            field.Type = string.IsNullOrWhiteSpace(field.Type)
+                ? FormFieldTypes.Text
+                : field.Type.Trim().ToLowerInvariant();
+
+            if (string.IsNullOrWhiteSpace(field.Name))
+            {
+                throw new ArgumentException("Every form field must have a name");
+            }
+
+            if ((field.Type == FormFieldTypes.Select || field.Type == FormFieldTypes.Radio) &&
+                (field.Options == null || field.Options.Count == 0))
+            {
+                throw new ArgumentException($"Field '{field.Name}' requires options");
+            }
+        }
     }
 
     private async Task<T?> QuerySingleAsync<T>(string containerName, QueryDefinition queryDefinition, string tenantId)

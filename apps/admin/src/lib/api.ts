@@ -451,6 +451,20 @@ class ApiClient {
     )
   }
 
+  // Activate a theme for a tenant
+  async activateTheme(token: string, tenantId: string, themeId: string): Promise<Theme> {
+    console.log('[API Client] Activating theme:', { tenantId, themeId })
+    return this.request<Theme>(
+      `/api/admin/themes/${encodeURIComponent(tenantId)}/${encodeURIComponent(themeId)}/activate`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      }
+    )
+  }
+
   // Delete a theme
   async deleteTheme(token: string, tenantId: string, themeId: string): Promise<{ message: string; tenantId: string; themeId: string }> {
     console.log('[API Client] Deleting theme:', { tenantId, themeId })

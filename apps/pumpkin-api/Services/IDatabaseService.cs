@@ -48,6 +48,7 @@ public interface IDatabaseService
     Task<List<Theme>> GetThemesByTenantAsync(string tenantId);
     Task<Theme> CreateThemeAsync(string tenantId, Theme theme);
     Task<Theme> UpdateThemeAsync(string tenantId, string themeId, Theme theme);
+    Task<Theme> ActivateThemeAsync(string tenantId, string themeId);
     Task<bool> DeleteThemeAsync(string tenantId, string themeId);
 
     // User authentication methods

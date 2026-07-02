@@ -6,6 +6,12 @@ using pumpkin_api.Tests;
 using pumpkin_net_models.Models;
 using System.Text.Json;
 
+if (args.Contains("--run-tests", StringComparer.OrdinalIgnoreCase))
+{
+    await Phase1ContractTests.RunAllAsync();
+    return;
+}
+
 // ============================================================================
 // 🔐 PUMPKIN CMS - API KEY & USER GENERATOR (TEST UTILITY)
 // ============================================================================
@@ -572,6 +578,9 @@ internal class TestDatabaseService : IDatabaseService, IDisposable
 
     public Task<Theme> UpdateThemeAsync(string tenantId, string themeId, Theme theme)
         => _connection.UpdateThemeAsync(tenantId, themeId, theme);
+
+    public Task<Theme> ActivateThemeAsync(string tenantId, string themeId)
+        => _connection.ActivateThemeAsync(tenantId, themeId);
 
     public Task<bool> DeleteThemeAsync(string tenantId, string themeId)
         => _connection.DeleteThemeAsync(tenantId, themeId);

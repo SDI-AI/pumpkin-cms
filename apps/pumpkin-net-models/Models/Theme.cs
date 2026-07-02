@@ -25,11 +25,52 @@ public class Theme
     [JsonPropertyName("name")]
     public string Name { get; set; } = string.Empty;
 
+    [JsonPropertyName("label")]
+    public string Label { get; set; } = string.Empty;
+
     [JsonPropertyName("description")]
     public string Description { get; set; } = string.Empty;
 
+    [JsonPropertyName("category")]
+    public string Category { get; set; } = "custom";
+
+    [JsonPropertyName("tags")]
+    public List<string> Tags { get; set; } = new();
+
     [JsonPropertyName("isActive")]
     public bool IsActive { get; set; } = true;
+
+    [JsonPropertyName("isSystem")]
+    public bool IsSystem { get; set; } = false;
+
+    [JsonPropertyName("isCustom")]
+    public bool IsCustom { get; set; } = true;
+
+    [JsonPropertyName("createdByUserId")]
+    public string CreatedByUserId { get; set; } = string.Empty;
+
+    [JsonPropertyName("version")]
+    public int Version { get; set; } = 1;
+
+    // CSS-variable theme tokens consumed by Tailwind and the sample app.
+
+    [JsonPropertyName("preview")]
+    public ThemePreview Preview { get; set; } = new();
+
+    [JsonPropertyName("cssVariables")]
+    public Dictionary<string, string> CssVariables { get; set; } = new();
+
+    [JsonPropertyName("typography")]
+    public ThemeTypography Typography { get; set; } = new();
+
+    [JsonPropertyName("spacing")]
+    public ThemeSpacing Spacing { get; set; } = new();
+
+    [JsonPropertyName("borders")]
+    public ThemeBorders Borders { get; set; } = new();
+
+    [JsonPropertyName("shadows")]
+    public ThemeShadows Shadows { get; set; } = new();
 
     // ── Layout sections ──────────────────────────────────────
 
@@ -59,6 +100,78 @@ public class Theme
 
     [JsonPropertyName("updatedAt")]
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+}
+
+public class ThemePreview
+{
+    [JsonPropertyName("palette")]
+    public List<string> Palette { get; set; } = new();
+
+    [JsonPropertyName("background")]
+    public string Background { get; set; } = string.Empty;
+
+    [JsonPropertyName("foreground")]
+    public string Foreground { get; set; } = string.Empty;
+
+    [JsonPropertyName("primary")]
+    public string Primary { get; set; } = string.Empty;
+
+    [JsonPropertyName("accent")]
+    public string Accent { get; set; } = string.Empty;
+}
+
+public class ThemeTypography
+{
+    [JsonPropertyName("fontSans")]
+    public string FontSans { get; set; } = "Inter, system-ui, sans-serif";
+
+    [JsonPropertyName("fontSerif")]
+    public string FontSerif { get; set; } = "Georgia, serif";
+
+    [JsonPropertyName("fontMono")]
+    public string FontMono { get; set; } = "ui-monospace, SFMono-Regular, monospace";
+
+    [JsonPropertyName("headingFont")]
+    public string HeadingFont { get; set; } = "Inter, system-ui, sans-serif";
+
+    [JsonPropertyName("bodyFont")]
+    public string BodyFont { get; set; } = "Inter, system-ui, sans-serif";
+
+    [JsonPropertyName("baseFontSize")]
+    public string BaseFontSize { get; set; } = "16px";
+
+    [JsonPropertyName("lineHeight")]
+    public string LineHeight { get; set; } = "1.5";
+
+    [JsonPropertyName("fontWeights")]
+    public Dictionary<string, string> FontWeights { get; set; } = new();
+}
+
+public class ThemeSpacing
+{
+    [JsonPropertyName("baseUnit")]
+    public string BaseUnit { get; set; } = "0.25rem";
+
+    [JsonPropertyName("scale")]
+    public Dictionary<string, string> Scale { get; set; } = new();
+}
+
+public class ThemeBorders
+{
+    [JsonPropertyName("radius")]
+    public Dictionary<string, string> Radius { get; set; } = new();
+
+    [JsonPropertyName("width")]
+    public Dictionary<string, string> Width { get; set; } = new();
+
+    [JsonPropertyName("style")]
+    public string Style { get; set; } = "solid";
+}
+
+public class ThemeShadows
+{
+    [JsonPropertyName("scale")]
+    public Dictionary<string, string> Scale { get; set; } = new();
 }
 
 // ─── Header ──────────────────────────────────────────────────

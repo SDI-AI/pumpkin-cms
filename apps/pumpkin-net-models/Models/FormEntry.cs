@@ -41,11 +41,20 @@ public class FormEntry
 
     /// <summary>Submission status: new | read | actioned | archived.</summary>
     [JsonPropertyName("status")]
-    public string Status { get; set; } = "new";
+    public string Status { get; set; } = FormEntryStatuses.New;
 
     /// <summary>Submission source, e.g. "website_contact_form" or "website_form".</summary>
     [JsonPropertyName("source")]
     public string Source { get; set; } = string.Empty;
+
+    [JsonPropertyName("readAt")]
+    public DateTime? ReadAt { get; set; }
+
+    [JsonPropertyName("actionedAt")]
+    public DateTime? ActionedAt { get; set; }
+
+    [JsonPropertyName("archivedAt")]
+    public DateTime? ArchivedAt { get; set; }
 
     [JsonPropertyName("ipAddress")]
     public string IpAddress { get; set; } = string.Empty;
@@ -62,6 +71,31 @@ public class FormEntryMetadata
     [JsonPropertyName("referrer")]
     public string Referrer { get; set; } = string.Empty;
 
+    [JsonPropertyName("utmSource")]
+    public string UtmSource { get; set; } = string.Empty;
+
+    [JsonPropertyName("utmMedium")]
+    public string UtmMedium { get; set; } = string.Empty;
+
+    [JsonPropertyName("utmCampaign")]
+    public string UtmCampaign { get; set; } = string.Empty;
+
     [JsonPropertyName("tags")]
     public List<string> Tags { get; set; } = new();
+}
+
+public static class FormEntryStatuses
+{
+    public const string New = "new";
+    public const string Read = "read";
+    public const string Actioned = "actioned";
+    public const string Archived = "archived";
+
+    public static readonly IReadOnlySet<string> All = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+    {
+        New,
+        Read,
+        Actioned,
+        Archived
+    };
 }

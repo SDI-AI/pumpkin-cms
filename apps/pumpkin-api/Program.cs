@@ -1529,6 +1529,30 @@ app.MapPut("/api/admin/themes/{tenantId}/{themeId}",
     .WithSummary("Update an existing theme")
     .WithDescription("Updates a theme by ID for a specific tenant. Requires JWT authentication.");
 
+// Admin: Activate a theme
+app.MapPost("/api/admin/themes/{tenantId}/{themeId}/activate",
+    async (IDatabaseService databaseService, string tenantId, string themeId, HttpContext context) =>
+    {
+        if (context.User?.Identity?.IsAuthenticated != true)
+            return Results.Unauthorized();
+
+        var userTenantId = context.User.FindFirst("tenantId")?.Value;
+        var userRole = context.User.FindFirst(ClaimTypes.Role)?.Value;
+
+        if (string.IsNullOrEmpty(userTenantId))
+            return Results.BadRequest("User tenant ID not found in token");
+
+        if (tenantId != userTenantId && userRole != "SuperAdmin")
+            return Results.Forbid();
+
+        return await PumpkinManager.ActivateThemeAsync(databaseService, tenantId, themeId);
+    })
+    .RequireAuthorization("TenantContentOwner")
+    .WithTags("Admin - Themes")
+    .WithName("ActivateTheme")
+    .WithSummary("Activate a theme")
+    .WithDescription("Marks one theme as active for a tenant and updates the tenant active-theme pointer.");
+
 // Admin: Delete a theme
 app.MapDelete("/api/admin/themes/{tenantId}/{themeId}",
     async (IDatabaseService databaseService, string tenantId, string themeId, HttpContext context) =>

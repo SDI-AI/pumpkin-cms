@@ -177,6 +177,11 @@ public class DatabaseService : IDatabaseService, IDisposable
         return _dataConnection.UpdateThemeAsync(tenantId, themeId, theme);
     }
 
+    public Task<Theme> ActivateThemeAsync(string tenantId, string themeId)
+    {
+        return _dataConnection.ActivateThemeAsync(tenantId, themeId);
+    }
+
     public Task<bool> DeleteThemeAsync(string tenantId, string themeId)
     {
         return _dataConnection.DeleteThemeAsync(tenantId, themeId);

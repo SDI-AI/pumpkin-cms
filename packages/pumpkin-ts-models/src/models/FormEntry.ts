@@ -4,8 +4,13 @@
  */
 export interface FormEntryMetadata {
   referrer: string;
+  utmSource: string;
+  utmMedium: string;
+  utmCampaign: string;
   tags: string[];
 }
+
+export type FormEntryStatus = 'new' | 'read' | 'actioned' | 'archived';
 
 /**
  * Represents a submitted form entry stored in the FormEntry container.
@@ -32,9 +37,12 @@ export interface FormEntry {
   formData: Record<string, unknown>;
   submittedAt: string; // ISO 8601
   /** Submission status: new | read | actioned | archived */
-  status: string;
+  status: FormEntryStatus | string;
   /** Submission source, e.g. "website_contact_form" or "website_form". */
   source: string;
+  readAt?: string;
+  actionedAt?: string;
+  archivedAt?: string;
   ipAddress: string;
   userAgent: string;
   metadata: FormEntryMetadata;
