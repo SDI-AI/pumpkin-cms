@@ -11,12 +11,44 @@ export type FormFieldType =
   | 'radio'
   | 'hidden';
 
+export type FormSubmitBehavior = 'message' | 'redirect';
+
+export type FormFieldWidth = 'full' | 'half' | 'third' | 'two-thirds';
+
 /**
  * A single option for a select or radio field.
  */
 export interface FormFieldOption {
   value: string;
   label: string;
+}
+
+export interface FormFieldValidation {
+  minLength?: number;
+  maxLength?: number;
+  pattern: string;
+  min?: number;
+  max?: number;
+  message: string;
+}
+
+export interface FormNotificationSettings {
+  enabled: boolean;
+  replyToField: string;
+  subjectTemplate: string;
+}
+
+export interface FormSpamProtection {
+  honeypotFieldName: string;
+  rejectWhenHoneypotFilled: boolean;
+  requireConsent: boolean;
+  consentFieldName: string;
+}
+
+export interface FormRateLimit {
+  enabled: boolean;
+  maxSubmissions: number;
+  windowSeconds: number;
 }
 
 /**
@@ -31,13 +63,19 @@ export interface FormFieldDefinition {
   type: FormFieldType;
   required: boolean;
   placeholder: string;
+  helpText: string;
   defaultValue?: string;
+  autocomplete: string;
   /** Options for select/radio fields. */
   options?: FormFieldOption[];
   /** Display order (ascending). */
   order: number;
   /** If true the field is submitted server-side but not rendered to the user. */
   hidden: boolean;
+  /** Layout width hint for form renderers. */
+  width: FormFieldWidth | string;
+  validation: FormFieldValidation;
+  attributes: Record<string, string>;
 }
 
 /**
@@ -60,7 +98,12 @@ export interface FormDefinition {
   fields: FormFieldDefinition[];
   submitButtonText: string;
   successMessage: string;
+  submitBehavior: FormSubmitBehavior | string;
+  redirectUrl: string;
   notificationEmails: string[];
+  notifications: FormNotificationSettings;
+  spamProtection: FormSpamProtection;
+  rateLimit: FormRateLimit;
   isActive: boolean;
   createdAt: string; // ISO 8601
   updatedAt: string; // ISO 8601

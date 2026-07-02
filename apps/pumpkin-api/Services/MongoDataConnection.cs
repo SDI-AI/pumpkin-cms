@@ -688,6 +688,28 @@ public class MongoDataConnection : IDataConnection, IDisposable
         return page;
     }
 
+    public async Task<bool> DeletePageAdminAsync(string tenantId, string pageSlug)
+    {
+        var pagesCollection = _database.GetCollection<Page>("Page");
+        var normalizedSlug = pageSlug.ToLowerInvariant();
+
+        var filter = Builders<Page>.Filter.And(
+            Builders<Page>.Filter.Eq(p => p.TenantId, tenantId),
+            Builders<Page>.Filter.Eq(p => p.PageSlug, normalizedSlug)
+        );
+
+        var result = await pagesCollection.DeleteOneAsync(filter);
+        if (result.DeletedCount == 0)
+        {
+            throw new KeyNotFoundException($"Page with slug '{pageSlug}' not found");
+        }
+
+        _logger.LogInformation("DeletePageAdminAsync - Page deleted - Slug: {Slug}, TenantId: {TenantId}",
+            normalizedSlug, tenantId);
+
+        return true;
+    }
+
     public async Task<List<Page>> GetHubPagesAsync(string tenantId)
     {
         var pageCollection = _database.GetCollection<Page>("Page");
@@ -803,6 +825,16 @@ public class MongoDataConnection : IDataConnection, IDisposable
     public async Task<Theme?> GetActiveThemeAdminAsync(string tenantId)
     {
         var themeCollection = _database.GetCollection<Theme>("Theme");
+        var tenant = await GetTenantAsync(tenantId);
+        if (!string.IsNullOrWhiteSpace(tenant?.Settings?.Theme))
+        {
+            var configuredTheme = await GetThemeAdminAsync(tenantId, tenant.Settings.Theme);
+            if (configuredTheme != null)
+            {
+                return configuredTheme;
+            }
+        }
+
         var filter = Builders<Theme>.Filter.And(
             Builders<Theme>.Filter.Eq(t => t.TenantId, tenantId),
             Builders<Theme>.Filter.Eq(t => t.IsActive, true)
@@ -834,6 +866,11 @@ public class MongoDataConnection : IDataConnection, IDisposable
         theme.UpdatedAt = DateTime.UtcNow;
 
         await themeCollection.InsertOneAsync(theme);
+        if (theme.IsActive)
+        {
+            return await ActivateThemeAsync(tenantId, theme.ThemeId);
+        }
+
         _logger.LogInformation("CreateThemeAsync - Theme created - ThemeId: {ThemeId}, TenantId: {TenantId}", theme.ThemeId, tenantId);
 
         return theme;
@@ -860,9 +897,50 @@ public class MongoDataConnection : IDataConnection, IDisposable
         theme.UpdatedAt = DateTime.UtcNow;
 
         await themeCollection.ReplaceOneAsync(filter, theme);
+        if (theme.IsActive)
+        {
+            return await ActivateThemeAsync(tenantId, themeId);
+        }
+
         _logger.LogInformation("UpdateThemeAsync - Theme updated - ThemeId: {ThemeId}, TenantId: {TenantId}", themeId, tenantId);
 
         return theme;
+    }
+
+    public async Task<Theme> ActivateThemeAsync(string tenantId, string themeId)
+    {
+        var themeCollection = _database.GetCollection<Theme>("Theme");
+        var target = await GetThemeAdminAsync(tenantId, themeId);
+        if (target == null)
+        {
+            throw new KeyNotFoundException($"Theme with ID '{themeId}' not found for tenant '{tenantId}'");
+        }
+
+        await themeCollection.UpdateManyAsync(
+            Builders<Theme>.Filter.Eq(t => t.TenantId, tenantId),
+            Builders<Theme>.Update.Set(t => t.IsActive, false));
+
+        target.IsActive = true;
+        target.UpdatedAt = DateTime.UtcNow;
+
+        var filter = Builders<Theme>.Filter.And(
+            Builders<Theme>.Filter.Eq(t => t.TenantId, tenantId),
+            Builders<Theme>.Filter.Eq(t => t.ThemeId, themeId));
+        await themeCollection.ReplaceOneAsync(filter, target);
+
+        var tenant = await GetTenantAsync(tenantId);
+        if (tenant != null)
+        {
+            var tenantCollection = _database.GetCollection<Tenant>("Tenant");
+            tenant.Settings ??= new TenantSettings();
+            tenant.Settings.Theme = themeId;
+            tenant.UpdatedAt = DateTime.UtcNow;
+            await tenantCollection.ReplaceOneAsync(
+                Builders<Tenant>.Filter.Eq(t => t.TenantId, tenantId),
+                tenant);
+        }
+
+        return target;
     }
 
     // Admin: Delete a theme
@@ -874,10 +952,23 @@ public class MongoDataConnection : IDataConnection, IDisposable
             Builders<Theme>.Filter.Eq(t => t.ThemeId, themeId)
         );
 
+        var existing = await GetThemeAdminAsync(tenantId, themeId);
         var result = await themeCollection.DeleteOneAsync(filter);
 
         if (result.DeletedCount > 0)
         {
+            var tenant = await GetTenantAsync(tenantId);
+            if (tenant != null && existing?.IsActive == true && tenant.Settings?.Theme == themeId)
+            {
+                var tenantCollection = _database.GetCollection<Tenant>("Tenant");
+                tenant.Settings ??= new TenantSettings();
+                tenant.Settings.Theme = string.Empty;
+                tenant.UpdatedAt = DateTime.UtcNow;
+                await tenantCollection.ReplaceOneAsync(
+                    Builders<Tenant>.Filter.Eq(t => t.TenantId, tenantId),
+                    tenant);
+            }
+
             _logger.LogInformation("DeleteThemeAsync - Theme deleted - ThemeId: {ThemeId}, TenantId: {TenantId}", themeId, tenantId);
             return true;
         }
@@ -909,6 +1000,121 @@ public class MongoDataConnection : IDataConnection, IDisposable
         
         _logger.LogInformation("UpdateUserLastLogin - UserId: {UserId}, TenantId: {TenantId}", 
             userId, tenantId);
+    }
+
+    public async Task<List<User>> GetUsersByTenantAsync(string tenantId)
+    {
+        var collection = _database.GetCollection<User>("User");
+        var filter = Builders<User>.Filter.Eq(u => u.TenantId, tenantId);
+        return await collection.Find(filter).SortBy(u => u.Email).ToListAsync();
+    }
+
+    public async Task<User?> GetUserAsync(string tenantId, string userId)
+    {
+        var collection = _database.GetCollection<User>("User");
+        var filter = Builders<User>.Filter.And(
+            Builders<User>.Filter.Eq(u => u.TenantId, tenantId),
+            Builders<User>.Filter.Eq(u => u.Id, userId));
+        return await collection.Find(filter).FirstOrDefaultAsync();
+    }
+
+    public async Task<User> CreateUserAsync(string tenantId, User user, string password)
+    {
+        ValidateNewPassword(password);
+
+        var collection = _database.GetCollection<User>("User");
+        user.TenantId = tenantId;
+        user.Email = user.Email.Trim().ToLowerInvariant();
+        user.Username = user.Username.Trim();
+
+        if (string.IsNullOrWhiteSpace(user.Id))
+        {
+            user.Id = Guid.NewGuid().ToString();
+        }
+
+        if (await collection.Find(Builders<User>.Filter.Eq(u => u.Email, user.Email)).AnyAsync())
+        {
+            throw new InvalidOperationException($"User with email '{user.Email}' already exists");
+        }
+
+        var usernameFilter = Builders<User>.Filter.And(
+            Builders<User>.Filter.Eq(u => u.TenantId, tenantId),
+            Builders<User>.Filter.Eq(u => u.Username, user.Username));
+        if (await collection.Find(usernameFilter).AnyAsync())
+        {
+            throw new InvalidOperationException($"User with username '{user.Username}' already exists in tenant '{tenantId}'");
+        }
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(password, 12);
+        user.CreatedDate = DateTime.UtcNow;
+        user.LastLogin = null;
+
+        await collection.InsertOneAsync(user);
+        return user;
+    }
+
+    public async Task<User> UpdateUserAsync(string tenantId, string userId, User user)
+    {
+        var existing = await GetUserAsync(tenantId, userId);
+        if (existing == null)
+        {
+            throw new KeyNotFoundException($"User with ID '{userId}' not found");
+        }
+
+        user.Id = existing.Id;
+        user.TenantId = tenantId;
+        user.Email = user.Email.Trim().ToLowerInvariant();
+        user.Username = user.Username.Trim();
+        user.PasswordHash = existing.PasswordHash;
+        user.CreatedDate = existing.CreatedDate;
+        user.LastLogin = existing.LastLogin;
+
+        var collection = _database.GetCollection<User>("User");
+        var filter = Builders<User>.Filter.And(
+            Builders<User>.Filter.Eq(u => u.TenantId, tenantId),
+            Builders<User>.Filter.Eq(u => u.Id, userId));
+        await collection.ReplaceOneAsync(filter, user);
+
+        return user;
+    }
+
+    public async Task<User> ResetUserPasswordAsync(string tenantId, string userId, string password)
+    {
+        ValidateNewPassword(password);
+
+        var existing = await GetUserAsync(tenantId, userId);
+        if (existing == null)
+        {
+            throw new KeyNotFoundException($"User with ID '{userId}' not found");
+        }
+
+        existing.PasswordHash = BCrypt.Net.BCrypt.HashPassword(password, 12);
+
+        var collection = _database.GetCollection<User>("User");
+        var filter = Builders<User>.Filter.And(
+            Builders<User>.Filter.Eq(u => u.TenantId, tenantId),
+            Builders<User>.Filter.Eq(u => u.Id, userId));
+        await collection.ReplaceOneAsync(filter, existing);
+
+        return existing;
+    }
+
+    public async Task<bool> DeleteUserAsync(string tenantId, string userId)
+    {
+        var collection = _database.GetCollection<User>("User");
+        var filter = Builders<User>.Filter.And(
+            Builders<User>.Filter.Eq(u => u.TenantId, tenantId),
+            Builders<User>.Filter.Eq(u => u.Id, userId));
+        var result = await collection.DeleteOneAsync(filter);
+        return result.DeletedCount > 0;
+    }
+
+    private static void ValidateNewPassword(string password)
+    {
+        if (string.IsNullOrWhiteSpace(password) || password.Length < 8)
+        {
+            throw new ArgumentException("Password must be at least 8 characters", nameof(password));
+        }
     }
 #else
     private readonly ILogger<MongoDataConnection> _logger;
@@ -1004,6 +1210,11 @@ public class MongoDataConnection : IDataConnection, IDisposable
         throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
     }
 
+    public Task<bool> DeletePageAdminAsync(string tenantId, string pageSlug)
+    {
+        throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
+    }
+
     public Task<List<Page>> GetHubPagesAsync(string tenantId)
     {
         throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
@@ -1025,6 +1236,36 @@ public class MongoDataConnection : IDataConnection, IDisposable
     }
 
     public Task UpdateUserLastLoginAsync(string userId, string tenantId)
+    {
+        throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
+    }
+
+    public Task<List<User>> GetUsersByTenantAsync(string tenantId)
+    {
+        throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
+    }
+
+    public Task<User?> GetUserAsync(string tenantId, string userId)
+    {
+        throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
+    }
+
+    public Task<User> CreateUserAsync(string tenantId, User user, string password)
+    {
+        throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
+    }
+
+    public Task<User> UpdateUserAsync(string tenantId, string userId, User user)
+    {
+        throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
+    }
+
+    public Task<User> ResetUserPasswordAsync(string tenantId, string userId, string password)
+    {
+        throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
+    }
+
+    public Task<bool> DeleteUserAsync(string tenantId, string userId)
     {
         throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
     }
@@ -1060,6 +1301,11 @@ public class MongoDataConnection : IDataConnection, IDisposable
     }
 
     public Task<Theme> UpdateThemeAsync(string tenantId, string themeId, Theme theme)
+    {
+        throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
+    }
+
+    public Task<Theme> ActivateThemeAsync(string tenantId, string themeId)
     {
         throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
     }

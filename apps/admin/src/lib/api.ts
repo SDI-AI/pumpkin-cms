@@ -1,4 +1,4 @@
-import { LoginRequest, LoginResponse, UserInfo, Page, Tenant, TenantInfo, Theme } from 'pumpkin-ts-models'
+import { LoginRequest, LoginResponse, UserInfo, User, Page, Tenant, TenantInfo, Theme } from 'pumpkin-ts-models'
 
 export interface DashboardStats {
   totalPages: number
@@ -12,6 +12,29 @@ export interface ActivityItem {
   title: string
   time: string
   user: string
+}
+
+export type AdminUser = Omit<User, 'passwordHash' | 'partitionKey'>
+
+export interface CreateAdminUserRequest {
+  email: string
+  username: string
+  password: string
+  role: string
+  firstName?: string
+  lastName?: string
+  isActive?: boolean
+  permissions?: string[]
+}
+
+export interface UpdateAdminUserRequest {
+  email: string
+  username: string
+  role: string
+  firstName?: string
+  lastName?: string
+  isActive: boolean
+  permissions?: string[]
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5064'
@@ -219,6 +242,73 @@ class ApiClient {
     return response
   }
 
+  // ===== USER ADMIN METHODS =====
+
+  async getUsers(token: string, tenantId: string): Promise<AdminUser[]> {
+    const response = await this.request<{ users: AdminUser[]; count: number; tenantId: string }>(
+      `/api/admin/users/${encodeURIComponent(tenantId)}`,
+      {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      }
+    )
+
+    return response.users
+  }
+
+  async createUser(token: string, tenantId: string, request: CreateAdminUserRequest): Promise<AdminUser> {
+    return this.request<AdminUser>(
+      `/api/admin/users/${encodeURIComponent(tenantId)}`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(request),
+      }
+    )
+  }
+
+  async updateUser(token: string, tenantId: string, userId: string, request: UpdateAdminUserRequest): Promise<AdminUser> {
+    return this.request<AdminUser>(
+      `/api/admin/users/${encodeURIComponent(tenantId)}/${encodeURIComponent(userId)}`,
+      {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(request),
+      }
+    )
+  }
+
+  async resetUserPassword(token: string, tenantId: string, userId: string, password: string): Promise<AdminUser> {
+    return this.request<AdminUser>(
+      `/api/admin/users/${encodeURIComponent(tenantId)}/${encodeURIComponent(userId)}/reset-password`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ password }),
+      }
+    )
+  }
+
+  async deleteUser(token: string, tenantId: string, userId: string): Promise<{ message: string; tenantId: string; userId: string }> {
+    return this.request<{ message: string; tenantId: string; userId: string }>(
+      `/api/admin/users/${encodeURIComponent(tenantId)}/${encodeURIComponent(userId)}`,
+      {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      }
+    )
+  }
+
   // Get all pages for a tenant (requires authentication)
   async getPages(token: string, tenantId: string): Promise<Page[]> {
     const response = await this.request<{ pages: Page[], count: number, tenantId: string }>(
@@ -357,6 +447,20 @@ class ApiClient {
           'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(theme),
+      }
+    )
+  }
+
+  // Activate a theme for a tenant
+  async activateTheme(token: string, tenantId: string, themeId: string): Promise<Theme> {
+    console.log('[API Client] Activating theme:', { tenantId, themeId })
+    return this.request<Theme>(
+      `/api/admin/themes/${encodeURIComponent(tenantId)}/${encodeURIComponent(themeId)}/activate`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
       }
     )
   }
