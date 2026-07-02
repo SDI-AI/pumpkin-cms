@@ -97,7 +97,7 @@ export default function IconsPage() {
       <div className="mb-8">
         {filteredIcons.length === 0 ? (
           <div className="text-center py-20">
-            <p className="text-neutral-500 text-lg">No icons found matching "{searchQuery}"</p>
+            <p className="text-neutral-500 text-lg">No icons found matching &quot;{searchQuery}&quot;</p>
             <button
               onClick={() => setSearchQuery('')}
               className="mt-4 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"

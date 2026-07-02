@@ -502,6 +502,9 @@ internal class TestDatabaseService : IDatabaseService, IDisposable
     public Task<Page> UpdatePageAdminAsync(string tenantId, string pageSlug, Page page)
         => _connection.UpdatePageAdminAsync(tenantId, pageSlug, page);
 
+    public Task<bool> DeletePageAdminAsync(string tenantId, string pageSlug)
+        => _connection.DeletePageAdminAsync(tenantId, pageSlug);
+
     public Task<List<Page>> GetHubPagesAsync(string tenantId)
         => _connection.GetHubPagesAsync(tenantId);
 
@@ -523,6 +526,30 @@ internal class TestDatabaseService : IDatabaseService, IDisposable
 
     public Task UpdateUserLastLoginAsync(string userId, string tenantId)
         => _connection.UpdateUserLastLoginAsync(userId, tenantId);
+
+    public Task<List<pumpkin_net_models.Models.User>> GetUsersByTenantAsync(string tenantId)
+        => _connection.GetUsersByTenantAsync(tenantId);
+
+    public Task<pumpkin_net_models.Models.User?> GetUserAsync(string tenantId, string userId)
+        => _connection.GetUserAsync(tenantId, userId);
+
+    public Task<pumpkin_net_models.Models.User> CreateUserAsync(
+        string tenantId,
+        pumpkin_net_models.Models.User user,
+        string password)
+        => _connection.CreateUserAsync(tenantId, user, password);
+
+    public Task<pumpkin_net_models.Models.User> UpdateUserAsync(
+        string tenantId,
+        string userId,
+        pumpkin_net_models.Models.User user)
+        => _connection.UpdateUserAsync(tenantId, userId, user);
+
+    public Task<pumpkin_net_models.Models.User> ResetUserPasswordAsync(string tenantId, string userId, string password)
+        => _connection.ResetUserPasswordAsync(tenantId, userId, password);
+
+    public Task<bool> DeleteUserAsync(string tenantId, string userId)
+        => _connection.DeleteUserAsync(tenantId, userId);
 
     // Theme methods
     public Task<Theme?> GetThemeAsync(string apiKey, string tenantId, string themeId)

@@ -36,6 +36,7 @@ public interface IDatabaseService
     Task<List<Tenant>> GetTenantsForUserAsync(string userTenantId, bool isSuperAdmin);
     Task<Page> SavePageAdminAsync(string tenantId, Page page);
     Task<Page> UpdatePageAdminAsync(string tenantId, string pageSlug, Page page);
+    Task<bool> DeletePageAdminAsync(string tenantId, string pageSlug);
     
     // Theme methods (content serving - API key required)
     Task<Theme?> GetThemeAsync(string apiKey, string tenantId, string themeId);
@@ -52,6 +53,14 @@ public interface IDatabaseService
     // User authentication methods
     Task<User?> GetUserByEmailAsync(string email);
     Task UpdateUserLastLoginAsync(string userId, string tenantId);
+
+    // User admin methods (JWT required)
+    Task<List<User>> GetUsersByTenantAsync(string tenantId);
+    Task<User?> GetUserAsync(string tenantId, string userId);
+    Task<User> CreateUserAsync(string tenantId, User user, string password);
+    Task<User> UpdateUserAsync(string tenantId, string userId, User user);
+    Task<User> ResetUserPasswordAsync(string tenantId, string userId, string password);
+    Task<bool> DeleteUserAsync(string tenantId, string userId);
 
     // FormDefinition admin (JWT required)
     Task<FormDefinition?> GetFormDefinitionAsync(string tenantId, string formDefinitionId);
