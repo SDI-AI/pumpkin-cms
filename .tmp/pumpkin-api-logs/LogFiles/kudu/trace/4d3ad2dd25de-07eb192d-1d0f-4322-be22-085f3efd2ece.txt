@@ -1,1 +1,0 @@
-2026-01-02T23:40:19  Startup Request, url: /api/logstreamV2/?max=50&nextToken=eyJmaWQiOjYzOTAyOTkzNzY0NDEyMDg4OCwicG9zIjoxNDk5NjYsImZpcnN0bG9ndXRjIjo2MzkwMjk3MzExNjQ5MzgzNjR9&api-version=2016-09-01, method: GET, type: request, pid: 851,1,5, ScmType: None
