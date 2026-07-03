@@ -1,0 +1,18 @@
+<step title="Incoming Request" date="2026-01-03T00:53:54.068" instance="6be98e" url="/api/zipdeploy?isAsync=true" method="POST" type="request" pid="850,1,63" Host="pumpkin-api-cdg2d3dwfpbbdygn.scm.centralus-01.azurewebsites.net" User-Agent="websdk/WebSdk_VisualStudio_18.0" Authorization="Bea..." Content-Type="application/zip; charset=utf-8" Expect="100-continue" Content-Length="6284925" X-ARR-LOG-ID="75937f07-64bf-49c5-b11b-59ac243b89f4" CLIENT-IP="108.11.45.171:55077" X-SITE-DEPLOYMENT-ID="pumpkin-api" WAS-DEFAULT-HOSTNAME="pumpkin-api-cdg2d3dwfpbbdygn.scm.centralus-01.azurewebsites.net" X-Forwarded-Proto="https" X-AppService-Proto="https" X-Forwarded-TlsVersion="1.3" X-WAWS-Unencoded-URL="/api/zipdeploy?isAsync=true" X-Client-IP="108.11.45.171" X-Client-Port="55077" Content-Encoding="utf-8" >
+  <step title="Cleanup Xml Logs" date="2026-01-03T00:53:54.070" /><!-- duration: 7ms -->
+  <step title="ZipPushDeploy" date="2026-01-03T00:53:54.583" >
+    <step title="ZipDeploy. Extract zip." date="2026-01-03T00:53:54.592" /><!-- duration: 3ms -->
+    <step title="None repository commit" date="2026-01-03T00:53:54.601" >
+      <step title="Commit id: 73f4d514-c0ed-4b17-b231-b6ba8b305e2b" date="2026-01-03T00:53:54.605" Message="N/A" AuthorName="N/A" AuthorEmail="N/A" /><!-- duration: 2ms -->
+    </step><!-- duration: 9ms -->
+    <step title="Starting PushDeployAsync" date="2026-01-03T00:53:54.612" /><!-- duration: 2ms -->
+    <step title="Writing artifact to /tmp/zipdeploy/83478529-9fcf-4584-a01e-68947e33cb98.zip" date="2026-01-03T00:53:54.659" >
+      <step title="Writing multipart request body to /tmp/zipdeploy/83478529-9fcf-4584-a01e-68947e33cb98.zip" date="2026-01-03T00:53:54.663" /><!-- duration: 6ms -->
+    </step><!-- duration: 235ms -->
+    <step title="Start deployment in the background" date="2026-01-03T00:53:54.910" >
+      <step title="Acquiring Deployment Lock" date="2026-01-03T00:53:54.926" /><!-- duration: 3ms -->
+      <step title="Acquired Deployment Lock" date="2026-01-03T00:53:54.983" /><!-- duration: 5ms -->
+    </step><!-- duration: 188ms -->
+  </step><!-- duration: 528ms -->
+  <step title="Outgoing response" date="2026-01-03T00:53:55.127" type="response" statusCode="202" statusText="Accepted" /><!-- duration: 3ms -->
+</step><!-- duration: 1064ms -->

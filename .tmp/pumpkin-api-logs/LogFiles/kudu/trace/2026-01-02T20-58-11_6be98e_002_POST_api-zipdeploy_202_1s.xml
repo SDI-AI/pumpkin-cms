@@ -1,0 +1,17 @@
+<step title="Incoming Request" date="2026-01-02T20:58:11.237" instance="6be98e" url="/api/zipdeploy?isAsync=true" method="POST" type="request" pid="851,1,23" Host="pumpkin-api-cdg2d3dwfpbbdygn.scm.centralus-01.azurewebsites.net" User-Agent="websdk/WebSdk_VisualStudio_18.0" Authorization="Bea..." Content-Type="application/zip; charset=utf-8" Expect="100-continue" Content-Length="6284846" X-ARR-LOG-ID="438a984a-548d-4343-a7e2-6623d135689c" CLIENT-IP="108.11.45.171:50941" X-SITE-DEPLOYMENT-ID="pumpkin-api" WAS-DEFAULT-HOSTNAME="pumpkin-api-cdg2d3dwfpbbdygn.scm.centralus-01.azurewebsites.net" X-Forwarded-Proto="https" X-AppService-Proto="https" X-Forwarded-TlsVersion="1.3" X-WAWS-Unencoded-URL="/api/zipdeploy?isAsync=true" X-Client-IP="108.11.45.171" X-Client-Port="50941" Content-Encoding="utf-8" >
+  <step title="ZipPushDeploy" date="2026-01-02T20:58:11.830" >
+    <step title="ZipDeploy. Extract zip." date="2026-01-02T20:58:11.837" /><!-- duration: 21ms -->
+    <step title="None repository commit" date="2026-01-02T20:58:11.868" >
+      <step title="Commit id: 3dd5547c-e017-4d9d-a889-b32943a04002" date="2026-01-02T20:58:11.871" Message="N/A" AuthorName="N/A" AuthorEmail="N/A" /><!-- duration: 3ms -->
+    </step><!-- duration: 9ms -->
+    <step title="Starting PushDeployAsync" date="2026-01-02T20:58:11.880" /><!-- duration: 3ms -->
+    <step title="Writing artifact to /tmp/zipdeploy/57004731-9974-4d34-9c4a-c535383f3590.zip" date="2026-01-02T20:58:11.909" >
+      <step title="Writing multipart request body to /tmp/zipdeploy/57004731-9974-4d34-9c4a-c535383f3590.zip" date="2026-01-02T20:58:11.916" /><!-- duration: 10ms -->
+    </step><!-- duration: 286ms -->
+    <step title="Start deployment in the background" date="2026-01-02T20:58:12.212" >
+      <step title="Acquiring Deployment Lock" date="2026-01-02T20:58:12.234" /><!-- duration: 4ms -->
+      <step title="Acquired Deployment Lock" date="2026-01-02T20:58:12.312" /><!-- duration: 7ms -->
+    </step><!-- duration: 271ms -->
+  </step><!-- duration: 664ms -->
+  <step title="Outgoing response" date="2026-01-02T20:58:12.512" type="response" statusCode="202" statusText="Accepted" /><!-- duration: 5ms -->
+</step><!-- duration: 1283ms -->

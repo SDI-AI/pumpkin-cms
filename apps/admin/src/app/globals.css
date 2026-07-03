@@ -35,7 +35,7 @@
   }
 
   .card {
-    @apply bg-white rounded-xl shadow-sm border border-neutral-100 p-6;
+    @apply bg-white rounded-lg shadow-sm border border-neutral-100 p-6;
   }
 
   .page-container {

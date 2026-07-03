@@ -1,0 +1,6 @@
+<step title="Incoming Request" date="2026-07-02T20:27:19.630" instance="49dcb7" url="/api/deployments/temp-ca529104/log" method="GET" type="request" pid="851,1,47" Host="pumpkin-api-cdg2d3dwfpbbdygn.scm.centralus-01.azurewebsites.net" User-Agent="vscode-azureappservice/0.27.0 core-rest-pipeline/1.22.2 Node/24.15.0 (Windows_NT 10.0.26200; x64)" Accept-Encoding="gzip,deflate" Accept-Language="en" Authorization="Bea..." x-ms-correlation-request-id="9e475dd8-fe8c-497b-addc-cdd7a0ca6336" x-ms-client-request-id="854f1d59-1b95-4516-829f-6406d2329db9" X-ARR-LOG-ID="854f1d59-1b95-4516-829f-6406d2329db9" CLIENT-IP="108.11.11.224:52686" X-SITE-DEPLOYMENT-ID="pumpkin-api" WAS-DEFAULT-HOSTNAME="pumpkin-api-cdg2d3dwfpbbdygn.scm.centralus-01.azurewebsites.net" X-Forwarded-Proto="https" X-AppService-Proto="https" X-Forwarded-TlsVersion="1.3" X-WAWS-Unencoded-URL="/api/deployments/temp-ca529104/log" X-Client-IP="108.11.11.224" X-Client-Port="52686" >
+  <step title="DeploymentService.GetLogEntry" date="2026-07-02T20:27:19.636" >
+    <step title="DeploymentManager.GetLogEntries(id:temp-ca529104)" date="2026-07-02T20:27:19.638" /><!-- duration: 7ms -->
+  </step><!-- duration: 12ms -->
+  <step title="Outgoing response" date="2026-07-02T20:27:19.652" type="response" statusCode="200" statusText="OK" /><!-- duration: 4ms -->
+</step><!-- duration: 30ms -->

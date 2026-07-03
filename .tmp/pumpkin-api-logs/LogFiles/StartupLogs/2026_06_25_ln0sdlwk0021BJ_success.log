@@ -1,0 +1,98 @@
+2026-06-25T02:14:37.4912982+00:00 ContainerStatus: State: Starting, Action: EstablishingSiteNetworks, LastError: , LastErrorTimestamp: 01/01/0001 00:00:00, LastErrorDetails: , Details: , DetailsLevel: INFO
+2026-06-25T02:14:40.1183669+00:00 ContainerStatus: State: Starting, Action: StartingSiteContainers, LastError: , LastErrorTimestamp: 01/01/0001 00:00:00, LastErrorDetails: , Details: , DetailsLevel: INFO
+2026-06-25T02:14:40.1189760+00:00 ContainerStatus: Container start method called.
+2026-06-25T02:14:40.1192065+00:00 ContainerStatus: State: Starting, Action: PullingImage, LastError: , LastErrorTimestamp: 01/01/0001 00:00:00, LastErrorDetails: , Details: Pulling image 10.1.0.4:13209/appsvc/dotnetcore:10.0_20260504.4.tuxprod for pumpkin-api., DetailsLevel: INFO
+2026-06-25T02:14:40.1211308+00:00 ContainerStatus: Establishing network.
+2026-06-25T02:14:40.1231341+00:00 ContainerStatus: Pulling image: appsvc/dotnetcore:10.0_20260504.4.tuxprod.
+2026-06-25T02:14:41.2855188+00:00 ContainerStatus: Container is starting.
+2026-06-25T02:14:41.2856598+00:00 ContainerStatus: State: Starting, Action: MountingVolumes, LastError: , LastErrorTimestamp: 01/01/0001 00:00:00, LastErrorDetails: , Details: Mounting volumes for pumpkin-api., DetailsLevel: INFO
+2026-06-25T02:14:41.2864697+00:00 ContainerStatus: Establishing user namespace if not established already.
+2026-06-25T02:14:41.2867040+00:00 ContainerStatus: Establishing network if not established already.
+2026-06-25T02:14:41.2868860+00:00 ContainerStatus: Mounting volumes.
+2026-06-25T02:14:41.2870980+00:00 ContainerStatus: Nested mountpoint 
+2026-06-25T02:14:41.2924841+00:00 ContainerStatus: Nested mountpoint volatile/logs
+2026-06-25T02:14:41.3334272+00:00 ContainerStatus: Nested mountpoint 
+2026-06-25T02:14:41.3491237+00:00 ContainerStatus: Nested mountpoint 
+2026-06-25T02:14:41.3744719+00:00 ContainerStatus: Nested mountpoint 
+2026-06-25T02:14:41.3870168+00:00 ContainerStatus: Nested mountpoint 
+2026-06-25T02:14:41.4920480+00:00 ContainerStatus: Nested mountpoint 
+2026-06-25T02:14:41.5710715+00:00 ContainerStatus: Nested mountpoint 
+2026-06-25T02:14:44.5716281+00:00 ContainerStatus: State: Starting, Action: CreatingContainer, LastError: , LastErrorTimestamp: 01/01/0001 00:00:00, LastErrorDetails: , Details: Finished pulling container image and mounting volumes for pumpkin-api. Allocatinng the rest of the container resources to finish container creation., DetailsLevel: INFO
+2026-06-25T02:14:44.5753088+00:00 ContainerStatus: Creating container.
+2026-06-25T02:14:44.5755306+00:00 ContainerStatus: Creating pipes for streaming container io.
+2026-06-25T02:14:44.5757039+00:00 ContainerStatus: Creating stdout named pipe at /podr/container/pipe/2c1c04572b88_pumpkin-api/stdout_6a5af14cb63a4e47949a0a874bd9d965.
+2026-06-25T02:14:44.5760104+00:00 ContainerStatus: Successfully created stdout named pipe at: /podr/container/pipe/2c1c04572b88_pumpkin-api/stdout_6a5af14cb63a4e47949a0a874bd9d965.
+2026-06-25T02:14:44.5761556+00:00 ContainerStatus: Opening named pipe /podr/container/pipe/2c1c04572b88_pumpkin-api/stdout_6a5af14cb63a4e47949a0a874bd9d965 for reading in non-blocking mode.
+2026-06-25T02:14:44.5763290+00:00 ContainerStatus: Successfully opened named pipe: /podr/container/pipe/2c1c04572b88_pumpkin-api/stdout_6a5af14cb63a4e47949a0a874bd9d965.
+2026-06-25T02:14:44.5764725+00:00 ContainerStatus: Successfully removed non-blocking flag from /podr/container/pipe/2c1c04572b88_pumpkin-api/stdout_6a5af14cb63a4e47949a0a874bd9d965.
+2026-06-25T02:14:44.5766829+00:00 ContainerStatus: Creating stderr named pipe at /podr/container/pipe/2c1c04572b88_pumpkin-api/stderr_c4608e84ee1b4f739d005b67b6150f05.
+2026-06-25T02:14:44.5768804+00:00 ContainerStatus: Successfully created stderr named pipe at: /podr/container/pipe/2c1c04572b88_pumpkin-api/stderr_c4608e84ee1b4f739d005b67b6150f05.
+2026-06-25T02:14:44.5769966+00:00 ContainerStatus: Opening named pipe /podr/container/pipe/2c1c04572b88_pumpkin-api/stderr_c4608e84ee1b4f739d005b67b6150f05 for reading in non-blocking mode.
+2026-06-25T02:14:44.6058638+00:00 ContainerStatus: Successfully opened named pipe: /podr/container/pipe/2c1c04572b88_pumpkin-api/stderr_c4608e84ee1b4f739d005b67b6150f05.
+2026-06-25T02:14:44.6060822+00:00 ContainerStatus: Successfully removed non-blocking flag from /podr/container/pipe/2c1c04572b88_pumpkin-api/stderr_c4608e84ee1b4f739d005b67b6150f05.
+2026-06-25T02:14:44.6954932+00:00 ContainerStatus: Creating container with image: appsvc/dotnetcore:10.0_20260504.4.tuxprod from registry: 10.1.0.6:13209 and fully qualified image name: 10.1.0.6:13209/appsvc/dotnetcore:10.0_20260504.4.tuxprod
+2026-06-25T02:14:47.7217877+00:00 ContainerStatus: Starting container: 2c1c04572b88_pumpkin-api.
+2026-06-25T02:14:48.6502397+00:00 ContainerStatus: Starting watchers and probes.
+2026-06-25T02:14:48.6562933+00:00 ContainerStream:    _____                               
+2026-06-25T02:14:48.6564299+00:00 ContainerStream:   /  _  \ __________ _________   ____  
+2026-06-25T02:14:48.6564372+00:00 ContainerStream:  /  /_\  \\___   /  |  \_  __ \_/ __ \ 
+2026-06-25T02:14:48.6564402+00:00 ContainerStream: /    |    \/    /|  |  /|  | \/\  ___/ 
+2026-06-25T02:14:48.6564432+00:00 ContainerStream: \____|__  /_____ \____/ |__|    \___  >
+2026-06-25T02:14:48.6564468+00:00 ContainerStream:         \/      \/                  \/ 
+2026-06-25T02:14:48.6564495+00:00 ContainerStream: A P P   S E R V I C E   O N   L I N U X
+2026-06-25T02:14:48.6564541+00:00 ContainerStream: 
+2026-06-25T02:14:48.6564573+00:00 ContainerStream: Documentation       : http://aka.ms/webapp-linux
+2026-06-25T02:14:48.6564607+00:00 ContainerStream: Dotnet quickstart   : https://aka.ms/dotnet-qs
+2026-06-25T02:14:48.6564635+00:00 ContainerStream: ASP .NETCore Version: 10.0.7
+2026-06-25T02:14:48.6564661+00:00 ContainerStream: Instance Name       : ln0sdlwk0021BJ
+2026-06-25T02:14:48.6564692+00:00 ContainerStream: Instance Id         : 4baccf3bb78f4212210ab7f58993beab5bd53c50b30a467a7fe4c1c582c86f3c
+2026-06-25T02:14:48.6564735+00:00 ContainerStream: 
+2026-06-25T02:14:48.6564764+00:00 ContainerStream: Note: Any data outside '/home' is not persisted
+2026-06-25T02:14:48.6784148+00:00 ContainerStatus: Starting metrics collection.
+2026-06-25T02:14:48.6795933+00:00 ContainerStatus: Container is running.
+2026-06-25T02:14:48.6808676+00:00 ContainerStatus: State: Starting, Action: CreatingContainer, LastError: , LastErrorTimestamp: 01/01/0001 00:00:00, LastErrorDetails: , Details: Container pumpkin-api successfully created and is running., DetailsLevel: INFO
+2026-06-25T02:14:48.8610400+00:00 ContainerStatus: Container start method finished after 8741 ms.
+2026-06-25T02:14:48.8613352+00:00 ContainerStatus: State: Starting, Action: InitiatingSiteWarmUpProbe, LastError: , LastErrorTimestamp: 01/01/0001 00:00:00, LastErrorDetails: , Details: Container pumpkin-api successfully created and is running., DetailsLevel: INFO
+2026-06-25T02:14:48.8613694+00:00 ContainerStatus: State: Starting, Action: WaitingForSiteWarmUpProbeSuccess, LastError: , LastErrorTimestamp: 01/01/0001 00:00:00, LastErrorDetails: , Details: Pinging warmup path to ensure container is ready to receive requests., DetailsLevel: INFO
+2026-06-25T02:14:54.4775135+00:00 ContainerStream:  * Starting OpenBSD Secure Shell server sshd
+2026-06-25T02:14:54.5988662+00:00 ContainerStream:    ...done.
+2026-06-25T02:14:54.6348633+00:00 ContainerStream: WEBSITES_INCLUDE_CLOUD_CERTS is not set to true.
+2026-06-25T02:14:54.7385698+00:00 ContainerStream: Updating certificates in /etc/ssl/certs...
+2026-06-25T02:15:14.1893919+00:00 ContainerStream: rehash: warning: skipping duplicate certificate in SSLcom-TLS-Root-2022-ECC.pem
+2026-06-25T02:15:14.1935595+00:00 ContainerStream: rehash: warning: skipping duplicate certificate in SSLcom-TLS-Root-2022-RSA.pem
+2026-06-25T02:15:14.4261217+00:00 ContainerStream: rehash: warning: skipping ca-certificates.crt,it does not contain exactly one certificate or CRL
+2026-06-25T02:15:14.4539856+00:00 ContainerStream: 4 added, 0 removed; done.
+2026-06-25T02:15:14.4540341+00:00 ContainerStream: Running hooks in /etc/ca-certificates/update.d...
+2026-06-25T02:15:14.4613824+00:00 ContainerStream: done.
+2026-06-25T02:15:14.4741129+00:00 ContainerStream: CA certificates copied and updated successfully.
+2026-06-25T02:15:14.7511005+00:00 ContainerStream:  * Starting periodic command scheduler cron
+2026-06-25T02:15:14.7513146+00:00 ContainerStream:    ...done.
+2026-06-25T02:15:14.7513451+00:00 ContainerStream: Running oryx create-script -appPath /home/site/wwwroot -output /opt/startup/startup.sh -defaultAppFilePath /defaulthome/hostingstart/hostingstart.dll     -bindPort 8080 -bindPort2 '' -userStartupCommand 'dotnet pumpkin-api.dll' 
+2026-06-25T02:15:14.7798750+00:00 ContainerStream: Could not find build manifest file at '/home/site/wwwroot/oryx-manifest.toml'
+2026-06-25T02:15:14.7799387+00:00 ContainerStream: Could not find operation ID in manifest. Generating an operation id...
+2026-06-25T02:15:14.7803920+00:00 ContainerStream: Build Operation ID: 864d32a5-4f8b-4b3b-8a33-8a37c9e52532
+2026-06-25T02:15:15.1127418+00:00 ContainerStream: 
+2026-06-25T02:15:15.1131777+00:00 ContainerStream: Agent extension disabled
+2026-06-25T02:15:15.1132023+00:00 ContainerStream: Before if loop >> DotNet Runtime 
+2026-06-25T02:15:15.1491525+00:00 ContainerStream: DotNet Runtime 10.0Writing output script to '/opt/startup/startup.sh'
+2026-06-25T02:15:15.2627679+00:00 ContainerStream: Running user provided startup command...
+2026-06-25T02:15:23.5395475+00:00 ContainerStream: info: Microsoft.Hosting.Lifetime[14]
+2026-06-25T02:15:23.5396038+00:00 ContainerStream:       Now listening on: http://[::]:8080
+2026-06-25T02:15:23.6493671+00:00 ContainerStream: info: Microsoft.Hosting.Lifetime[0]
+2026-06-25T02:15:23.6494425+00:00 ContainerStream:       Application started. Press Ctrl+C to shut down.
+2026-06-25T02:15:23.6554433+00:00 ContainerStream: info: Microsoft.Hosting.Lifetime[0]
+2026-06-25T02:15:23.6555086+00:00 ContainerStream:       Hosting environment: Production
+2026-06-25T02:15:23.6580000+00:00 ContainerStream: info: Microsoft.Hosting.Lifetime[0]
+2026-06-25T02:15:23.6580636+00:00 ContainerStream:       Content root path: /home/site/wwwroot
+2026-06-25T02:15:25.9724113+00:00 ContainerStream: info: pumpkin_api.Services.DatabaseService[0]
+2026-06-25T02:15:25.9725108+00:00 ContainerStream:       Initializing DatabaseService with provider: CosmosDb
+2026-06-25T02:15:26.7905261+00:00 ContainerStream: info: pumpkin_api.Services.CosmosDataConnection[0]
+2026-06-25T02:15:26.7906056+00:00 ContainerStream:       Cosmos DB Data Connection initialized for database: pumpkin-cms
+2026-06-25T02:15:26.7917206+00:00 ContainerStream: info: pumpkin_api.Services.DatabaseService[0]
+2026-06-25T02:15:26.7917829+00:00 ContainerStream:       DatabaseService initialized with CosmosDb
+2026-06-25T02:15:27.5015739+00:00 ContainerStatus: Site startup probe succeeded after 38.6397852 seconds.
+2026-06-25T02:15:27.6186399+00:00 ContainerStatus: State: Starting, Action: WarmUpProbeSucceeded, LastError: , LastErrorTimestamp: 01/01/0001 00:00:00, LastErrorDetails: , Details: Site startup probe succeeded after 38.6397852 seconds., DetailsLevel: INFO
+2026-06-25T02:15:27.8697488+00:00 ContainerStatus: Site is running with deployment version: 3cb8f8bb-9c7f-4835-8584-69ad9b45366c
+2026-06-25T02:15:27.8700491+00:00 ContainerStatus: Site started.
+2026-06-25T02:15:27.8701511+00:00 ContainerStatus: State: Started, Action: None, LastError: , LastErrorTimestamp: 01/01/0001 00:00:00, LastErrorDetails: , Details: Site started at 06/25/2026 02:15:27 (UTC), DetailsLevel: INFO
+2026-06-25T02:15:27.8704204+00:00 ContainerStatus: Site is running with patch version DOTNETCORE-10.0.7

@@ -1,0 +1,8 @@
+<step title="Incoming Request" date="2026-01-02T20:58:12.665" instance="6be98e" url="/api/deployments/latest?deployer=Push-Deployer&amp;time=2026-01-02_20-58-12Z" method="GET" type="request" pid="851,1,30" Host="pumpkin-api-cdg2d3dwfpbbdygn.scm.centralus-01.azurewebsites.net" User-Agent="websdk/WebSdk_VisualStudio_18.0 websdk/WebSdk_VisualStudio_18.0" Authorization="Bea..." Cookie="ARRAffinity=6be98e16aeff14a1170eeca086ba3154af6769e98172307f9541f1c6bf72944b; ARRAffinitySameSite=6be98e16aeff14a1170eeca086ba3154af6769e98172307f9541f1c6bf72944b" X-ARR-LOG-ID="5d7568ca-9159-40d0-8c39-8c3d961725aa" CLIENT-IP="108.11.45.171:50941" X-SITE-DEPLOYMENT-ID="pumpkin-api" WAS-DEFAULT-HOSTNAME="pumpkin-api-cdg2d3dwfpbbdygn.scm.centralus-01.azurewebsites.net" X-Forwarded-Proto="https" X-AppService-Proto="https" X-Forwarded-TlsVersion="1.3" X-WAWS-Unencoded-URL="/api/deployments/latest?deployer=Push-Deployer&amp;time=2026-01-02_20-58-12Z" X-Client-IP="108.11.45.171" X-Client-Port="50941" >
+  <step title="DeploymentService.GetResult" date="2026-01-02T20:58:12.764" >
+    <step title="DeploymentService.GetLatestDeployment" date="2026-01-02T20:58:12.770" >
+      <step title="DeploymentManager.GetResults" date="2026-01-02T20:58:12.774" /><!-- duration: 592ms -->
+    </step><!-- duration: 626ms -->
+  </step><!-- duration: 637ms -->
+  <step title="Outgoing response" date="2026-01-02T20:58:13.484" type="response" statusCode="202" statusText="Accepted" /><!-- duration: 3ms -->
+</step><!-- duration: 826ms -->

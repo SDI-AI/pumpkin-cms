@@ -12,6 +12,12 @@ if (args.Contains("--run-tests", StringComparer.OrdinalIgnoreCase))
     return;
 }
 
+if (args.Contains("--backfill-pumpkin-theme", StringComparer.OrdinalIgnoreCase))
+{
+    await ThemeContractBackfill.RunPumpkinDefaultAsync(args);
+    return;
+}
+
 // ============================================================================
 // 🔐 PUMPKIN CMS - API KEY & USER GENERATOR (TEST UTILITY)
 // ============================================================================
@@ -74,10 +80,16 @@ Console.WriteLine("\n🔐 Pumpkin CMS - User Generator\n");
 
 // ⚠️ IMPORTANT: Change this password before deploying to production!
 // This is a placeholder for testing only.
+var adminPassword = args
+    .FirstOrDefault(arg => arg.StartsWith("--password=", StringComparison.OrdinalIgnoreCase))
+    ?.Split('=', 2)[1]
+    ?? Environment.GetEnvironmentVariable("PUMPKIN_ADMIN_PASSWORD")
+    ?? "CHANGE-ME-BEFORE-PRODUCTION";
+
 var (userDoc, userPassword) = UserGenerator.GenerateUser(
     email: "admin@pumpkincms.io",
     username: "superadmin",
-    password: "CHANGE-ME-BEFORE-PRODUCTION",  // ⚠️ REPLACE WITH YOUR SECURE PASSWORD
+    password: adminPassword,  // ⚠️ REPLACE WITH YOUR SECURE PASSWORD
     tenantId: "admin",
     firstName: "Super",
     lastName: "Admin",

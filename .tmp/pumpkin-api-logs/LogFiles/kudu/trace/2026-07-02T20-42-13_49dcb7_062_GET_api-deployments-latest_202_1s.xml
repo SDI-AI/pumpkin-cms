@@ -1,0 +1,8 @@
+<step title="Incoming Request" date="2026-07-02T20:42:13.788" instance="49dcb7" url="/api/deployments/latest?deployer=ms-azuretools-vscode&amp;time=2026-07-02_20-42-08Z" method="GET" type="request" pid="851,1,42" Host="pumpkin-api-cdg2d3dwfpbbdygn.scm.centralus-01.azurewebsites.net" User-Agent="vscode-azureappservice/0.27.0 core-rest-pipeline/1.22.2 Node/24.15.0 (Windows_NT 10.0.26200; x64)" Accept-Encoding="gzip,deflate" Accept-Language="en" Authorization="Bea..." x-ms-correlation-request-id="48c7ae22-1d10-4999-888c-ecaf31c81364" x-ms-client-request-id="c667dcfc-e622-44e4-acf3-54eb2406d200" X-ARR-LOG-ID="c667dcfc-e622-44e4-acf3-54eb2406d200" CLIENT-IP="108.11.11.224:52936" X-SITE-DEPLOYMENT-ID="pumpkin-api" WAS-DEFAULT-HOSTNAME="pumpkin-api-cdg2d3dwfpbbdygn.scm.centralus-01.azurewebsites.net" X-Forwarded-Proto="https" X-AppService-Proto="https" X-Forwarded-TlsVersion="1.3" X-WAWS-Unencoded-URL="/api/deployments/latest?deployer=ms-azuretools-vscode&amp;time=2026-07-02_20-42-08Z" X-Client-IP="108.11.11.224" X-Client-Port="52936" >
+  <step title="DeploymentService.GetResult" date="2026-07-02T20:42:13.804" >
+    <step title="DeploymentService.GetLatestDeployment" date="2026-07-02T20:42:13.806" >
+      <step title="DeploymentManager.GetResults" date="2026-07-02T20:42:13.810" /><!-- duration: 644ms -->
+    </step><!-- duration: 652ms -->
+  </step><!-- duration: 657ms -->
+  <step title="Outgoing response" date="2026-07-02T20:42:14.465" type="response" statusCode="202" statusText="Accepted" /><!-- duration: 8ms -->
+</step><!-- duration: 688ms -->

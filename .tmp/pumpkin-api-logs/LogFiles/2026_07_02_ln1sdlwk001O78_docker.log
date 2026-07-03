@@ -1,0 +1,58 @@
+2026-07-02T20:23:46.3598642Z State: Stopping, Action: StoppingSite, LastError: , LastErrorTimestamp: 01/01/0001 00:00:00, LastErrorDetails: , Details: Site started at 06/25/2026 04:52:10 (UTC), DetailsLevel: INFO
+2026-07-02T20:23:46.3682786Z State: Stopping, Action: StoppingSiteContainers, LastError: , LastErrorTimestamp: 01/01/0001 00:00:00, LastErrorDetails: , Details: Site started at 06/25/2026 04:52:10 (UTC), DetailsLevel: INFO
+2026-07-02T20:23:46.3726751Z Container is terminating. Grace period: 5 seconds.
+2026-07-02T20:23:46.4542760Z Stop and delete container. Retry count = 0
+2026-07-02T20:23:46.4553451Z Stopping container: 5b196c2fa702_pumpkin-api.
+2026-07-02T20:23:51.4657359Z Deleting container: 5b196c2fa702_pumpkin-api. Retry count = 0
+2026-07-02T20:23:51.5585732Z Container spec TerminationMessagePolicy  path 
+2026-07-02T20:23:51.5603119Z Container is terminated. Total time elapsed: 5186 ms.
+2026-07-02T20:23:51.5645176Z Site: pumpkin-api stopped.
+2026-07-02T20:50:41.7069502Z State: Blocked, Action: None, LastError: , LastErrorTimestamp: 01/01/0001 00:00:00, LastErrorDetails: , Details: Site stopped at 07/02/2026 20:23:51 (UTC), DetailsLevel: INFO
+2026-07-02T20:51:06.9989097Z State: Starting, Action: EstablishingSiteNetworks, LastError: , LastErrorTimestamp: 01/01/0001 00:00:00, LastErrorDetails: , Details: Site stopped at 07/02/2026 20:23:51 (UTC), DetailsLevel: INFO
+2026-07-02T20:51:07.3858254Z State: Starting, Action: StartingSiteContainers, LastError: , LastErrorTimestamp: 01/01/0001 00:00:00, LastErrorDetails: , Details: Site stopped at 07/02/2026 20:23:51 (UTC), DetailsLevel: INFO
+2026-07-02T20:51:07.3859637Z Container start method called.
+2026-07-02T20:51:07.3860232Z State: Starting, Action: PullingImage, LastError: , LastErrorTimestamp: 01/01/0001 00:00:00, LastErrorDetails: , Details: Pulling image 10.1.0.6:13209/appsvc/dotnetcore:10.0_20260504.4.tuxprod for pumpkin-api., DetailsLevel: INFO
+2026-07-02T20:51:07.3888255Z Establishing network.
+2026-07-02T20:51:07.3893136Z Pulling image: appsvc/dotnetcore:10.0_20260504.4.tuxprod.
+2026-07-02T20:51:07.4591091Z Image appsvc/dotnetcore:10.0_20260504.4.tuxprod is pulled from registry 10.1.0.6:13209
+2026-07-02T20:51:07.4592733Z Container is starting.
+2026-07-02T20:51:07.4593436Z State: Starting, Action: MountingVolumes, LastError: , LastErrorTimestamp: 01/01/0001 00:00:00, LastErrorDetails: , Details: Mounting volumes for pumpkin-api., DetailsLevel: INFO
+2026-07-02T20:51:07.4608041Z Establishing user namespace if not established already.
+2026-07-02T20:51:07.4609594Z Establishing network if not established already.
+2026-07-02T20:51:07.4619572Z Mounting volumes.
+2026-07-02T20:51:07.4621609Z Nested mountpoint 
+2026-07-02T20:51:07.4645092Z Nested mountpoint volatile/logs
+2026-07-02T20:51:07.4672283Z Nested mountpoint 
+2026-07-02T20:51:07.4700839Z Nested mountpoint 
+2026-07-02T20:51:07.4711888Z Nested mountpoint 
+2026-07-02T20:51:07.4749423Z Nested mountpoint 
+2026-07-02T20:51:07.4833756Z Nested mountpoint 
+2026-07-02T20:51:07.4891071Z Nested mountpoint 
+2026-07-02T20:51:07.5809000Z State: Starting, Action: CreatingContainer, LastError: , LastErrorTimestamp: 01/01/0001 00:00:00, LastErrorDetails: , Details: Finished pulling container image and mounting volumes for pumpkin-api. Allocatinng the rest of the container resources to finish container creation., DetailsLevel: INFO
+2026-07-02T20:51:07.5810599Z Creating container.
+2026-07-02T20:51:07.5812364Z Creating pipes for streaming container io.
+2026-07-02T20:51:07.5813918Z Creating stdout named pipe at /podr/container/pipe/59d2df9c5c9f_pumpkin-api/stdout_14c43ad06eca4cc191e1fa1f01179edb.
+2026-07-02T20:51:07.5830949Z Successfully created stdout named pipe at: /podr/container/pipe/59d2df9c5c9f_pumpkin-api/stdout_14c43ad06eca4cc191e1fa1f01179edb.
+2026-07-02T20:51:07.5833276Z Opening named pipe /podr/container/pipe/59d2df9c5c9f_pumpkin-api/stdout_14c43ad06eca4cc191e1fa1f01179edb for reading in non-blocking mode.
+2026-07-02T20:51:07.5834835Z Successfully opened named pipe: /podr/container/pipe/59d2df9c5c9f_pumpkin-api/stdout_14c43ad06eca4cc191e1fa1f01179edb.
+2026-07-02T20:51:07.5836126Z Successfully removed non-blocking flag from /podr/container/pipe/59d2df9c5c9f_pumpkin-api/stdout_14c43ad06eca4cc191e1fa1f01179edb.
+2026-07-02T20:51:07.5838267Z Creating stderr named pipe at /podr/container/pipe/59d2df9c5c9f_pumpkin-api/stderr_420f02b9dc4f43a79586479db05ff3f4.
+2026-07-02T20:51:07.5839981Z Successfully created stderr named pipe at: /podr/container/pipe/59d2df9c5c9f_pumpkin-api/stderr_420f02b9dc4f43a79586479db05ff3f4.
+2026-07-02T20:51:07.5856407Z Opening named pipe /podr/container/pipe/59d2df9c5c9f_pumpkin-api/stderr_420f02b9dc4f43a79586479db05ff3f4 for reading in non-blocking mode.
+2026-07-02T20:51:07.5862053Z Successfully opened named pipe: /podr/container/pipe/59d2df9c5c9f_pumpkin-api/stderr_420f02b9dc4f43a79586479db05ff3f4.
+2026-07-02T20:51:07.5863591Z Successfully removed non-blocking flag from /podr/container/pipe/59d2df9c5c9f_pumpkin-api/stderr_420f02b9dc4f43a79586479db05ff3f4.
+2026-07-02T20:51:07.5871885Z Creating container with image: appsvc/dotnetcore:10.0_20260504.4.tuxprod from registry: 10.1.0.6:13209 and fully qualified image name: 10.1.0.6:13209/appsvc/dotnetcore:10.0_20260504.4.tuxprod
+2026-07-02T20:51:07.7496150Z Starting container: 59d2df9c5c9f_pumpkin-api.
+2026-07-02T20:51:07.7653538Z Starting watchers and probes.
+2026-07-02T20:51:07.7659653Z Starting metrics collection.
+2026-07-02T20:51:07.7668286Z Container is running.
+2026-07-02T20:51:07.7674153Z State: Starting, Action: CreatingContainer, LastError: , LastErrorTimestamp: 01/01/0001 00:00:00, LastErrorDetails: , Details: Container pumpkin-api successfully created and is running., DetailsLevel: INFO
+2026-07-02T20:51:07.7912264Z Container start method finished after 404 ms.
+2026-07-02T20:51:07.7929657Z State: Starting, Action: InitiatingSiteWarmUpProbe, LastError: , LastErrorTimestamp: 01/01/0001 00:00:00, LastErrorDetails: , Details: Container pumpkin-api successfully created and is running., DetailsLevel: INFO
+2026-07-02T20:51:07.7931273Z State: Starting, Action: WaitingForSiteWarmUpProbeSuccess, LastError: , LastErrorTimestamp: 01/01/0001 00:00:00, LastErrorDetails: , Details: Pinging warmup path to ensure container is ready to receive requests., DetailsLevel: INFO
+2026-07-02T20:51:16.1986971Z Site startup probe succeeded after 8.4052443 seconds.
+2026-07-02T20:51:16.2667657Z State: Starting, Action: WarmUpProbeSucceeded, LastError: , LastErrorTimestamp: 01/01/0001 00:00:00, LastErrorDetails: , Details: Site startup probe succeeded after 8.4052443 seconds., DetailsLevel: INFO
+2026-07-02T20:51:16.3105346Z Site is running with deployment version: 9dad86ab-fbe6-49df-80d7-292eb1f3fb30
+2026-07-02T20:51:16.3107234Z Site started.
+2026-07-02T20:51:16.3107862Z State: Started, Action: None, LastError: , LastErrorTimestamp: 01/01/0001 00:00:00, LastErrorDetails: , Details: Site started at 07/02/2026 20:51:16 (UTC), DetailsLevel: INFO
+2026-07-02T20:51:16.3122945Z Site is running with patch version DOTNETCORE-10.0.7

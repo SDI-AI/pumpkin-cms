@@ -55,6 +55,12 @@ class ApiClient {
     this.apiKey = apiKey
   }
 
+  private debug(...args: unknown[]) {
+    if (process.env.NEXT_PUBLIC_API_DEBUG === 'true') {
+      console.log(...args)
+    }
+  }
+
   private async request<T>(
     endpoint: string,
     options: RequestInit = {}
@@ -72,7 +78,7 @@ class ApiClient {
       headers,
     }
 
-    console.log('[API Client] Request:', {
+    this.debug('[API Client] Request:', {
       url,
       method: config.method || 'GET',
       hasApiKey: !!this.apiKey,
@@ -82,7 +88,7 @@ class ApiClient {
     try {
       const response = await fetch(url, config)
       
-      console.log('[API Client] Response:', {
+      this.debug('[API Client] Response:', {
         status: response.status,
         statusText: response.statusText,
         ok: response.ok
@@ -99,7 +105,7 @@ class ApiClient {
           errorData = { message: text || response.statusText }
         }
         
-        console.error('[API Client] Error response:', errorData)
+        this.debug('[API Client] Error response:', errorData)
         
         const errorMessage = errorData.message || 
                            errorData.error || 
@@ -114,13 +120,13 @@ class ApiClient {
       }
 
       const data = await response.json()
-      console.log('[API Client] Success:', data)
+      this.debug('[API Client] Success:', data)
       return data
     } catch (error) {
       if ((error as ApiError).status) {
         throw error
       }
-      console.error('[API Client] Network error:', error)
+      this.debug('[API Client] Network error:', error)
       throw {
         message: 'Network error. Please check your connection and ensure the API is accessible.',
         status: 0,
@@ -157,7 +163,7 @@ class ApiClient {
 
   // Get tenants accessible to the authenticated user
   async getTenants(token: string): Promise<Tenant[]> {
-    console.log('[API Client] Getting tenants...')
+    this.debug('[API Client] Getting tenants...')
     const response = await this.request<{ tenants: Tenant[], count: number }>(
       '/api/admin/tenants',
       {
@@ -168,13 +174,13 @@ class ApiClient {
       }
     )
     
-    console.log('[API Client] Tenants response:', response)
+    this.debug('[API Client] Tenants response:', response)
     return response.tenants
   }
 
   // Create a new tenant (requires authentication and SuperAdmin role)
   async createTenant(token: string, tenant: Tenant): Promise<Tenant> {
-    console.log('[API Client] Creating tenant...')
+    this.debug('[API Client] Creating tenant...')
     const response = await this.request<Tenant>(
       '/api/admin/tenants',
       {
@@ -186,13 +192,13 @@ class ApiClient {
       }
     )
     
-    console.log('[API Client] Tenant created:', response)
+    this.debug('[API Client] Tenant created:', response)
     return response
   }
 
   // Update an existing tenant (requires authentication and SuperAdmin role)
   async updateTenant(token: string, tenantId: string, tenant: Tenant): Promise<Tenant> {
-    console.log('[API Client] Updating tenant:', tenantId)
+    this.debug('[API Client] Updating tenant:', tenantId)
     const response = await this.request<Tenant>(
       `/api/admin/tenants/${tenantId}`,
       {
@@ -204,13 +210,13 @@ class ApiClient {
       }
     )
     
-    console.log('[API Client] Tenant updated:', response)
+    this.debug('[API Client] Tenant updated:', response)
     return response
   }
 
   // Regenerate tenant API key (requires authentication and SuperAdmin role)
   async regenerateTenantApiKey(token: string, tenantId: string): Promise<{ tenant: Tenant; apiKey: string }> {
-    console.log('[API Client] Regenerating API key for tenant:', tenantId)
+    this.debug('[API Client] Regenerating API key for tenant:', tenantId)
     const response = await this.request<{ tenant: Tenant; apiKey: string }>(
       `/api/admin/tenants/${tenantId}/regenerate-api-key`,
       {
@@ -221,13 +227,13 @@ class ApiClient {
       }
     )
     
-    console.log('[API Client] API key regenerated')
+    this.debug('[API Client] API key regenerated')
     return response
   }
 
   // Delete a tenant (requires authentication and SuperAdmin role)
   async deleteTenant(token: string, tenantId: string): Promise<{ message: string; tenantId: string }> {
-    console.log('[API Client] Deleting tenant:', tenantId)
+    this.debug('[API Client] Deleting tenant:', tenantId)
     const response = await this.request<{ message: string; tenantId: string }>(
       `/api/admin/tenants/${tenantId}`,
       {
@@ -238,7 +244,7 @@ class ApiClient {
       }
     )
     
-    console.log('[API Client] Tenant deleted:', response)
+    this.debug('[API Client] Tenant deleted:', response)
     return response
   }
 
@@ -325,12 +331,12 @@ class ApiClient {
 
   // Get a single page by slug (uses admin pages list endpoint and filters)
   async getPage(token: string, tenantId: string, pageSlug: string): Promise<Page> {
-    console.log('[API Client] getPage called:', { tenantId, pageSlug })
+    this.debug('[API Client] getPage called:', { tenantId, pageSlug })
     const pages = await this.getPages(token, tenantId)
     const normalizedSlug = pageSlug.toLowerCase()
     const page = pages.find(p => p.pageSlug?.toLowerCase() === normalizedSlug)
     if (!page) {
-      console.error('[API Client] Page not found in list:', { pageSlug, normalizedSlug, availableSlugs: pages.map(p => p.pageSlug) })
+      this.debug('[API Client] Page not found in list:', { pageSlug, normalizedSlug, availableSlugs: pages.map(p => p.pageSlug) })
       throw {
         message: `Page not found: ${pageSlug}`,
         status: 404,
@@ -342,7 +348,7 @@ class ApiClient {
 
   // Create a new page (admin, JWT auth)
   async createPage(token: string, tenantId: string, page: Page): Promise<Page> {
-    console.log('[API Client] Creating page:', { tenantId, pageSlug: page.pageSlug })
+    this.debug('[API Client] Creating page:', { tenantId, pageSlug: page.pageSlug })
     return this.request<Page>(
       `/api/admin/pages/${encodeURIComponent(tenantId)}`,
       {
@@ -357,7 +363,7 @@ class ApiClient {
 
   // Update an existing page (admin, JWT auth)
   async updatePage(token: string, tenantId: string, pageSlug: string, page: Page): Promise<Page> {
-    console.log('[API Client] Updating page:', { tenantId, pageSlug })
+    this.debug('[API Client] Updating page:', { tenantId, pageSlug })
     return this.request<Page>(
       `/api/admin/pages/${encodeURIComponent(tenantId)}/${encodeURIComponent(pageSlug)}`,
       {
@@ -374,7 +380,7 @@ class ApiClient {
 
   // Get all themes for a tenant
   async getThemes(token: string, tenantId: string): Promise<Theme[]> {
-    console.log('[API Client] Getting themes for tenant:', tenantId)
+    this.debug('[API Client] Getting themes for tenant:', tenantId)
     const response = await this.request<{ themes: Theme[]; count: number; tenantId: string }>(
       `/api/admin/themes/${encodeURIComponent(tenantId)}`,
       {
@@ -384,13 +390,13 @@ class ApiClient {
         },
       }
     )
-    console.log('[API Client] Themes response:', response)
+    this.debug('[API Client] Themes response:', response)
     return response.themes
   }
 
   // Get a specific theme by ID
   async getTheme(token: string, tenantId: string, themeId: string): Promise<Theme> {
-    console.log('[API Client] Getting theme:', { tenantId, themeId })
+    this.debug('[API Client] Getting theme:', { tenantId, themeId })
     return this.request<Theme>(
       `/api/admin/themes/${encodeURIComponent(tenantId)}/${encodeURIComponent(themeId)}`,
       {
@@ -404,7 +410,7 @@ class ApiClient {
 
   // Get the active theme for a tenant
   async getActiveTheme(token: string, tenantId: string): Promise<Theme | null> {
-    console.log('[API Client] Getting active theme for tenant:', tenantId)
+    this.debug('[API Client] Getting active theme for tenant:', tenantId)
     try {
       return await this.request<Theme>(
         `/api/admin/themes/${encodeURIComponent(tenantId)}/active`,
@@ -423,7 +429,7 @@ class ApiClient {
 
   // Create a new theme
   async createTheme(token: string, tenantId: string, theme: Theme): Promise<Theme> {
-    console.log('[API Client] Creating theme:', { tenantId, themeId: theme.themeId })
+    this.debug('[API Client] Creating theme:', { tenantId, themeId: theme.themeId })
     return this.request<Theme>(
       `/api/admin/themes/${encodeURIComponent(tenantId)}`,
       {
@@ -438,7 +444,7 @@ class ApiClient {
 
   // Update an existing theme
   async updateTheme(token: string, tenantId: string, themeId: string, theme: Theme): Promise<Theme> {
-    console.log('[API Client] Updating theme:', { tenantId, themeId })
+    this.debug('[API Client] Updating theme:', { tenantId, themeId })
     return this.request<Theme>(
       `/api/admin/themes/${encodeURIComponent(tenantId)}/${encodeURIComponent(themeId)}`,
       {
@@ -453,7 +459,7 @@ class ApiClient {
 
   // Activate a theme for a tenant
   async activateTheme(token: string, tenantId: string, themeId: string): Promise<Theme> {
-    console.log('[API Client] Activating theme:', { tenantId, themeId })
+    this.debug('[API Client] Activating theme:', { tenantId, themeId })
     return this.request<Theme>(
       `/api/admin/themes/${encodeURIComponent(tenantId)}/${encodeURIComponent(themeId)}/activate`,
       {
@@ -467,7 +473,7 @@ class ApiClient {
 
   // Delete a theme
   async deleteTheme(token: string, tenantId: string, themeId: string): Promise<{ message: string; tenantId: string; themeId: string }> {
-    console.log('[API Client] Deleting theme:', { tenantId, themeId })
+    this.debug('[API Client] Deleting theme:', { tenantId, themeId })
     return this.request<{ message: string; tenantId: string; themeId: string }>(
       `/api/admin/themes/${encodeURIComponent(tenantId)}/${encodeURIComponent(themeId)}`,
       {
