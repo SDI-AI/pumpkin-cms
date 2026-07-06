@@ -1,17 +1,18 @@
-import { AdminPlaceholder } from '@/components/admin/AdminPlaceholder';
+import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
+import { getStarterAdminPages } from '@/lib/starter-admin-pages';
+import { PageListView } from './_components/PageListView';
 
-export default function StarterAdminPagesPage() {
+export default async function StarterAdminPagesPage() {
+  const { pages, unavailablePages } = await getStarterAdminPages();
+
   return (
-    <AdminPlaceholder
-      nextPhase="Phase 3"
-      title="Pages"
-      description="This route is ready for the existing page editor and page list workflows."
-      items={[
-        'Port the current page list and editor components.',
-        'Adapt API calls to the configured tenant instead of selected tenant context.',
-        'Keep block editing, metadata editing, and publish/save states intact.',
-        'Add preview links back to the public starter routes.',
-      ]}
-    />
+    <section>
+      <AdminPageHeader
+        eyebrow="Phase 3"
+        title="Pages"
+        description="Manage the tenant pages available to this starter deployment."
+      />
+      <PageListView pages={pages} unavailablePages={unavailablePages} />
+    </section>
   );
 }
