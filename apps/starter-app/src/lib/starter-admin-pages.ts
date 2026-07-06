@@ -1,14 +1,10 @@
 import type { Page } from 'pumpkin-ts-models';
+import { getStarterAdminToken } from '@/lib/admin-auth';
 import { loadTenantConfig } from '@/lib/tenant-config';
 
-interface SitemapEntry {
-  pageSlug: string;
-  lastModified: string;
-}
-
-interface SitemapResponse {
+interface PagesResponse {
   tenantId: string;
-  pages: SitemapEntry[];
+  pages: Page[];
   count: number;
 }
 
@@ -22,44 +18,25 @@ export async function getStarterAdminPages(): Promise<StarterAdminPagesResult> {
   if (!config) {
     throw new Error('Pumpkin tenant configuration is missing.');
   }
+  const token = getRequiredAdminToken();
 
-  const sitemapResponse = await fetch(`${config.apiUrl}/api/tenant/${encodeURIComponent(config.tenantId)}/sitemap`, {
+  const response = await fetch(`${config.apiUrl}/api/admin/pages?tenantId=${encodeURIComponent(config.tenantId)}`, {
     headers: {
       Accept: 'application/json',
-      Authorization: `Bearer ${config.apiKey}`,
+      Authorization: `Bearer ${token}`,
     },
     cache: 'no-store',
   });
 
-  if (!sitemapResponse.ok) {
-    throw new Error(await readApiError(sitemapResponse, 'Unable to load tenant sitemap.'));
+  if (!response.ok) {
+    throw new Error(await readApiError(response, 'Unable to load tenant pages.'));
   }
 
-  const sitemap = (await sitemapResponse.json()) as SitemapResponse;
-  const fetchedPages = await Promise.all(
-    sitemap.pages.map(async (entry) => {
-      const response = await fetch(
-        `${config.apiUrl}/api/pages/${encodeURIComponent(config.tenantId)}/${encodeSlugPath(entry.pageSlug)}`,
-        {
-          headers: {
-            Accept: 'application/json',
-            Authorization: `Bearer ${config.apiKey}`,
-          },
-          cache: 'no-store',
-        },
-      );
-
-      if (!response.ok) {
-        return { page: null, slug: entry.pageSlug };
-      }
-
-      return { page: (await response.json()) as Page, slug: entry.pageSlug };
-    }),
-  );
+  const data = (await response.json()) as PagesResponse;
 
   return {
-    pages: fetchedPages.flatMap((item) => (item.page ? [item.page] : [])),
-    unavailablePages: fetchedPages.flatMap((item) => (item.page ? [] : [item.slug])),
+    pages: data.pages,
+    unavailablePages: [],
   };
 }
 
@@ -68,13 +45,14 @@ export async function getStarterAdminPage(pageSlug: string): Promise<Page> {
   if (!config) {
     throw new Error('Pumpkin tenant configuration is missing.');
   }
+  const token = getRequiredAdminToken();
 
   const response = await fetch(
-    `${config.apiUrl}/api/pages/${encodeURIComponent(config.tenantId)}/${encodeSlugPath(pageSlug)}`,
+    `${config.apiUrl}/api/admin/pages/${encodeURIComponent(config.tenantId)}/${encodeSlugPath(pageSlug)}`,
     {
       headers: {
         Accept: 'application/json',
-        Authorization: `Bearer ${config.apiKey}`,
+        Authorization: `Bearer ${token}`,
       },
       cache: 'no-store',
     },
@@ -92,14 +70,15 @@ export async function updateStarterAdminPage(pageSlug: string, page: Page): Prom
   if (!config) {
     throw new Error('Pumpkin tenant configuration is missing.');
   }
+  const token = getRequiredAdminToken();
 
   const response = await fetch(
-    `${config.apiUrl}/api/pages/${encodeURIComponent(config.tenantId)}/${encodeSlugPath(pageSlug)}`,
+    `${config.apiUrl}/api/admin/pages/${encodeURIComponent(config.tenantId)}/${encodeSlugPath(pageSlug)}`,
     {
       method: 'PUT',
       headers: {
         Accept: 'application/json',
-        Authorization: `Bearer ${config.apiKey}`,
+        Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(page),
@@ -131,4 +110,13 @@ function encodeSlugPath(slug: string) {
     .split('/')
     .map((segment) => encodeURIComponent(segment))
     .join('/');
+}
+
+function getRequiredAdminToken() {
+  const token = getStarterAdminToken();
+  if (!token) {
+    throw new Error('Starter admin session is missing.');
+  }
+
+  return token;
 }

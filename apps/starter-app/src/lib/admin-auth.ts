@@ -1,9 +1,10 @@
-import { createHmac, timingSafeEqual } from 'node:crypto';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { loadTenantConfig, getMissingTenantConfigKeys } from '@/lib/tenant-config';
+import type { UserInfo } from 'pumpkin-ts-models';
 
-export const starterAdminCookieName = 'pumpkin_starter_admin';
+export const starterAdminTokenCookieName = 'pumpkin_starter_admin_token';
+export const starterAdminUserCookieName = 'pumpkin_starter_admin_user';
 
 const sessionMaxAgeSeconds = 60 * 60 * 8;
 
@@ -14,39 +15,11 @@ export interface StarterAdminContext {
   configSource: string;
   adminConfigured: boolean;
   missingConfigKeys: string[];
-}
-
-export function getStarterAdminPassword() {
-  return process.env.PUMPKIN_ADMIN_PASSWORD?.trim() || '';
+  user: UserInfo | null;
 }
 
 export function isStarterAdminConfigured() {
-  return Boolean(getStarterAdminPassword());
-}
-
-export function verifyStarterAdminPassword(password: string) {
-  const expected = getStarterAdminPassword();
-  if (!expected || !password) return false;
-
-  return safeEqual(password, expected);
-}
-
-export function createStarterAdminSession() {
-  const expiresAt = Date.now() + sessionMaxAgeSeconds * 1000;
-  const payload = String(expiresAt);
-  return `${payload}.${sign(payload)}`;
-}
-
-export function verifyStarterAdminSession(value?: string) {
-  if (!value) return false;
-
-  const [payload, signature] = value.split('.');
-  if (!payload || !signature) return false;
-
-  const expiresAt = Number(payload);
-  if (!Number.isFinite(expiresAt) || expiresAt <= Date.now()) return false;
-
-  return safeEqual(signature, sign(payload));
+  return Boolean(loadTenantConfig());
 }
 
 export function getStarterAdminCookieOptions() {
@@ -60,7 +33,7 @@ export function getStarterAdminCookieOptions() {
 }
 
 export function isStarterAdminAuthenticated() {
-  return verifyStarterAdminSession(cookies().get(starterAdminCookieName)?.value);
+  return Boolean(getStarterAdminToken());
 }
 
 export function requireStarterAdmin() {
@@ -69,13 +42,24 @@ export function requireStarterAdmin() {
   }
 }
 
+export function getStarterAdminToken() {
+  return cookies().get(starterAdminTokenCookieName)?.value || '';
+}
+
+export function getStarterAdminUser(): UserInfo | null {
+  const raw = cookies().get(starterAdminUserCookieName)?.value;
+  if (!raw) return null;
+
+  try {
+    return JSON.parse(raw) as UserInfo;
+  } catch {
+    return null;
+  }
+}
+
 export function getStarterAdminContext(): StarterAdminContext {
   const tenantConfig = loadTenantConfig();
   const missingConfigKeys = getMissingTenantConfigKeys();
-
-  if (!isStarterAdminConfigured()) {
-    missingConfigKeys.push('PUMPKIN_ADMIN_PASSWORD');
-  }
 
   return {
     siteName: tenantConfig?.siteName || 'Pumpkin Starter',
@@ -84,25 +68,6 @@ export function getStarterAdminContext(): StarterAdminContext {
     configSource: tenantConfig?.source || 'missing',
     adminConfigured: isStarterAdminConfigured(),
     missingConfigKeys,
+    user: getStarterAdminUser(),
   };
-}
-
-function sign(payload: string) {
-  return createHmac('sha256', getSessionSecret()).update(payload).digest('base64url');
-}
-
-function getSessionSecret() {
-  return (
-    process.env.PUMPKIN_ADMIN_SESSION_SECRET ||
-    process.env.PUMPKIN_API_KEY ||
-    getStarterAdminPassword() ||
-    'starter-admin-dev-secret'
-  );
-}
-
-function safeEqual(a: string, b: string) {
-  const left = Buffer.from(a);
-  const right = Buffer.from(b);
-
-  return left.length === right.length && timingSafeEqual(left, right);
 }

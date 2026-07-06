@@ -72,8 +72,10 @@ export function AdminShell({ context, children }: AdminShellProps) {
 
           <div className="flex items-center gap-3">
             <div className="hidden text-right sm:block">
-              <p className="text-xs font-medium uppercase tracking-wide text-neutral-500">Tenant</p>
-              <p className="max-w-44 truncate text-sm font-semibold text-neutral-900">{context.tenantId}</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-neutral-500">{context.user?.role || 'Tenant'}</p>
+              <p className="max-w-44 truncate text-sm font-semibold text-neutral-900">
+                {context.user?.username || context.tenantId}
+              </p>
             </div>
             <button
               type="button"

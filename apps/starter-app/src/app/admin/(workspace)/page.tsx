@@ -66,6 +66,10 @@ export default function StarterAdminDashboardPage() {
                 <dt className="font-medium text-neutral-500">Config source</dt>
                 <dd className="mt-1 font-semibold text-neutral-900">{context.configSource}</dd>
               </div>
+              <div>
+                <dt className="font-medium text-neutral-500">Signed in as</dt>
+                <dd className="mt-1 font-semibold text-neutral-900">{context.user?.email || 'Unknown'}</dd>
+              </div>
             </dl>
             {!configured && (
               <p className="mt-3 text-sm text-amber-700">

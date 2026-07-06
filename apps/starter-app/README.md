@@ -17,8 +17,6 @@ NEXT_PUBLIC_PUMPKIN_API_URL=http://localhost:5064
 PUMPKIN_TENANT_ID=existing-tenant-id
 PUMPKIN_API_KEY=existing-tenant-api-key
 PUMPKIN_SITE_NAME=Optional Site Name
-PUMPKIN_ADMIN_PASSWORD=tenant-admin-password
-PUMPKIN_ADMIN_SESSION_SECRET=long-random-session-secret
 ```
 
 2. Optional local development file written before app startup by a CLI or developer:
@@ -56,7 +54,7 @@ npm run dev
 
 Open http://localhost:3003.
 
-The single-tenant admin shell is available at http://localhost:3003/admin when `PUMPKIN_ADMIN_PASSWORD` is configured.
+The single-tenant admin shell is available at http://localhost:3003/admin. It uses Pumpkin admin accounts and stores the JWT in an HTTP-only cookie.
 
 ## Phase 1 Boundary
 

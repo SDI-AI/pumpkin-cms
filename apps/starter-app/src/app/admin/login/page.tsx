@@ -6,6 +6,7 @@ import { LockKeyhole } from 'lucide-react';
 
 export default function StarterAdminLoginPage() {
   const router = useRouter();
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -19,7 +20,7 @@ export default function StarterAdminLoginPage() {
       const response = await fetch('/api/admin/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ email, password }),
       });
 
       if (!response.ok) {
@@ -44,7 +45,7 @@ export default function StarterAdminLoginPage() {
             <LockKeyhole className="h-6 w-6" aria-hidden="true" />
           </div>
           <h1 className="mt-4 text-2xl font-bold tracking-normal">Starter Admin</h1>
-          <p className="mt-2 text-sm text-neutral-600">Sign in to manage this tenant site.</p>
+          <p className="mt-2 text-sm text-neutral-600">Use your Pumpkin admin account for this tenant site.</p>
         </div>
 
         <form onSubmit={submit} className="rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
@@ -54,8 +55,22 @@ export default function StarterAdminLoginPage() {
             </p>
           )}
 
-          <label htmlFor="password" className="block text-sm font-semibold text-neutral-800">
-            Admin password
+          <label htmlFor="email" className="block text-sm font-semibold text-neutral-800">
+            Email
+          </label>
+          <input
+            id="email"
+            type="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            className="mt-2 h-11 w-full rounded-md border border-neutral-300 px-3 text-sm outline-none focus:border-pumpkin-500 focus:ring-2 focus:ring-pumpkin-100"
+            autoComplete="email"
+            required
+            disabled={loading}
+          />
+
+          <label htmlFor="password" className="mt-4 block text-sm font-semibold text-neutral-800">
+            Password
           </label>
           <input
             id="password"
