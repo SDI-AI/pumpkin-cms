@@ -1,4 +1,3 @@
-import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { getStarterAdminPages } from '@/lib/starter-admin-pages';
 import { PageFlowMapView } from './_components/PageFlowMapView';
 
@@ -6,12 +5,7 @@ export default async function StarterAdminPageMapPage() {
   const { pages, unavailablePages } = await getStarterAdminPages();
 
   return (
-    <section>
-      <AdminPageHeader
-        eyebrow="Phase 2"
-        title="Page Map"
-        description="Review the tenant page hierarchy by hub, spoke, orphaned page, and related hub references."
-      />
+    <section className="relative left-1/2 -my-8 flex h-[calc(100vh-4rem)] w-screen -translate-x-1/2 flex-col overflow-hidden bg-neutral-100">
       <PageFlowMapView pages={pages} unavailablePages={unavailablePages} />
     </section>
   );

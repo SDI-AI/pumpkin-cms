@@ -17,7 +17,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import Dagre from '@dagrejs/dagre';
-import { Plus, RotateCcw, Search } from 'lucide-react';
+import { GitBranch, Plus, RotateCcw, Search } from 'lucide-react';
 import type { NodePosition, Page } from 'pumpkin-ts-models';
 
 interface PageFlowMapViewProps {
@@ -146,46 +146,80 @@ export function PageFlowMapView({ pages, unavailablePages }: PageFlowMapViewProp
   }, []);
 
   return (
-    <div className="space-y-5">
-      <div className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="grid gap-3 sm:grid-cols-4">
-            <Stat label="Pages" value={String(filteredPages.length)} />
-            <Stat label="Hubs" value={String(stats.hubCount)} />
-            <Stat label="Spokes" value={String(stats.spokeCount)} />
-            <Stat label="Orphans" value={String(stats.orphanedCount)} />
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="border-b border-neutral-200 bg-white px-4 py-3 shadow-sm sm:px-6 lg:px-8">
+        <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-pumpkin-50 text-pumpkin-700">
+              <GitBranch className="h-5 w-5" aria-hidden="true" />
+            </span>
+            <div className="min-w-0">
+              <p className="text-xs font-bold uppercase tracking-wide text-pumpkin-700">Page Map</p>
+              <h1 className="truncate text-lg font-bold text-neutral-950">Tenant Page Hierarchy</h1>
+            </div>
           </div>
-          <div className="relative w-full lg:w-80">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" aria-hidden="true" />
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Filter pages"
-              className="h-10 w-full rounded-md border border-neutral-300 px-3 pl-9 text-sm outline-none focus:border-pumpkin-500 focus:ring-2 focus:ring-pumpkin-100"
-            />
+
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
+            <div className="grid grid-cols-4 gap-2">
+              <Stat label="Pages" value={String(filteredPages.length)} />
+              <Stat label="Hubs" value={String(stats.hubCount)} />
+              <Stat label="Spokes" value={String(stats.spokeCount)} />
+              <Stat label="Orphans" value={String(stats.orphanedCount)} />
+            </div>
+
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <div className="relative w-full sm:w-72">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" aria-hidden="true" />
+                <input
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder="Filter pages"
+                  className="h-10 w-full rounded-md border border-neutral-300 px-3 pl-9 text-sm outline-none focus:border-pumpkin-500 focus:ring-2 focus:ring-pumpkin-100"
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={resetLayout}
+                disabled={savingLayout || nodes.length === 0}
+                className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-md border border-neutral-300 bg-white px-3 text-sm font-semibold text-neutral-800 transition-colors hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <RotateCcw className="h-4 w-4" aria-hidden="true" />
+                <span>{savingLayout ? 'Saving...' : 'Reset Layout'}</span>
+              </button>
+            </div>
           </div>
         </div>
 
-        {(unavailablePages.length > 0 || message || error) && (
-          <div className="mt-4 space-y-2">
+        <div className="mt-3 flex flex-col gap-2 2xl:flex-row 2xl:items-center 2xl:justify-between">
+          <div className="flex flex-wrap gap-x-5 gap-y-2">
+            <LegendItem color="linear-gradient(135deg,#fff7ed,#ffedd5)" border="2px solid #f97316" label="Hub" value={String(stats.hubCount)} />
+            <LegendItem color="#fff" border="1.5px solid #d1d5db" label="Spoke" value={String(stats.spokeCount)} />
+            <LegendItem color="linear-gradient(135deg,#fffbeb,#fef3c7)" border="2px dashed #f59e0b" label="Orphaned" value={String(stats.orphanedCount)} />
+            <EdgeLegend color="#f97316" label="Hub to Spoke" />
+            <EdgeLegend color="#dc2626" label="Hub to Sub-Hub" width={3} />
+            <EdgeLegend color="#3b82f6" label="Related Hubs" dashed />
+          </div>
+
+          <div className="min-h-8">
             {unavailablePages.length > 0 && (
-              <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+              <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-1.5 text-sm text-amber-800">
                 Some sitemap entries could not be loaded: {unavailablePages.join(', ')}
               </p>
             )}
             {(message || error) && (
               <p className={[
-                'rounded-md border px-3 py-2 text-sm',
+                'rounded-md border px-3 py-1.5 text-sm',
                 error ? 'border-red-200 bg-red-50 text-red-700' : 'border-green-200 bg-green-50 text-green-700',
               ].join(' ')}>
                 {error || message}
               </p>
             )}
           </div>
-        )}
+        </div>
       </div>
 
-      <div className="h-[calc(100vh-18rem)] min-h-[34rem] overflow-hidden rounded-lg border border-neutral-200 bg-neutral-50 shadow-sm">
+      <div className="min-h-0 flex-1 bg-neutral-50">
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -227,36 +261,6 @@ export function PageFlowMapView({ pages, unavailablePages }: PageFlowMapViewProp
               zoomable
             />
           )}
-
-          <Panel position="top-right">
-            <button
-              type="button"
-              onClick={resetLayout}
-              disabled={savingLayout || nodes.length === 0}
-              className="inline-flex h-10 items-center gap-2 rounded-md border border-neutral-200 bg-white/95 px-3 text-sm font-semibold text-neutral-800 shadow-lg backdrop-blur-sm transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <RotateCcw className="h-4 w-4" aria-hidden="true" />
-              <span>{savingLayout ? 'Saving...' : 'Reset Layout'}</span>
-            </button>
-          </Panel>
-
-          <Panel position="top-left">
-            <div className="max-w-md rounded-lg border border-neutral-200 bg-white/95 px-5 py-3.5 shadow-lg backdrop-blur-sm">
-              <h3 className="mb-2.5 text-xs font-bold uppercase tracking-wide text-neutral-500">Legend</h3>
-              <div className="grid grid-cols-2 gap-x-6 gap-y-1.5">
-                <LegendItem color="linear-gradient(135deg,#fff7ed,#ffedd5)" border="2px solid #f97316" label="Hub" value={String(stats.hubCount)} />
-                <LegendItem color="#fff" border="1.5px solid #d1d5db" label="Spoke" value={String(stats.spokeCount)} />
-                <LegendItem color="linear-gradient(135deg,#fffbeb,#fef3c7)" border="2px dashed #f59e0b" label="Orphaned" value={String(stats.orphanedCount)} />
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-neutral-400">Total</span>
-                  <span className="rounded-full bg-emerald-50 px-1.5 text-[10px] font-semibold text-emerald-600">{filteredPages.length}</span>
-                </div>
-                <EdgeLegend color="#f97316" label="Hub to Spoke" />
-                <EdgeLegend color="#dc2626" label="Hub to Sub-Hub" width={3} />
-                <EdgeLegend color="#3b82f6" label="Related Hubs" dashed className="col-span-2" />
-              </div>
-            </div>
-          </Panel>
 
           {nodes.length === 0 && (
             <Panel position="top-center">
