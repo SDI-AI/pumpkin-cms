@@ -37,6 +37,9 @@ export type { TestimonialsBlockViewProps } from './TestimonialsBlockView';
 export { ContactBlockView } from './ContactBlockView';
 export type { ContactBlockViewProps } from './ContactBlockView';
 
+export { FormBlockView } from './FormBlockView';
+export type { FormBlockViewProps } from './FormBlockView';
+
 export { BlogBlockView } from './BlogBlockView';
 export type { BlogBlockViewProps } from './BlogBlockView';
 

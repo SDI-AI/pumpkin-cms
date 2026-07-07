@@ -23,6 +23,7 @@ public static class HtmlBlockFactory
         { "Gallery", typeof(GalleryBlock) },
         { "Testimonials", typeof(TestimonialsBlock) },
         { "Contact", typeof(ContactBlock) },
+        { "Form", typeof(FormBlock) },
         { "Blog", typeof(BlogBlock) }
     };
 

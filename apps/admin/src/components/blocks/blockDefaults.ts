@@ -22,6 +22,7 @@ export const BLOCK_TYPE_INFO: BlockTypeInfo[] = [
   { type: 'Gallery', label: 'Gallery', icon: '???', category: 'interaction', description: 'Image gallery with captions' },
   { type: 'Testimonials', label: 'Testimonials', icon: '?', category: 'interaction', description: 'Customer reviews and testimonials' },
   { type: 'Contact', label: 'Contact', icon: '??', category: 'interaction', description: 'Contact form with details' },
+  { type: 'Form', label: 'Form', icon: '??', category: 'interaction', description: 'Form definition renderer' },
   { type: 'Blog', label: 'Blog', icon: '??', category: 'blog', description: 'Blog post content block' },
 ]
 
@@ -62,6 +63,8 @@ export function createDefaultBlock(type: string): IHtmlBlock {
       return { type: 'Testimonials', content: { title: '', subtitle: '', layout: 'carousel', items: [] } }
     case 'Contact':
       return { type: 'Contact', content: { id: '', title: '', subtitle: '', address: '', phone: '', email: '', hours: '', formFields: [], submitButtonText: 'Submit', socialLinks: [] } }
+    case 'Form':
+      return { type: 'Form', content: { formType: 'contact', title: '', subtitle: '', description: '', layout: 'default', successMessage: '' } }
     case 'Blog':
       return { type: 'Blog', content: { title: '', subtitle: '', author: '', authorImage: '', authorBio: '', publishedDate: '', featuredImage: '', featuredImageAlt: '', excerpt: '', body: '', tags: [], categories: [], readingTime: 0, relatedPosts: [] } }
     default:

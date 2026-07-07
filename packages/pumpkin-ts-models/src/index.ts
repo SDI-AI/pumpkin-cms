@@ -121,7 +121,9 @@ export type {
   FormField,
   SocialLink,
   ContactContent,
-  ContactBlock
+  ContactBlock,
+  FormBlockContent,
+  FormBlock
 } from './models/InteractionBlocks';
 
 // Blog blocks
