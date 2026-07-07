@@ -3,17 +3,18 @@ export type { User, LoginRequest, LoginResponse, UserInfo } from './models/User'
 export { UserRole, userRoleToString, stringToUserRole, isUserRole, userToUserInfo } from './models/User';
 export type { Tenant, ApiKeyMeta, TenantSettings, Features, Contact, Billing, TenantInfo } from './models/Tenant';
 export { tenantToTenantInfo } from './models/Tenant';
-export type { FormEntry, FormEntryMetadata } from './models/FormEntry';
+export type { FormEntry, FormEntryMetadata, FormEntryStatus } from './models/FormEntry';
+export type { FormDefinition, FormFieldDefinition, FormFieldOption, FormFieldType, FormFieldWidth, FormFieldValidation, FormSubmitBehavior, FormNotificationSettings, FormSpamProtection, FormRateLimit } from './models/FormDefinition';
 export type { Page, PageMetaData, SearchData, ContentData, SeoData, AlternateUrl, OpenGraphData, TwitterCardData, ContentRelationships, NodePosition } from './models/Page';
 export type { HeroType, HeroContent, HeroBlock } from './models/HeroBlocks';
 export type { PrimaryCtaContent, PrimaryCtaBlock, SecondaryCtaContent, SecondaryCtaBlock } from './models/CtaBlocks';
 export type { Card, CardGridContent, CardGridBlock, FaqItem, FaqContent, FaqBlock } from './models/ContentBlocks';
 export type { BreadcrumbItem, BreadcrumbsContent, BreadcrumbsBlock, TrustBarItem, TrustBarContent, TrustBarBlock, Step, HowItWorksContent, HowItWorksBlock, ServiceAreaMapContent, ServiceAreaMapBlock, ProTipItem, LocalProTipsContent, LocalProTipsBlock } from './models/NavigationBlocks';
-export type { GalleryImage, GalleryContent, GalleryBlock, TestimonialItem, TestimonialsContent, TestimonialsBlock, FormField, SocialLink, ContactContent, ContactBlock } from './models/InteractionBlocks';
+export type { GalleryImage, GalleryContent, GalleryBlock, TestimonialItem, TestimonialsContent, TestimonialsBlock, FormField, SocialLink, ContactContent, ContactBlock, FormBlockContent, FormBlock } from './models/InteractionBlocks';
 export type { RelatedPost, BlogContent, BlogBlock } from './models/BlogBlocks';
 export type { HtmlBlock } from './models/HtmlBlockTypes';
 export { BLOCK_TYPE_MAP, SUPPORTED_BLOCK_TYPES, isBlockOfType, isHtmlBlock, createGenericBlock } from './models/HtmlBlockTypes';
-export type { Theme, ThemeHeader, ThemeFooter, BlockStyleMap, MenuItem } from './models/Theme';
+export type { Theme, ThemeHeader, ThemeFooter, ThemePreview, ThemeTypography, ThemeSpacing, ThemeBorders, ThemeShadows, BlockStyleMap, MenuItem } from './models/Theme';
 export { PageJsonConverter } from './PageJsonConverter';
 export type { JsonConverterOptions } from './PageJsonConverter';
 //# sourceMappingURL=index.d.ts.map

@@ -22,11 +22,11 @@ public class DatabaseService : IDatabaseService, IDisposable
 
         _logger.LogInformation("Initializing DatabaseService with provider: {Provider}", databaseSettings.Provider);
 
-        // Route to the appropriate database implementation based on configuration
+        // Phase 1 supports Cosmos DB only.
         _dataConnection = databaseSettings.Provider.ToLowerInvariant() switch
         {
             "cosmosdb" => serviceProvider.GetRequiredService<CosmosDataConnection>(),
-            "mongodb" => serviceProvider.GetRequiredService<MongoDataConnection>(),
+            "mongodb" => throw new NotSupportedException("MongoDB support is disabled in this build. Configure Database:Provider to CosmosDb."),
             _ => throw new InvalidOperationException($"Unsupported database provider: {databaseSettings.Provider}")
         };
 
@@ -135,6 +135,11 @@ public class DatabaseService : IDatabaseService, IDisposable
         return _dataConnection.UpdatePageAdminAsync(tenantId, pageSlug, page);
     }
 
+    public Task<bool> DeletePageAdminAsync(string tenantId, string pageSlug)
+    {
+        return _dataConnection.DeletePageAdminAsync(tenantId, pageSlug);
+    }
+
     // Theme methods (content serving - API key required)
     public Task<Theme?> GetThemeAsync(string apiKey, string tenantId, string themeId)
     {
@@ -172,6 +177,11 @@ public class DatabaseService : IDatabaseService, IDisposable
         return _dataConnection.UpdateThemeAsync(tenantId, themeId, theme);
     }
 
+    public Task<Theme> ActivateThemeAsync(string tenantId, string themeId)
+    {
+        return _dataConnection.ActivateThemeAsync(tenantId, themeId);
+    }
+
     public Task<bool> DeleteThemeAsync(string tenantId, string themeId)
     {
         return _dataConnection.DeleteThemeAsync(tenantId, themeId);
@@ -186,6 +196,36 @@ public class DatabaseService : IDatabaseService, IDisposable
     public Task UpdateUserLastLoginAsync(string userId, string tenantId)
     {
         return _dataConnection.UpdateUserLastLoginAsync(userId, tenantId);
+    }
+
+    public Task<List<User>> GetUsersByTenantAsync(string tenantId)
+    {
+        return _dataConnection.GetUsersByTenantAsync(tenantId);
+    }
+
+    public Task<User?> GetUserAsync(string tenantId, string userId)
+    {
+        return _dataConnection.GetUserAsync(tenantId, userId);
+    }
+
+    public Task<User> CreateUserAsync(string tenantId, User user, string password)
+    {
+        return _dataConnection.CreateUserAsync(tenantId, user, password);
+    }
+
+    public Task<User> UpdateUserAsync(string tenantId, string userId, User user)
+    {
+        return _dataConnection.UpdateUserAsync(tenantId, userId, user);
+    }
+
+    public Task<User> ResetUserPasswordAsync(string tenantId, string userId, string password)
+    {
+        return _dataConnection.ResetUserPasswordAsync(tenantId, userId, password);
+    }
+
+    public Task<bool> DeleteUserAsync(string tenantId, string userId)
+    {
+        return _dataConnection.DeleteUserAsync(tenantId, userId);
     }
 
     // FormDefinition content serving (API key required)

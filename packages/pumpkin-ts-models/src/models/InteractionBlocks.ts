@@ -69,3 +69,18 @@ export interface ContactBlock extends IHtmlBlock {
   type: 'Contact';
   content: ContactContent;
 }
+
+// Form Block
+export interface FormBlockContent {
+  formType: string;
+  title: string;
+  subtitle: string;
+  description?: string;
+  layout: string;
+  successMessage: string;
+}
+
+export interface FormBlock extends IHtmlBlock {
+  type: 'Form';
+  content: FormBlockContent;
+}

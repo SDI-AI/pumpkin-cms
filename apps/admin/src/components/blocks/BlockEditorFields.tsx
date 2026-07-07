@@ -41,6 +41,8 @@ export default function BlockEditorFields({ block, onChange }: BlockEditorFields
       return <TestimonialsFields content={content} update={update} onChange={onChange} />
     case 'Contact':
       return <ContactFields content={content} update={update} onChange={onChange} />
+    case 'Form':
+      return <FormFields content={content} update={update} />
     case 'Blog':
       return <BlogFields content={content} update={update} onChange={onChange} />
     default:
@@ -527,6 +529,28 @@ function ContactFields({ content, update, onChange }: { content: any; update: (k
           </div>
         )}
       />
+    </div>
+  )
+}
+
+/* ????? Form ????? */
+
+function FormFields({ content, update }: { content: any; update: (k: string, v: any) => void }) {
+  return (
+    <div className="space-y-3">
+      <Field label="Form Type" value={content.formType} onChange={v => update('formType', v)} placeholder="contact" />
+      <Field label="Title" value={content.title} onChange={v => update('title', v)} />
+      <Field label="Subtitle" value={content.subtitle} onChange={v => update('subtitle', v)} />
+      <Field label="Description" value={content.description} onChange={v => update('description', v)} multiline />
+      <div>
+        <label className={labelClass}>Layout</label>
+        <select value={content.layout || 'default'} onChange={e => update('layout', e.target.value)} className={inputClass}>
+          <option value="default">Default</option>
+          <option value="compact">Compact</option>
+          <option value="split">Split</option>
+        </select>
+      </div>
+      <Field label="Fallback Success Message" value={content.successMessage} onChange={v => update('successMessage', v)} multiline />
     </div>
   )
 }

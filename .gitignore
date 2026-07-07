@@ -32,6 +32,7 @@ bld/
 project.lock.json
 project.fragment.lock.json
 artifacts/
+.tmp/
 
 # NuGet Packages
 *.nupkg
@@ -50,6 +51,7 @@ node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+apps/admin/admin-dev.*.log
 
 # TypeScript
 *.tsbuildinfo

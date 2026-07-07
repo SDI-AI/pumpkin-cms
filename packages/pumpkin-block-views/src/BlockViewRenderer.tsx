@@ -5,7 +5,7 @@ import type {
   CardGridBlock, FaqBlock, BreadcrumbsBlock,
   TrustBarBlock, HowItWorksBlock, ServiceAreaMapBlock,
   LocalProTipsBlock, GalleryBlock, TestimonialsBlock,
-  ContactBlock, BlogBlock,
+  ContactBlock, FormBlock, FormDefinition, BlogBlock,
 } from 'pumpkin-ts-models';
 
 import { HeroBlockView } from './views/HeroBlockView';
@@ -21,6 +21,7 @@ import { LocalProTipsBlockView } from './views/LocalProTipsBlockView';
 import { GalleryBlockView } from './views/GalleryBlockView';
 import { TestimonialsBlockView } from './views/TestimonialsBlockView';
 import { ContactBlockView } from './views/ContactBlockView';
+import { FormBlockView } from './views/FormBlockView';
 import { BlogBlockView } from './views/BlogBlockView';
 
 import type { HeroClassNames } from './defaults/hero';
@@ -36,6 +37,7 @@ import type { LocalProTipsClassNames } from './defaults/localProTips';
 import type { GalleryClassNames } from './defaults/gallery';
 import type { TestimonialsClassNames } from './defaults/testimonials';
 import type { ContactClassNames } from './defaults/contact';
+import type { FormClassNames } from './defaults/form';
 import type { BlogClassNames } from './defaults/blog';
 
 /**
@@ -55,6 +57,7 @@ export interface BlockClassNamesMap {
   Gallery?: GalleryClassNames;
   Testimonials?: TestimonialsClassNames;
   Contact?: ContactClassNames;
+  Form?: FormClassNames;
   Blog?: BlogClassNames;
 }
 
@@ -64,6 +67,11 @@ export interface BlockClassNamesMap {
 export interface BlockOverrides {
   Contact?: {
     onSubmit?: (formData: Record<string, string>) => void;
+  };
+  Form?: {
+    formDefinition?: FormDefinition;
+    pageSlug?: string;
+    onSubmit?: (formType: string, formData: Record<string, string>, pageSlug?: string) => Promise<void> | void;
   };
   Blog?: {
     renderBody?: (body: string) => React.ReactNode;
@@ -136,6 +144,17 @@ export function BlockViewRenderer({ block, classNames, overrides, fallback }: Bl
           block={block as ContactBlock}
           classNames={classNames?.Contact}
           onSubmit={overrides?.Contact?.onSubmit}
+        />
+      );
+
+    case 'Form':
+      return (
+        <FormBlockView
+          block={block as FormBlock}
+          classNames={classNames?.Form}
+          formDefinition={overrides?.Form?.formDefinition}
+          pageSlug={overrides?.Form?.pageSlug}
+          onSubmit={overrides?.Form?.onSubmit}
         />
       );
 

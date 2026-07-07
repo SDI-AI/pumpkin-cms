@@ -237,6 +237,7 @@ export class PageJsonConverter {
       case 'Gallery':
       case 'Testimonials':
       case 'Contact':
+      case 'Form':
       case 'Blog':
         // For known types, validate and return the block with proper structure
         return this.validateBlockContent(block);

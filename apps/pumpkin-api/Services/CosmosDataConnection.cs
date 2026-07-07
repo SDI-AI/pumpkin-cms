@@ -3,6 +3,7 @@ using Microsoft.Extensions.Options;
 using pumpkin_net_models.Models;
 using System.Net;
 using System.Security.Cryptography;
+using CmsUser = pumpkin_net_models.Models.User;
 
 namespace pumpkin_api.Services;
 
@@ -340,10 +341,11 @@ public class CosmosDataConnection : IDataConnection, IDisposable
                 formEntry.Id = Guid.NewGuid().ToString();
             }
 
-            // Set tenant ID if not already set
-            if (string.IsNullOrEmpty(formEntry.TenantId))
+            formEntry.TenantId = tenantId;
+            formEntry.Status = FormEntryStatuses.New;
+            if (string.IsNullOrWhiteSpace(formEntry.Source))
             {
-                formEntry.TenantId = tenantId;
+                formEntry.Source = "website_form";
             }
 
             var formEntryContainer = _database.GetContainer("FormEntry");
@@ -1001,6 +1003,40 @@ public class CosmosDataConnection : IDataConnection, IDisposable
         }
     }
 
+    // JWT-authenticated admin method: Delete page (no API key validation)
+    public async Task<bool> DeletePageAdminAsync(string tenantId, string pageSlug)
+    {
+        try
+        {
+            var pagesContainer = _database.GetContainer("Page");
+            var normalizedSlug = pageSlug.ToLowerInvariant();
+            var existingPage = await GetPageBySlugAsync(tenantId, normalizedSlug);
+
+            if (existingPage == null)
+            {
+                _logger.LogWarning("DeletePageAdminAsync - Page not found - Slug: {Slug}, TenantId: {TenantId}", normalizedSlug, tenantId);
+                throw new KeyNotFoundException($"Page with slug '{pageSlug}' not found");
+            }
+
+            var deleteResponse = await pagesContainer.DeleteItemAsync<Page>(existingPage.PageId, new PartitionKey(tenantId));
+
+            _logger.LogInformation("DeletePageAdminAsync - Page deleted - Slug: {Slug}, PageId: {PageId}, TenantId: {TenantId}, RU: {RU}",
+                normalizedSlug, existingPage.PageId, tenantId, deleteResponse.RequestCharge);
+
+            return true;
+        }
+        catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+        {
+            _logger.LogWarning("DeletePageAdminAsync - Page not found - Slug: {Slug}, TenantId: {TenantId}", pageSlug, tenantId);
+            throw new KeyNotFoundException($"Page with slug '{pageSlug}' not found", ex);
+        }
+        catch (CosmosException ex)
+        {
+            _logger.LogError(ex, "DeletePageAdminAsync error - Slug: {Slug}, TenantId: {TenantId}", pageSlug, tenantId);
+            throw;
+        }
+    }
+
     // Admin: Get hub pages for a tenant (JWT authentication required at endpoint level)
     public async Task<List<Page>> GetHubPagesAsync(string tenantId)
     {
@@ -1241,6 +1277,16 @@ public class CosmosDataConnection : IDataConnection, IDisposable
     {
         try
         {
+            var tenant = await GetTenantAsync(tenantId);
+            if (!string.IsNullOrWhiteSpace(tenant?.Settings?.Theme))
+            {
+                var configuredTheme = await GetThemeAdminAsync(tenantId, tenant.Settings.Theme);
+                if (configuredTheme != null)
+                {
+                    return configuredTheme;
+                }
+            }
+
             var themeContainer = _database.GetContainer("Theme");
             var query = "SELECT * FROM c WHERE c.tenantId = @tenantId AND c.isActive = true";
             var queryDefinition = new QueryDefinition(query)
@@ -1320,10 +1366,15 @@ public class CosmosDataConnection : IDataConnection, IDisposable
 
             theme.TenantId = tenantId;
             theme.Id = theme.ThemeId;
+            ApplyThemeDefaults(theme);
             theme.CreatedAt = DateTime.UtcNow;
             theme.UpdatedAt = DateTime.UtcNow;
 
             var response = await themeContainer.CreateItemAsync(theme, new PartitionKey(tenantId));
+            if (theme.IsActive)
+            {
+                return await ActivateThemeAsync(tenantId, theme.ThemeId);
+            }
 
             _logger.LogInformation("CreateThemeAsync - Theme created - ThemeId: {ThemeId}, TenantId: {TenantId}, RU: {RU}",
                 theme.ThemeId, tenantId, response.RequestCharge);
@@ -1357,10 +1408,15 @@ public class CosmosDataConnection : IDataConnection, IDisposable
             theme.ThemeId = themeId;
             theme.TenantId = tenantId;
             theme.Id = themeId;
+            ApplyThemeDefaults(theme);
             theme.CreatedAt = existing.CreatedAt;
             theme.UpdatedAt = DateTime.UtcNow;
 
             var response = await themeContainer.ReplaceItemAsync(theme, themeId, new PartitionKey(tenantId));
+            if (theme.IsActive)
+            {
+                return await ActivateThemeAsync(tenantId, themeId);
+            }
 
             _logger.LogInformation("UpdateThemeAsync - Theme updated - ThemeId: {ThemeId}, TenantId: {TenantId}, RU: {RU}",
                 themeId, tenantId, response.RequestCharge);
@@ -1378,6 +1434,58 @@ public class CosmosDataConnection : IDataConnection, IDisposable
         }
     }
 
+    public async Task<Theme> ActivateThemeAsync(string tenantId, string themeId)
+    {
+        var themeContainer = _database.GetContainer("Theme");
+        var activeTheme = await GetThemeAdminAsync(tenantId, themeId);
+        if (activeTheme == null)
+        {
+            throw new KeyNotFoundException($"Theme with ID '{themeId}' not found for tenant '{tenantId}'");
+        }
+
+        var themes = await GetThemesByTenantAsync(tenantId);
+        foreach (var theme in themes)
+        {
+            var shouldBeActive = theme.ThemeId == themeId;
+            if (theme.IsActive == shouldBeActive)
+            {
+                continue;
+            }
+
+            theme.IsActive = shouldBeActive;
+            theme.UpdatedAt = DateTime.UtcNow;
+            await themeContainer.ReplaceItemAsync(theme, theme.ThemeId, new PartitionKey(tenantId));
+
+            if (shouldBeActive)
+            {
+                activeTheme = theme;
+            }
+        }
+
+        if (!activeTheme.IsActive)
+        {
+            activeTheme.IsActive = true;
+            activeTheme.UpdatedAt = DateTime.UtcNow;
+            var response = await themeContainer.ReplaceItemAsync(activeTheme, activeTheme.ThemeId, new PartitionKey(tenantId));
+            activeTheme = response.Resource;
+        }
+
+        var tenant = await GetTenantAsync(tenantId);
+        if (tenant != null)
+        {
+            tenant.Settings ??= new TenantSettings();
+            tenant.Settings.Theme = themeId;
+            tenant.UpdatedAt = DateTime.UtcNow;
+            var tenantContainer = _database.GetContainer("Tenant");
+            await tenantContainer.ReplaceItemAsync(tenant, tenant.Id, new PartitionKey(tenantId));
+        }
+
+        _logger.LogInformation("ActivateThemeAsync - Theme activated - ThemeId: {ThemeId}, TenantId: {TenantId}",
+            themeId, tenantId);
+
+        return activeTheme;
+    }
+
     // Admin: Delete a theme
     public async Task<bool> DeleteThemeAsync(string tenantId, string themeId)
     {
@@ -1392,6 +1500,18 @@ public class CosmosDataConnection : IDataConnection, IDisposable
             }
 
             await themeContainer.DeleteItemAsync<Theme>(themeId, new PartitionKey(tenantId));
+            if (existing.IsActive)
+            {
+                var tenant = await GetTenantAsync(tenantId);
+                if (tenant != null && tenant.Settings?.Theme == themeId)
+                {
+                    tenant.Settings ??= new TenantSettings();
+                    tenant.Settings.Theme = string.Empty;
+                    tenant.UpdatedAt = DateTime.UtcNow;
+                    var tenantContainer = _database.GetContainer("Tenant");
+                    await tenantContainer.ReplaceItemAsync(tenant, tenant.Id, new PartitionKey(tenantId));
+                }
+            }
 
             _logger.LogInformation("DeleteThemeAsync - Theme deleted - ThemeId: {ThemeId}, TenantId: {TenantId}", themeId, tenantId);
             return true;
@@ -1408,6 +1528,37 @@ public class CosmosDataConnection : IDataConnection, IDisposable
         }
     }
 
+    private static void ApplyThemeDefaults(Theme theme)
+    {
+        if (string.IsNullOrWhiteSpace(theme.Label))
+        {
+            theme.Label = theme.Name;
+        }
+
+        if (string.IsNullOrWhiteSpace(theme.Category))
+        {
+            theme.Category = theme.IsSystem ? "starter" : "custom";
+        }
+
+        theme.IsCustom = !theme.IsSystem || theme.IsCustom;
+
+        if (theme.Preview.Palette.Count == 0)
+        {
+            AddPreviewColor(theme, "--background");
+            AddPreviewColor(theme, "--foreground");
+            AddPreviewColor(theme, "--primary");
+            AddPreviewColor(theme, "--accent");
+        }
+    }
+
+    private static void AddPreviewColor(Theme theme, string variableName)
+    {
+        if (theme.CssVariables.TryGetValue(variableName, out var value) && !string.IsNullOrWhiteSpace(value))
+        {
+            theme.Preview.Palette.Add(value);
+        }
+    }
+
     /// <summary>
     /// Get user by email address for authentication
     /// </summary>
@@ -1416,10 +1567,11 @@ public class CosmosDataConnection : IDataConnection, IDisposable
         try
         {
             var userContainer = _database.GetContainer("User");
+            var normalizedEmail = email.Trim().ToLowerInvariant();
             
             var query = new QueryDefinition(
                 "SELECT * FROM c WHERE c.email = @email")
-                .WithParameter("@email", email);
+                .WithParameter("@email", normalizedEmail);
 
             var iterator = userContainer.GetItemQueryIterator<pumpkin_net_models.Models.User>(query);
             var users = new List<pumpkin_net_models.Models.User>();
@@ -1433,7 +1585,7 @@ public class CosmosDataConnection : IDataConnection, IDisposable
             var user = users.FirstOrDefault();
             
             _logger.LogInformation("GetUserByEmail - Email: {Email}, Found: {Found}", 
-                email, user != null);
+                normalizedEmail, user != null);
             
             return user;
         }
@@ -1489,60 +1641,535 @@ public class CosmosDataConnection : IDataConnection, IDisposable
         }
     }
 
+    public async Task<List<CmsUser>> GetUsersByTenantAsync(string tenantId)
+    {
+        var query = new QueryDefinition("SELECT * FROM c WHERE c.tenantId = @tenantId")
+            .WithParameter("@tenantId", tenantId);
+
+        var users = await QueryAllAsync<CmsUser>("User", query, tenantId);
+        return users
+            .OrderBy(user => user.Email)
+            .ToList();
+    }
+
+    public async Task<CmsUser?> GetUserAsync(string tenantId, string userId)
+    {
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            throw new ArgumentException("User ID is required", nameof(userId));
+        }
+
+        try
+        {
+            var userContainer = _database.GetContainer("User");
+            var response = await userContainer.ReadItemAsync<CmsUser>(userId, new PartitionKey(tenantId));
+            return response.Resource;
+        }
+        catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+    }
+
+    public async Task<CmsUser> CreateUserAsync(string tenantId, CmsUser user, string password)
+    {
+        if (user == null)
+        {
+            throw new ArgumentNullException(nameof(user));
+        }
+
+        ValidateNewPassword(password);
+
+        user.TenantId = tenantId;
+        user.Email = NormalizeEmail(user.Email);
+        user.Username = user.Username.Trim();
+
+        if (string.IsNullOrWhiteSpace(user.Email))
+        {
+            throw new ArgumentException("Email is required", nameof(user));
+        }
+
+        if (string.IsNullOrWhiteSpace(user.Username))
+        {
+            throw new ArgumentException("Username is required", nameof(user));
+        }
+
+        if (string.IsNullOrWhiteSpace(user.Id))
+        {
+            user.Id = Guid.NewGuid().ToString();
+        }
+
+        var existingByEmail = await GetUserByEmailAsync(user.Email);
+        if (existingByEmail != null)
+        {
+            throw new InvalidOperationException($"User with email '{user.Email}' already exists");
+        }
+
+        var existingByUsername = await GetUserByUsernameAsync(tenantId, user.Username);
+        if (existingByUsername != null)
+        {
+            throw new InvalidOperationException($"User with username '{user.Username}' already exists in tenant '{tenantId}'");
+        }
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(password, 12);
+        user.CreatedDate = DateTime.UtcNow;
+        user.LastLogin = null;
+
+        var userContainer = _database.GetContainer("User");
+        var response = await userContainer.CreateItemAsync(user, new PartitionKey(tenantId));
+
+        _logger.LogInformation("CreateUserAsync - User created - UserId: {UserId}, Email: {Email}, TenantId: {TenantId}, Role: {Role}, RU: {RU}",
+            user.Id, user.Email, tenantId, user.Role, response.RequestCharge);
+
+        return response.Resource;
+    }
+
+    public async Task<CmsUser> UpdateUserAsync(string tenantId, string userId, CmsUser user)
+    {
+        if (user == null)
+        {
+            throw new ArgumentNullException(nameof(user));
+        }
+
+        var existing = await GetUserAsync(tenantId, userId);
+        if (existing == null)
+        {
+            throw new KeyNotFoundException($"User with ID '{userId}' not found");
+        }
+
+        user.Id = existing.Id;
+        user.TenantId = tenantId;
+        user.Email = NormalizeEmail(user.Email);
+        user.Username = user.Username.Trim();
+        user.PasswordHash = existing.PasswordHash;
+        user.CreatedDate = existing.CreatedDate;
+        user.LastLogin = existing.LastLogin;
+
+        if (string.IsNullOrWhiteSpace(user.Email))
+        {
+            throw new ArgumentException("Email is required", nameof(user));
+        }
+
+        if (string.IsNullOrWhiteSpace(user.Username))
+        {
+            throw new ArgumentException("Username is required", nameof(user));
+        }
+
+        var existingByEmail = await GetUserByEmailAsync(user.Email);
+        if (existingByEmail != null && existingByEmail.Id != existing.Id)
+        {
+            throw new InvalidOperationException($"User with email '{user.Email}' already exists");
+        }
+
+        var existingByUsername = await GetUserByUsernameAsync(tenantId, user.Username);
+        if (existingByUsername != null && existingByUsername.Id != existing.Id)
+        {
+            throw new InvalidOperationException($"User with username '{user.Username}' already exists in tenant '{tenantId}'");
+        }
+
+        var userContainer = _database.GetContainer("User");
+        var response = await userContainer.ReplaceItemAsync(user, existing.Id, new PartitionKey(tenantId));
+
+        _logger.LogInformation("UpdateUserAsync - User updated - UserId: {UserId}, Email: {Email}, TenantId: {TenantId}, Role: {Role}, RU: {RU}",
+            user.Id, user.Email, tenantId, user.Role, response.RequestCharge);
+
+        return response.Resource;
+    }
+
+    public async Task<CmsUser> ResetUserPasswordAsync(string tenantId, string userId, string password)
+    {
+        ValidateNewPassword(password);
+
+        var existing = await GetUserAsync(tenantId, userId);
+        if (existing == null)
+        {
+            throw new KeyNotFoundException($"User with ID '{userId}' not found");
+        }
+
+        existing.PasswordHash = BCrypt.Net.BCrypt.HashPassword(password, 12);
+
+        var userContainer = _database.GetContainer("User");
+        var response = await userContainer.ReplaceItemAsync(existing, existing.Id, new PartitionKey(tenantId));
+
+        _logger.LogInformation("ResetUserPasswordAsync - Password reset - UserId: {UserId}, TenantId: {TenantId}, RU: {RU}",
+            userId, tenantId, response.RequestCharge);
+
+        return response.Resource;
+    }
+
+    public async Task<bool> DeleteUserAsync(string tenantId, string userId)
+    {
+        var existing = await GetUserAsync(tenantId, userId);
+        if (existing == null)
+        {
+            return false;
+        }
+
+        var userContainer = _database.GetContainer("User");
+        await userContainer.DeleteItemAsync<CmsUser>(existing.Id, new PartitionKey(tenantId));
+
+        _logger.LogInformation("DeleteUserAsync - User deleted - UserId: {UserId}, TenantId: {TenantId}", userId, tenantId);
+
+        return true;
+    }
+
+    private async Task<CmsUser?> GetUserByUsernameAsync(string tenantId, string username)
+    {
+        var query = new QueryDefinition(
+                "SELECT * FROM c WHERE c.tenantId = @tenantId AND c.username = @username")
+            .WithParameter("@tenantId", tenantId)
+            .WithParameter("@username", username.Trim());
+
+        return await QuerySingleAsync<CmsUser>("User", query, tenantId);
+    }
+
+    private static string NormalizeEmail(string email)
+    {
+        return email.Trim().ToLowerInvariant();
+    }
+
+    private static void ValidateNewPassword(string password)
+    {
+        if (string.IsNullOrWhiteSpace(password) || password.Length < 8)
+        {
+            throw new ArgumentException("Password must be at least 8 characters", nameof(password));
+        }
+    }
+
     // ===== FORM DEFINITION — content serving (API key) =====
 
-    public Task<FormDefinition?> GetFormDefinitionPublicAsync(string apiKey, string tenantId, string type)
+    public async Task<FormDefinition?> GetFormDefinitionPublicAsync(string apiKey, string tenantId, string type)
     {
-        throw new NotImplementedException("FormDefinition data layer not yet implemented for Cosmos DB.");
+        var isValidTenant = await ValidateTenantApiKeyAsync(apiKey, tenantId);
+        if (!isValidTenant)
+        {
+            _logger.LogWarning("Invalid API key for form definition lookup - TenantId: {TenantId}", tenantId);
+            throw new UnauthorizedAccessException("Invalid API key or tenant ID");
+        }
+
+        if (string.IsNullOrWhiteSpace(type))
+        {
+            throw new ArgumentException("Form type is required", nameof(type));
+        }
+
+        var normalizedType = NormalizeFormType(type);
+        var query = new QueryDefinition(
+                "SELECT * FROM c WHERE c.tenantId = @tenantId AND c.type = @type AND c.isActive = true")
+            .WithParameter("@tenantId", tenantId)
+            .WithParameter("@type", normalizedType);
+
+        return await QuerySingleAsync<FormDefinition>("FormDefinition", query, tenantId);
     }
 
     // ===== FORM DEFINITION — admin (JWT) =====
 
-    public Task<FormDefinition?> GetFormDefinitionAsync(string tenantId, string formDefinitionId)
+    public async Task<FormDefinition?> GetFormDefinitionAsync(string tenantId, string formDefinitionId)
     {
-        throw new NotImplementedException("FormDefinition data layer not yet implemented for Cosmos DB.");
+        if (string.IsNullOrWhiteSpace(formDefinitionId))
+        {
+            throw new ArgumentException("Form definition ID is required", nameof(formDefinitionId));
+        }
+
+        var query = new QueryDefinition(
+                "SELECT * FROM c WHERE c.tenantId = @tenantId AND (c.formDefinitionId = @formDefinitionId OR c.id = @formDefinitionId)")
+            .WithParameter("@tenantId", tenantId)
+            .WithParameter("@formDefinitionId", formDefinitionId);
+
+        return await QuerySingleAsync<FormDefinition>("FormDefinition", query, tenantId);
     }
 
-    public Task<FormDefinition?> GetFormDefinitionByTypeAsync(string tenantId, string type)
+    public async Task<FormDefinition?> GetFormDefinitionByTypeAsync(string tenantId, string type)
     {
-        throw new NotImplementedException("FormDefinition data layer not yet implemented for Cosmos DB.");
+        if (string.IsNullOrWhiteSpace(type))
+        {
+            throw new ArgumentException("Form type is required", nameof(type));
+        }
+
+        var normalizedType = NormalizeFormType(type);
+        var query = new QueryDefinition(
+                "SELECT * FROM c WHERE c.tenantId = @tenantId AND c.type = @type")
+            .WithParameter("@tenantId", tenantId)
+            .WithParameter("@type", normalizedType);
+
+        return await QuerySingleAsync<FormDefinition>("FormDefinition", query, tenantId);
     }
 
-    public Task<List<FormDefinition>> GetFormDefinitionsByTenantAsync(string tenantId)
+    public async Task<List<FormDefinition>> GetFormDefinitionsByTenantAsync(string tenantId)
     {
-        throw new NotImplementedException("FormDefinition data layer not yet implemented for Cosmos DB.");
+        var query = new QueryDefinition("SELECT * FROM c WHERE c.tenantId = @tenantId")
+            .WithParameter("@tenantId", tenantId);
+
+        var definitions = await QueryAllAsync<FormDefinition>("FormDefinition", query, tenantId);
+        return definitions
+            .OrderByDescending(definition => definition.UpdatedAt)
+            .ThenBy(definition => definition.Name)
+            .ToList();
     }
 
-    public Task<FormDefinition> CreateFormDefinitionAsync(string tenantId, FormDefinition formDefinition)
+    public async Task<FormDefinition> CreateFormDefinitionAsync(string tenantId, FormDefinition formDefinition)
     {
-        throw new NotImplementedException("FormDefinition data layer not yet implemented for Cosmos DB.");
+        if (formDefinition == null)
+        {
+            throw new ArgumentNullException(nameof(formDefinition));
+        }
+
+        if (string.IsNullOrWhiteSpace(formDefinition.Type))
+        {
+            throw new ArgumentException("Form type is required", nameof(formDefinition));
+        }
+
+        formDefinition.TenantId = tenantId;
+        formDefinition.Type = NormalizeFormType(formDefinition.Type);
+        ValidateFormDefinition(formDefinition);
+
+        if (string.IsNullOrWhiteSpace(formDefinition.FormDefinitionId))
+        {
+            formDefinition.FormDefinitionId = string.IsNullOrWhiteSpace(formDefinition.Id)
+                ? Guid.NewGuid().ToString()
+                : formDefinition.Id;
+        }
+
+        formDefinition.Id = formDefinition.FormDefinitionId;
+
+        var existingById = await GetFormDefinitionAsync(tenantId, formDefinition.FormDefinitionId);
+        if (existingById != null)
+        {
+            throw new InvalidOperationException($"Form definition with ID '{formDefinition.FormDefinitionId}' already exists");
+        }
+
+        var existingByType = await GetFormDefinitionByTypeAsync(tenantId, formDefinition.Type);
+        if (existingByType != null)
+        {
+            throw new InvalidOperationException($"Form definition with type '{formDefinition.Type}' already exists");
+        }
+
+        if (formDefinition.CreatedAt == default)
+        {
+            formDefinition.CreatedAt = DateTime.UtcNow;
+        }
+
+        formDefinition.UpdatedAt = DateTime.UtcNow;
+
+        var container = _database.GetContainer("FormDefinition");
+        var response = await container.CreateItemAsync(formDefinition, new PartitionKey(tenantId));
+
+        _logger.LogInformation("CreateFormDefinitionAsync - Form definition created - FormDefinitionId: {FormDefinitionId}, Type: {Type}, TenantId: {TenantId}, RU: {RU}",
+            formDefinition.FormDefinitionId, formDefinition.Type, tenantId, response.RequestCharge);
+
+        return response.Resource;
     }
 
-    public Task<FormDefinition> UpdateFormDefinitionAsync(string tenantId, string formDefinitionId, FormDefinition formDefinition)
+    public async Task<FormDefinition> UpdateFormDefinitionAsync(string tenantId, string formDefinitionId, FormDefinition formDefinition)
     {
-        throw new NotImplementedException("FormDefinition data layer not yet implemented for Cosmos DB.");
+        if (formDefinition == null)
+        {
+            throw new ArgumentNullException(nameof(formDefinition));
+        }
+
+        if (string.IsNullOrWhiteSpace(formDefinition.Type))
+        {
+            throw new ArgumentException("Form type is required", nameof(formDefinition));
+        }
+
+        var existing = await GetFormDefinitionAsync(tenantId, formDefinitionId);
+        if (existing == null)
+        {
+            throw new KeyNotFoundException($"Form definition with ID '{formDefinitionId}' not found");
+        }
+
+        var normalizedType = formDefinition.Type.Trim();
+        normalizedType = NormalizeFormType(normalizedType);
+        formDefinition.Type = normalizedType;
+        ValidateFormDefinition(formDefinition);
+        var existingByType = await GetFormDefinitionByTypeAsync(tenantId, normalizedType);
+        if (existingByType != null && existingByType.FormDefinitionId != existing.FormDefinitionId)
+        {
+            throw new InvalidOperationException($"Form definition with type '{normalizedType}' already exists");
+        }
+
+        formDefinition.Id = existing.Id;
+        formDefinition.FormDefinitionId = existing.FormDefinitionId;
+        formDefinition.TenantId = tenantId;
+        formDefinition.Type = normalizedType;
+        formDefinition.CreatedAt = existing.CreatedAt;
+        formDefinition.UpdatedAt = DateTime.UtcNow;
+
+        var container = _database.GetContainer("FormDefinition");
+        var response = await container.ReplaceItemAsync(formDefinition, existing.Id, new PartitionKey(tenantId));
+
+        _logger.LogInformation("UpdateFormDefinitionAsync - Form definition updated - FormDefinitionId: {FormDefinitionId}, Type: {Type}, TenantId: {TenantId}, RU: {RU}",
+            formDefinition.FormDefinitionId, formDefinition.Type, tenantId, response.RequestCharge);
+
+        return response.Resource;
     }
 
-    public Task<bool> DeleteFormDefinitionAsync(string tenantId, string formDefinitionId)
+    public async Task<bool> DeleteFormDefinitionAsync(string tenantId, string formDefinitionId)
     {
-        throw new NotImplementedException("FormDefinition data layer not yet implemented for Cosmos DB.");
+        var existing = await GetFormDefinitionAsync(tenantId, formDefinitionId);
+        if (existing == null)
+        {
+            throw new KeyNotFoundException($"Form definition with ID '{formDefinitionId}' not found");
+        }
+
+        var container = _database.GetContainer("FormDefinition");
+        var response = await container.DeleteItemAsync<FormDefinition>(existing.Id, new PartitionKey(tenantId));
+
+        _logger.LogInformation("DeleteFormDefinitionAsync - Form definition deleted - FormDefinitionId: {FormDefinitionId}, TenantId: {TenantId}, RU: {RU}",
+            existing.FormDefinitionId, tenantId, response.RequestCharge);
+
+        return true;
     }
 
     // ===== FORM ENTRY — admin (JWT) =====
 
-    public Task<List<FormEntry>> GetFormEntriesByTenantAsync(string tenantId, string? type = null)
+    public async Task<List<FormEntry>> GetFormEntriesByTenantAsync(string tenantId, string? type = null)
     {
-        throw new NotImplementedException("FormEntry admin queries not yet implemented for Cosmos DB.");
+        var queryText = string.IsNullOrWhiteSpace(type)
+            ? "SELECT * FROM c WHERE (c.TenantId = @tenantId OR c.tenantId = @tenantId)"
+            : "SELECT * FROM c WHERE (c.TenantId = @tenantId OR c.tenantId = @tenantId) AND c.type = @type";
+
+        var query = new QueryDefinition(queryText)
+            .WithParameter("@tenantId", tenantId);
+
+        if (!string.IsNullOrWhiteSpace(type))
+        {
+            query.WithParameter("@type", type.Trim());
+        }
+
+        var entries = await QueryAllAsync<FormEntry>("FormEntry", query, tenantId);
+        return entries
+            .OrderByDescending(entry => entry.SubmittedAt)
+            .ToList();
     }
 
-    public Task<FormEntry?> GetFormEntryAsync(string tenantId, string entryId)
+    public async Task<FormEntry?> GetFormEntryAsync(string tenantId, string entryId)
     {
-        throw new NotImplementedException("FormEntry admin queries not yet implemented for Cosmos DB.");
+        if (string.IsNullOrWhiteSpace(entryId))
+        {
+            throw new ArgumentException("Form entry ID is required", nameof(entryId));
+        }
+
+        var query = new QueryDefinition(
+                "SELECT * FROM c WHERE (c.TenantId = @tenantId OR c.tenantId = @tenantId) AND c.id = @entryId")
+            .WithParameter("@tenantId", tenantId)
+            .WithParameter("@entryId", entryId);
+
+        return await QuerySingleAsync<FormEntry>("FormEntry", query, tenantId);
     }
 
-    public Task<FormEntry> UpdateFormEntryStatusAsync(string tenantId, string entryId, string status)
+    public async Task<FormEntry> UpdateFormEntryStatusAsync(string tenantId, string entryId, string status)
     {
-        throw new NotImplementedException("FormEntry admin queries not yet implemented for Cosmos DB.");
+        if (string.IsNullOrWhiteSpace(status) || !FormEntryStatuses.All.Contains(status.Trim()))
+        {
+            throw new ArgumentException("Status must be one of: new, read, actioned, archived", nameof(status));
+        }
+
+        var existing = await GetFormEntryAsync(tenantId, entryId);
+        if (existing == null)
+        {
+            throw new KeyNotFoundException($"Form entry with ID '{entryId}' not found");
+        }
+
+        existing.Status = status.Trim().ToLowerInvariant();
+        var now = DateTime.UtcNow;
+        if (existing.Status == FormEntryStatuses.Read && existing.ReadAt == null)
+        {
+            existing.ReadAt = now;
+        }
+        else if (existing.Status == FormEntryStatuses.Actioned && existing.ActionedAt == null)
+        {
+            existing.ActionedAt = now;
+        }
+        else if (existing.Status == FormEntryStatuses.Archived && existing.ArchivedAt == null)
+        {
+            existing.ArchivedAt = now;
+        }
+
+        var container = _database.GetContainer("FormEntry");
+        var response = await container.ReplaceItemAsync(existing, existing.Id, new PartitionKey(tenantId));
+
+        _logger.LogInformation("UpdateFormEntryStatusAsync - Form entry status updated - EntryId: {EntryId}, Status: {Status}, TenantId: {TenantId}, RU: {RU}",
+            entryId, existing.Status, tenantId, response.RequestCharge);
+
+        return response.Resource;
+    }
+
+    private static string NormalizeFormType(string type)
+    {
+        return type.Trim().ToLowerInvariant();
+    }
+
+    private static void ValidateFormDefinition(FormDefinition formDefinition)
+    {
+        var duplicateFieldNames = formDefinition.Fields
+            .Where(field => !string.IsNullOrWhiteSpace(field.Name))
+            .GroupBy(field => field.Name.Trim(), StringComparer.OrdinalIgnoreCase)
+            .Where(group => group.Count() > 1)
+            .Select(group => group.Key)
+            .ToList();
+
+        if (duplicateFieldNames.Any())
+        {
+            throw new ArgumentException($"Duplicate field names are not allowed: {string.Join(", ", duplicateFieldNames)}");
+        }
+
+        foreach (var field in formDefinition.Fields)
+        {
+            field.Name = field.Name.Trim();
+            field.Type = string.IsNullOrWhiteSpace(field.Type)
+                ? FormFieldTypes.Text
+                : field.Type.Trim().ToLowerInvariant();
+
+            if (string.IsNullOrWhiteSpace(field.Name))
+            {
+                throw new ArgumentException("Every form field must have a name");
+            }
+
+            if ((field.Type == FormFieldTypes.Select || field.Type == FormFieldTypes.Radio) &&
+                (field.Options == null || field.Options.Count == 0))
+            {
+                throw new ArgumentException($"Field '{field.Name}' requires options");
+            }
+        }
+    }
+
+    private async Task<T?> QuerySingleAsync<T>(string containerName, QueryDefinition queryDefinition, string tenantId)
+    {
+        var container = _database.GetContainer(containerName);
+        using var iterator = container.GetItemQueryIterator<T>(queryDefinition, requestOptions: new QueryRequestOptions
+        {
+            PartitionKey = new PartitionKey(tenantId)
+        });
+
+        while (iterator.HasMoreResults)
+        {
+            var response = await iterator.ReadNextAsync();
+            var item = response.FirstOrDefault();
+            if (item != null)
+            {
+                return item;
+            }
+        }
+
+        return default;
+    }
+
+    private async Task<List<T>> QueryAllAsync<T>(string containerName, QueryDefinition queryDefinition, string tenantId)
+    {
+        var container = _database.GetContainer(containerName);
+        var items = new List<T>();
+        using var iterator = container.GetItemQueryIterator<T>(queryDefinition, requestOptions: new QueryRequestOptions
+        {
+            PartitionKey = new PartitionKey(tenantId)
+        });
+
+        while (iterator.HasMoreResults)
+        {
+            var response = await iterator.ReadNextAsync();
+            items.AddRange(response);
+        }
+
+        return items;
     }
 
     public void Dispose()

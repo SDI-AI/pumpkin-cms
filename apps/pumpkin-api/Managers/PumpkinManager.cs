@@ -1,5 +1,7 @@
 using pumpkin_api.Services;
 using pumpkin_net_models.Models;
+using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace pumpkin_api.Managers;
 
@@ -7,7 +9,7 @@ public static class PumpkinManager
 {
     public static IResult GetWelcomeMessage()
     {
-        return Results.Ok("🎃 Welcome to Pumpkin CMS v0.2 🎃");
+        return Results.Ok("🎃 Welcome to Pumpkin CMS v0.902 🎃");
     }
 
     public static async Task<IResult> GetPageAsync(IDatabaseService databaseService, string apiKey, string tenantId, string pageSlug, ILogger? logger = null)
@@ -578,6 +580,28 @@ public static class PumpkinManager
         }
     }
 
+    public static async Task<IResult> ActivateThemeAsync(IDatabaseService databaseService, string tenantId, string themeId)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(tenantId))
+                return Results.BadRequest("Tenant ID is required");
+            if (string.IsNullOrEmpty(themeId))
+                return Results.BadRequest("Theme ID is required");
+
+            var activated = await databaseService.ActivateThemeAsync(tenantId, themeId);
+            return Results.Ok(activated);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return Results.NotFound(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Error activating theme: {ex.Message}");
+        }
+    }
+
     public static async Task<IResult> DeleteThemeAsync(IDatabaseService databaseService, string tenantId, string themeId)
     {
         try
@@ -658,8 +682,10 @@ public static class PumpkinManager
             if (formData == null)
                 return Results.BadRequest("Form data is required");
 
+            var normalizedType = type.Trim().ToLowerInvariant();
+
             // Fetch the definition to validate required fields
-            var definition = await databaseService.GetFormDefinitionPublicAsync(apiKey, tenantId, type);
+            var definition = await databaseService.GetFormDefinitionPublicAsync(apiKey, tenantId, normalizedType);
 
             if (definition == null)
                 return Results.NotFound("Form definition not found or access denied");
@@ -667,17 +693,40 @@ public static class PumpkinManager
             if (!definition.IsActive)
                 return Results.BadRequest("This form is not currently accepting submissions");
 
+            var spamResult = ValidateSpamProtection(definition, formData);
+            if (spamResult != null)
+                return spamResult;
+
+            var allowedFieldNames = definition.Fields
+                .Select(f => f.Name)
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var unknownFields = formData.Keys
+                .Where(key => !allowedFieldNames.Contains(key))
+                .Where(key => !key.StartsWith("_", StringComparison.Ordinal))
+                .Where(key => !key.Equals("pageSlug", StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            if (unknownFields.Any())
+                return Results.BadRequest($"Unknown fields submitted: {string.Join(", ", unknownFields)}");
+
             // Validate required fields
             var missingFields = definition.Fields
                 .Where(f => f.Required && !f.Hidden)
                 .Where(f => !formData.ContainsKey(f.Name) ||
                             formData[f.Name] == null ||
-                            string.IsNullOrWhiteSpace(formData[f.Name]?.ToString()))
+                            string.IsNullOrWhiteSpace(GetStringValue(formData[f.Name])))
                 .Select(f => f.Label)
                 .ToList();
 
             if (missingFields.Any())
                 return Results.BadRequest($"Required fields missing: {string.Join(", ", missingFields)}");
+
+            var validationErrors = ValidateFieldValues(definition, formData);
+            if (validationErrors.Any())
+                return Results.BadRequest($"Invalid fields: {string.Join("; ", validationErrors)}");
+
+            var sanitizedFormData = BuildSanitizedFormData(definition, formData);
 
             // Build the FormEntry
             var ipAddress = httpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty;
@@ -686,19 +735,23 @@ public static class PumpkinManager
 
             var entry = new FormEntry
             {
-                Id = $"{type}-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}-{Guid.NewGuid():N}",
-                Type = type,
+                Id = $"{normalizedType}-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}-{Guid.NewGuid():N}",
+                Type = normalizedType,
                 TenantId = tenantId,
                 FormDefinitionId = definition.FormDefinitionId,
-                FormData = formData,
+                PageSlug = GetStringValue(GetOptionalValue(formData, "pageSlug")) ?? GetStringValue(GetOptionalValue(formData, "_pageSlug")) ?? string.Empty,
+                FormData = sanitizedFormData,
                 SubmittedAt = DateTime.UtcNow,
-                Status = "new",
+                Status = FormEntryStatuses.New,
                 Source = "website_form",
                 IpAddress = fullIp,
                 UserAgent = httpContext.Request.Headers.UserAgent.FirstOrDefault() ?? string.Empty,
                 Metadata = new FormEntryMetadata
                 {
-                    Referrer = httpContext.Request.Headers.Referer.FirstOrDefault() ?? string.Empty
+                    Referrer = httpContext.Request.Headers.Referer.FirstOrDefault() ?? string.Empty,
+                    UtmSource = GetStringValue(GetOptionalValue(formData, "_utmSource")) ?? string.Empty,
+                    UtmMedium = GetStringValue(GetOptionalValue(formData, "_utmMedium")) ?? string.Empty,
+                    UtmCampaign = GetStringValue(GetOptionalValue(formData, "_utmCampaign")) ?? string.Empty
                 }
             };
 
@@ -909,5 +962,161 @@ public static class PumpkinManager
         {
             return Results.Problem($"Error updating form entry status: {ex.Message}");
         }
+    }
+
+    private static IResult? ValidateSpamProtection(FormDefinition definition, Dictionary<string, object?> formData)
+    {
+        var spam = definition.SpamProtection;
+        if (spam.RejectWhenHoneypotFilled &&
+            !string.IsNullOrWhiteSpace(spam.HoneypotFieldName) &&
+            !string.IsNullOrWhiteSpace(GetStringValue(GetOptionalValue(formData, spam.HoneypotFieldName))))
+        {
+            return Results.BadRequest("Submission rejected");
+        }
+
+        if (spam.RequireConsent &&
+            !string.IsNullOrWhiteSpace(spam.ConsentFieldName) &&
+            !IsTruthy(GetOptionalValue(formData, spam.ConsentFieldName)))
+        {
+            return Results.BadRequest("Consent is required");
+        }
+
+        return null;
+    }
+
+    private static List<string> ValidateFieldValues(FormDefinition definition, Dictionary<string, object?> formData)
+    {
+        var errors = new List<string>();
+        foreach (var field in definition.Fields.Where(f => !f.Hidden))
+        {
+            if (!formData.TryGetValue(field.Name, out var rawValue) || rawValue == null)
+            {
+                continue;
+            }
+
+            var value = GetStringValue(rawValue);
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                continue;
+            }
+
+            if (field.Type.Equals(FormFieldTypes.Email, StringComparison.OrdinalIgnoreCase) &&
+                !Regex.IsMatch(value, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
+            {
+                errors.Add($"{field.Label} must be a valid email address");
+            }
+
+            if ((field.Type.Equals(FormFieldTypes.Select, StringComparison.OrdinalIgnoreCase) ||
+                 field.Type.Equals(FormFieldTypes.Radio, StringComparison.OrdinalIgnoreCase)) &&
+                field.Options?.Any() == true &&
+                !field.Options.Any(option => option.Value == value))
+            {
+                errors.Add($"{field.Label} has an invalid option");
+            }
+
+            if (field.Validation.MinLength.HasValue && value.Length < field.Validation.MinLength.Value)
+            {
+                errors.Add(GetValidationMessage(field, $"minimum length is {field.Validation.MinLength.Value}"));
+            }
+
+            if (field.Validation.MaxLength.HasValue && value.Length > field.Validation.MaxLength.Value)
+            {
+                errors.Add(GetValidationMessage(field, $"maximum length is {field.Validation.MaxLength.Value}"));
+            }
+
+            if (!string.IsNullOrWhiteSpace(field.Validation.Pattern) &&
+                !Regex.IsMatch(value, field.Validation.Pattern))
+            {
+                errors.Add(GetValidationMessage(field, "format is invalid"));
+            }
+
+            if ((field.Validation.Min.HasValue || field.Validation.Max.HasValue) &&
+                decimal.TryParse(value, out var numericValue))
+            {
+                if (field.Validation.Min.HasValue && numericValue < field.Validation.Min.Value)
+                {
+                    errors.Add(GetValidationMessage(field, $"minimum value is {field.Validation.Min.Value}"));
+                }
+
+                if (field.Validation.Max.HasValue && numericValue > field.Validation.Max.Value)
+                {
+                    errors.Add(GetValidationMessage(field, $"maximum value is {field.Validation.Max.Value}"));
+                }
+            }
+        }
+
+        return errors;
+    }
+
+    private static Dictionary<string, object?> BuildSanitizedFormData(FormDefinition definition, Dictionary<string, object?> formData)
+    {
+        var sanitized = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+        foreach (var field in definition.Fields)
+        {
+            if (formData.TryGetValue(field.Name, out var value))
+            {
+                sanitized[field.Name] = NormalizeFormValue(value);
+            }
+            else if (field.DefaultValue != null)
+            {
+                sanitized[field.Name] = field.DefaultValue;
+            }
+        }
+
+        return sanitized;
+    }
+
+    private static object? GetOptionalValue(Dictionary<string, object?> formData, string key)
+    {
+        return formData.TryGetValue(key, out var value) ? value : null;
+    }
+
+    private static object? NormalizeFormValue(object? value)
+    {
+        if (value is JsonElement jsonElement)
+        {
+            return jsonElement.ValueKind switch
+            {
+                JsonValueKind.String => jsonElement.GetString(),
+                JsonValueKind.Number => jsonElement.GetRawText(),
+                JsonValueKind.True => true,
+                JsonValueKind.False => false,
+                JsonValueKind.Null => null,
+                _ => jsonElement.GetRawText()
+            };
+        }
+
+        return value;
+    }
+
+    private static string? GetStringValue(object? value)
+    {
+        var normalized = NormalizeFormValue(value);
+        return normalized switch
+        {
+            null => null,
+            string stringValue => stringValue,
+            bool boolValue => boolValue ? "true" : "false",
+            _ => normalized.ToString()
+        };
+    }
+
+    private static bool IsTruthy(object? value)
+    {
+        return GetStringValue(value)?.Trim().ToLowerInvariant() switch
+        {
+            "true" => true,
+            "1" => true,
+            "yes" => true,
+            "on" => true,
+            _ => false
+        };
+    }
+
+    private static string GetValidationMessage(FormFieldDefinition field, string fallback)
+    {
+        return string.IsNullOrWhiteSpace(field.Validation.Message)
+            ? $"{field.Label} {fallback}"
+            : field.Validation.Message;
     }
 }

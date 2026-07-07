@@ -91,7 +91,15 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("TenantContentReader", policy =>
+        policy.RequireRole("SuperAdmin", "TenantAdmin", "Editor", "Viewer"));
+    options.AddPolicy("TenantContentEditor", policy =>
+        policy.RequireRole("SuperAdmin", "TenantAdmin", "Editor"));
+    options.AddPolicy("TenantContentOwner", policy =>
+        policy.RequireRole("SuperAdmin", "TenantAdmin"));
+});
 
 // Configure CORS
 // Admin/auth routes use the "AllowAll" policy (access is controlled by JWT).
@@ -130,7 +138,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI(options =>
     {
-        options.SwaggerEndpoint("/swagger/v1/swagger.json", "Pumpkin CMS API v0.2");
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "Pumpkin CMS API v.9");
         options.RoutePrefix = "swagger";
         options.DocumentTitle = "Pumpkin CMS API Documentation";
         options.DefaultModelsExpandDepth(2);
@@ -423,6 +431,62 @@ app.MapPost("/api/auth/login",
     .WithSummary("User login")
     .WithDescription("Authenticates a user with email and password, returns JWT token for subsequent requests")
     .AllowAnonymous();
+
+// Verify current JWT and return the authenticated user
+app.MapGet("/api/auth/verify",
+    async (IDatabaseService databaseService, HttpContext context) =>
+    {
+        if (context.User?.Identity?.IsAuthenticated != true)
+        {
+            return Results.Unauthorized();
+        }
+
+        var email = context.User.FindFirst(ClaimTypes.Email)?.Value;
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            return Results.Unauthorized();
+        }
+
+        var user = await databaseService.GetUserByEmailAsync(email);
+        if (user == null || !user.IsActive)
+        {
+            return Results.Unauthorized();
+        }
+
+        return Results.Ok(new UserInfo
+        {
+            Id = user.Id,
+            TenantId = user.TenantId,
+            Email = user.Email,
+            Username = user.Username,
+            FirstName = user.FirstName,
+            LastName = user.LastName,
+            Role = user.Role.ToString(),
+            Permissions = user.Permissions
+        });
+    })
+    .RequireAuthorization()
+    .WithTags("Authentication")
+    .WithName("VerifyToken")
+    .WithSummary("Verify JWT")
+    .WithDescription("Validates the current JWT and returns the active user profile.");
+
+// Stateless JWT logout endpoint for clients that clear their local token
+app.MapPost("/api/auth/logout",
+    (HttpContext context) =>
+    {
+        if (context.User?.Identity?.IsAuthenticated != true)
+        {
+            return Results.Unauthorized();
+        }
+
+        return Results.Ok(new { message = "Logged out" });
+    })
+    .RequireAuthorization()
+    .WithTags("Authentication")
+    .WithName("Logout")
+    .WithSummary("Logout")
+    .WithDescription("Completes client logout for stateless JWT authentication. Clients should discard their token.");
 
 // ===== ADMIN ENDPOINTS =====
 
@@ -733,6 +797,284 @@ app.MapDelete("/api/admin/tenants/{tenantId}",
     .WithSummary("Delete tenant (SuperAdmin only)")
     .WithDescription("Deletes a tenant. Requires SuperAdmin role and JWT authentication via Bearer token. Cannot delete own tenant.");
 
+// ===== ADMIN: USER ENDPOINTS =====
+
+// Admin: List users for a tenant
+app.MapGet("/api/admin/users/{tenantId}",
+    async (IDatabaseService databaseService, HttpContext context, string tenantId) =>
+    {
+        var authError = AuthorizeUserAdmin(context, tenantId);
+        if (authError != null)
+        {
+            return authError;
+        }
+
+        try
+        {
+            var users = await databaseService.GetUsersByTenantAsync(tenantId);
+            return Results.Ok(new
+            {
+                users = users.Select(ToAdminUserInfo),
+                count = users.Count,
+                tenantId
+            });
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Error retrieving users: {ex.Message}");
+        }
+    })
+    .RequireAuthorization("TenantContentOwner")
+    .WithTags("Admin - Users")
+    .WithName("GetUsersByTenant")
+    .WithSummary("List users for a tenant")
+    .WithDescription("Lists users for a tenant. SuperAdmins can list any tenant; TenantAdmins can list their own tenant.");
+
+// Admin: Get a single user
+app.MapGet("/api/admin/users/{tenantId}/{userId}",
+    async (IDatabaseService databaseService, HttpContext context, string tenantId, string userId) =>
+    {
+        var authError = AuthorizeUserAdmin(context, tenantId);
+        if (authError != null)
+        {
+            return authError;
+        }
+
+        var user = await databaseService.GetUserAsync(tenantId, userId);
+        return user == null ? Results.NotFound("User not found") : Results.Ok(ToAdminUserInfo(user));
+    })
+    .RequireAuthorization("TenantContentOwner")
+    .WithTags("Admin - Users")
+    .WithName("GetAdminUser")
+    .WithSummary("Get user by ID")
+    .WithDescription("Gets a sanitized user profile by ID.");
+
+// Admin: Create a user
+app.MapPost("/api/admin/users/{tenantId}",
+    async (IDatabaseService databaseService, HttpContext context, string tenantId, CreateAdminUserRequest request) =>
+    {
+        var authError = AuthorizeUserAdmin(context, tenantId);
+        if (authError != null)
+        {
+            return authError;
+        }
+
+        if (!TryParseUserRole(request.Role, out var role))
+        {
+            return Results.BadRequest("Invalid role");
+        }
+
+        var currentRole = context.User.FindFirst(ClaimTypes.Role)?.Value;
+        if (currentRole != "SuperAdmin" && role == UserRole.SuperAdmin)
+        {
+            return Results.Forbid();
+        }
+
+        try
+        {
+            var user = new User
+            {
+                TenantId = tenantId,
+                Email = request.Email,
+                Username = request.Username,
+                PasswordHash = string.Empty,
+                FirstName = request.FirstName,
+                LastName = request.LastName,
+                Role = role,
+                IsActive = request.IsActive ?? true,
+                Permissions = request.Permissions ?? new List<string>()
+            };
+
+            var createdUser = await databaseService.CreateUserAsync(tenantId, user, request.Password);
+            return Results.Created($"/api/admin/users/{tenantId}/{createdUser.Id}", ToAdminUserInfo(createdUser));
+        }
+        catch (ArgumentException ex)
+        {
+            return Results.BadRequest(ex.Message);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Results.Conflict(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Error creating user: {ex.Message}");
+        }
+    })
+    .RequireAuthorization("TenantContentOwner")
+    .WithTags("Admin - Users")
+    .WithName("CreateAdminUser")
+    .WithSummary("Create user")
+    .WithDescription("Creates a user with server-side BCrypt password hashing.");
+
+// Admin: Update a user profile
+app.MapPut("/api/admin/users/{tenantId}/{userId}",
+    async (IDatabaseService databaseService, HttpContext context, string tenantId, string userId, UpdateAdminUserRequest request) =>
+    {
+        var authError = AuthorizeUserAdmin(context, tenantId);
+        if (authError != null)
+        {
+            return authError;
+        }
+
+        if (!TryParseUserRole(request.Role, out var role))
+        {
+            return Results.BadRequest("Invalid role");
+        }
+
+        var currentRole = context.User.FindFirst(ClaimTypes.Role)?.Value;
+        var currentUserId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        try
+        {
+            var existingUser = await databaseService.GetUserAsync(tenantId, userId);
+            if (existingUser == null)
+            {
+                return Results.NotFound("User not found");
+            }
+
+            if (currentRole != "SuperAdmin" && (existingUser.Role == UserRole.SuperAdmin || role == UserRole.SuperAdmin))
+            {
+                return Results.Forbid();
+            }
+
+            if (currentUserId == userId && request.IsActive == false)
+            {
+                return Results.BadRequest("Cannot deactivate your own user");
+            }
+
+            var user = new User
+            {
+                Id = userId,
+                TenantId = tenantId,
+                Email = request.Email,
+                Username = request.Username,
+                PasswordHash = string.Empty,
+                FirstName = request.FirstName,
+                LastName = request.LastName,
+                Role = role,
+                IsActive = request.IsActive,
+                Permissions = request.Permissions ?? existingUser.Permissions
+            };
+
+            var updatedUser = await databaseService.UpdateUserAsync(tenantId, userId, user);
+            return Results.Ok(ToAdminUserInfo(updatedUser));
+        }
+        catch (ArgumentException ex)
+        {
+            return Results.BadRequest(ex.Message);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return Results.NotFound(ex.Message);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Results.Conflict(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Error updating user: {ex.Message}");
+        }
+    })
+    .RequireAuthorization("TenantContentOwner")
+    .WithTags("Admin - Users")
+    .WithName("UpdateAdminUser")
+    .WithSummary("Update user")
+    .WithDescription("Updates user profile fields without accepting password hashes.");
+
+// Admin: Reset a user's password
+app.MapPost("/api/admin/users/{tenantId}/{userId}/reset-password",
+    async (IDatabaseService databaseService, HttpContext context, string tenantId, string userId, ResetAdminUserPasswordRequest request) =>
+    {
+        var authError = AuthorizeUserAdmin(context, tenantId);
+        if (authError != null)
+        {
+            return authError;
+        }
+
+        try
+        {
+            var targetUser = await databaseService.GetUserAsync(tenantId, userId);
+            if (targetUser == null)
+            {
+                return Results.NotFound("User not found");
+            }
+
+            var currentRole = context.User.FindFirst(ClaimTypes.Role)?.Value;
+            if (currentRole != "SuperAdmin" && targetUser.Role == UserRole.SuperAdmin)
+            {
+                return Results.Forbid();
+            }
+
+            var updatedUser = await databaseService.ResetUserPasswordAsync(tenantId, userId, request.Password);
+            return Results.Ok(ToAdminUserInfo(updatedUser));
+        }
+        catch (ArgumentException ex)
+        {
+            return Results.BadRequest(ex.Message);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return Results.NotFound(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Error resetting user password: {ex.Message}");
+        }
+    })
+    .RequireAuthorization("TenantContentOwner")
+    .WithTags("Admin - Users")
+    .WithName("ResetAdminUserPassword")
+    .WithSummary("Reset user password")
+    .WithDescription("Resets a user's password with server-side BCrypt hashing.");
+
+// Admin: Delete a user
+app.MapDelete("/api/admin/users/{tenantId}/{userId}",
+    async (IDatabaseService databaseService, HttpContext context, string tenantId, string userId) =>
+    {
+        var authError = AuthorizeUserAdmin(context, tenantId);
+        if (authError != null)
+        {
+            return authError;
+        }
+
+        var currentUserId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (currentUserId == userId)
+        {
+            return Results.BadRequest("Cannot delete your own user");
+        }
+
+        try
+        {
+            var targetUser = await databaseService.GetUserAsync(tenantId, userId);
+            if (targetUser == null)
+            {
+                return Results.NotFound("User not found");
+            }
+
+            var currentRole = context.User.FindFirst(ClaimTypes.Role)?.Value;
+            if (currentRole != "SuperAdmin" && targetUser.Role == UserRole.SuperAdmin)
+            {
+                return Results.Forbid();
+            }
+
+            var deleted = await databaseService.DeleteUserAsync(tenantId, userId);
+            return deleted
+                ? Results.Ok(new { message = "User deleted successfully", tenantId, userId })
+                : Results.NotFound("User not found");
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Error deleting user: {ex.Message}");
+        }
+    })
+    .RequireAuthorization("TenantContentOwner")
+    .WithTags("Admin - Users")
+    .WithName("DeleteAdminUser")
+    .WithSummary("Delete user")
+    .WithDescription("Deletes a user. Users cannot delete their own account.");
+
 // Admin: Get all pages (optionally filtered by tenant)
 app.MapGet("/api/admin/pages",
     async (IDatabaseService databaseService, HttpContext context, string? tenantId = null) =>
@@ -773,7 +1115,7 @@ app.MapGet("/api/admin/pages",
             return Results.Problem($"Error retrieving pages: {ex.Message}");
         }
     })
-    .RequireAuthorization()
+    .RequireAuthorization("TenantContentReader")
     .WithTags("Admin")
     .WithName("GetAllPages")
     .WithSummary("Get all pages for authenticated user's tenant")
@@ -811,7 +1153,7 @@ app.MapGet("/api/admin/pages/{tenantId}/{**pageSlug}",
 
         return Results.Ok(page);
     })
-    .RequireAuthorization()
+    .RequireAuthorization("TenantContentReader")
     .WithTags("Admin")
     .WithName("GetPageBySlug")
     .WithSummary("Get a single page by slug for editing")
@@ -862,7 +1204,7 @@ app.MapPost("/api/admin/pages/{tenantId}",
             return Results.Problem($"Error creating page: {ex.Message}");
         }
     })
-    .RequireAuthorization()
+    .RequireAuthorization("TenantContentEditor")
     .WithTags("Admin")
     .WithName("AdminCreatePage")
     .WithSummary("Create a new page (admin)")
@@ -912,11 +1254,56 @@ app.MapPut("/api/admin/pages/{tenantId}/{**pageSlug}",
             return Results.Problem($"Error updating page: {ex.Message}");
         }
     })
-    .RequireAuthorization()
+    .RequireAuthorization("TenantContentEditor")
     .WithTags("Admin")
     .WithName("AdminUpdatePage")
     .WithSummary("Update an existing page (admin)")
     .WithDescription("Updates a page by slug for a specific tenant. Requires JWT authentication.");
+
+// Admin: Delete an existing page (JWT auth, no API key)
+app.MapDelete("/api/admin/pages/{tenantId}/{**pageSlug}",
+    async (IDatabaseService databaseService, string tenantId, string pageSlug, HttpContext context) =>
+    {
+        if (context.User?.Identity?.IsAuthenticated != true)
+        {
+            return Results.Unauthorized();
+        }
+
+        var userTenantId = context.User.FindFirst("tenantId")?.Value;
+        var userRole = context.User.FindFirst(ClaimTypes.Role)?.Value;
+
+        if (string.IsNullOrEmpty(userTenantId))
+        {
+            return Results.BadRequest("User tenant ID not found in token");
+        }
+
+        if (tenantId != userTenantId && userRole != "SuperAdmin")
+        {
+            return Results.Forbid();
+        }
+
+        try
+        {
+            var decodedSlug = Uri.UnescapeDataString(pageSlug);
+            var deleted = await databaseService.DeletePageAdminAsync(tenantId, decodedSlug);
+            return deleted
+                ? Results.Ok(new { message = "Page deleted successfully", tenantId, pageSlug = decodedSlug })
+                : Results.NotFound("Page not found");
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return Results.NotFound(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Error deleting page: {ex.Message}");
+        }
+    })
+    .RequireAuthorization("TenantContentOwner")
+    .WithTags("Admin")
+    .WithName("AdminDeletePage")
+    .WithSummary("Delete an existing page (admin)")
+    .WithDescription("Deletes a page by slug for a specific tenant. Requires TenantAdmin or SuperAdmin role.");
 
 // Admin: Get hub pages for a tenant
 app.MapGet("/api/admin/tenants/{tenantId}/hubs",
@@ -945,7 +1332,7 @@ app.MapGet("/api/admin/tenants/{tenantId}/hubs",
         
         return await PumpkinManager.GetHubPagesAsync(databaseService, tenantId);
     })
-    .RequireAuthorization()
+    .RequireAuthorization("TenantContentReader")
     .WithTags("Admin")
     .WithName("GetHubPages")
     .WithSummary("Get all hub/pillar pages for a tenant")
@@ -981,7 +1368,7 @@ app.MapGet("/api/admin/tenants/{tenantId}/hubs/{hubPageSlug}/spokes",
         
         return await PumpkinManager.GetSpokePagesAsync(databaseService, tenantId, decodedHubPageSlug);
     })
-    .RequireAuthorization()
+    .RequireAuthorization("TenantContentReader")
     .WithTags("Admin")
     .WithName("GetSpokePages")
     .WithSummary("Get all spoke pages for a hub")
@@ -1014,7 +1401,7 @@ app.MapGet("/api/admin/tenants/{tenantId}/content-hierarchy",
         
         return await PumpkinManager.GetContentHierarchyAsync(databaseService, tenantId);
     })
-    .RequireAuthorization()
+    .RequireAuthorization("TenantContentReader")
     .WithTags("Admin")
     .WithName("GetContentHierarchy")
     .WithSummary("Get complete content hierarchy visualization")
@@ -1040,7 +1427,7 @@ app.MapGet("/api/admin/themes/{tenantId}",
 
         return await PumpkinManager.GetThemesByTenantAsync(databaseService, tenantId);
     })
-    .RequireAuthorization()
+    .RequireAuthorization("TenantContentReader")
     .WithTags("Admin - Themes")
     .WithName("GetThemesByTenant")
     .WithSummary("Get all themes for a tenant")
@@ -1064,7 +1451,7 @@ app.MapGet("/api/admin/themes/{tenantId}/active",
 
         return await PumpkinManager.GetActiveThemeAdminAsync(databaseService, tenantId);
     })
-    .RequireAuthorization()
+    .RequireAuthorization("TenantContentReader")
     .WithTags("Admin - Themes")
     .WithName("GetActiveThemeAdmin")
     .WithSummary("Get the active theme for a tenant (admin)")
@@ -1088,7 +1475,7 @@ app.MapGet("/api/admin/themes/{tenantId}/{themeId}",
 
         return await PumpkinManager.GetThemeAdminAsync(databaseService, tenantId, themeId);
     })
-    .RequireAuthorization()
+    .RequireAuthorization("TenantContentReader")
     .WithTags("Admin - Themes")
     .WithName("GetThemeAdmin")
     .WithSummary("Get a specific theme by ID (admin)")
@@ -1112,7 +1499,7 @@ app.MapPost("/api/admin/themes/{tenantId}",
 
         return await PumpkinManager.CreateThemeAsync(databaseService, tenantId, theme);
     })
-    .RequireAuthorization()
+    .RequireAuthorization("TenantContentOwner")
     .WithTags("Admin - Themes")
     .WithName("CreateTheme")
     .WithSummary("Create a new theme")
@@ -1136,11 +1523,35 @@ app.MapPut("/api/admin/themes/{tenantId}/{themeId}",
 
         return await PumpkinManager.UpdateThemeAsync(databaseService, tenantId, themeId, theme);
     })
-    .RequireAuthorization()
+    .RequireAuthorization("TenantContentOwner")
     .WithTags("Admin - Themes")
     .WithName("UpdateTheme")
     .WithSummary("Update an existing theme")
     .WithDescription("Updates a theme by ID for a specific tenant. Requires JWT authentication.");
+
+// Admin: Activate a theme
+app.MapPost("/api/admin/themes/{tenantId}/{themeId}/activate",
+    async (IDatabaseService databaseService, string tenantId, string themeId, HttpContext context) =>
+    {
+        if (context.User?.Identity?.IsAuthenticated != true)
+            return Results.Unauthorized();
+
+        var userTenantId = context.User.FindFirst("tenantId")?.Value;
+        var userRole = context.User.FindFirst(ClaimTypes.Role)?.Value;
+
+        if (string.IsNullOrEmpty(userTenantId))
+            return Results.BadRequest("User tenant ID not found in token");
+
+        if (tenantId != userTenantId && userRole != "SuperAdmin")
+            return Results.Forbid();
+
+        return await PumpkinManager.ActivateThemeAsync(databaseService, tenantId, themeId);
+    })
+    .RequireAuthorization("TenantContentOwner")
+    .WithTags("Admin - Themes")
+    .WithName("ActivateTheme")
+    .WithSummary("Activate a theme")
+    .WithDescription("Marks one theme as active for a tenant and updates the tenant active-theme pointer.");
 
 // Admin: Delete a theme
 app.MapDelete("/api/admin/themes/{tenantId}/{themeId}",
@@ -1160,7 +1571,7 @@ app.MapDelete("/api/admin/themes/{tenantId}/{themeId}",
 
         return await PumpkinManager.DeleteThemeAsync(databaseService, tenantId, themeId);
     })
-    .RequireAuthorization()
+    .RequireAuthorization("TenantContentOwner")
     .WithTags("Admin - Themes")
     .WithName("DeleteTheme")
     .WithSummary("Delete a theme")
@@ -1186,7 +1597,7 @@ app.MapGet("/api/admin/forms/{tenantId}/definitions",
 
         return await PumpkinManager.GetFormDefinitionsByTenantAsync(databaseService, tenantId);
     })
-    .RequireAuthorization()
+    .RequireAuthorization("TenantContentReader")
     .WithTags("Admin - Forms")
     .WithName("GetFormDefinitionsByTenant")
     .WithSummary("List all form definitions for a tenant")
@@ -1210,7 +1621,7 @@ app.MapGet("/api/admin/forms/{tenantId}/definitions/{formDefinitionId}",
 
         return await PumpkinManager.GetFormDefinitionAsync(databaseService, tenantId, formDefinitionId);
     })
-    .RequireAuthorization()
+    .RequireAuthorization("TenantContentReader")
     .WithTags("Admin - Forms")
     .WithName("GetFormDefinition_Admin")
     .WithSummary("Get a form definition by ID")
@@ -1234,7 +1645,7 @@ app.MapPost("/api/admin/forms/{tenantId}/definitions",
 
         return await PumpkinManager.CreateFormDefinitionAsync(databaseService, tenantId, formDefinition);
     })
-    .RequireAuthorization()
+    .RequireAuthorization("TenantContentOwner")
     .WithTags("Admin - Forms")
     .WithName("CreateFormDefinition")
     .WithSummary("Create a form definition")
@@ -1259,7 +1670,7 @@ app.MapPut("/api/admin/forms/{tenantId}/definitions/{formDefinitionId}",
 
         return await PumpkinManager.UpdateFormDefinitionAsync(databaseService, tenantId, formDefinitionId, formDefinition);
     })
-    .RequireAuthorization()
+    .RequireAuthorization("TenantContentOwner")
     .WithTags("Admin - Forms")
     .WithName("UpdateFormDefinition")
     .WithSummary("Update a form definition")
@@ -1283,7 +1694,7 @@ app.MapDelete("/api/admin/forms/{tenantId}/definitions/{formDefinitionId}",
 
         return await PumpkinManager.DeleteFormDefinitionAsync(databaseService, tenantId, formDefinitionId);
     })
-    .RequireAuthorization()
+    .RequireAuthorization("TenantContentOwner")
     .WithTags("Admin - Forms")
     .WithName("DeleteFormDefinition")
     .WithSummary("Delete a form definition")
@@ -1309,7 +1720,7 @@ app.MapGet("/api/admin/forms/{tenantId}/entries",
 
         return await PumpkinManager.GetFormEntriesByTenantAsync(databaseService, tenantId, type);
     })
-    .RequireAuthorization()
+    .RequireAuthorization("TenantContentReader")
     .WithTags("Admin - Forms")
     .WithName("GetFormEntries")
     .WithSummary("List form entries for a tenant")
@@ -1333,7 +1744,7 @@ app.MapGet("/api/admin/forms/{tenantId}/entries/{entryId}",
 
         return await PumpkinManager.GetFormEntryAsync(databaseService, tenantId, entryId);
     })
-    .RequireAuthorization()
+    .RequireAuthorization("TenantContentReader")
     .WithTags("Admin - Forms")
     .WithName("GetFormEntry")
     .WithSummary("Get a single form entry")
@@ -1358,13 +1769,101 @@ app.MapPut("/api/admin/forms/{tenantId}/entries/{entryId}/status",
 
         return await PumpkinManager.UpdateFormEntryStatusAsync(databaseService, tenantId, entryId, request.Status);
     })
-    .RequireAuthorization()
+    .RequireAuthorization("TenantContentEditor")
     .WithTags("Admin - Forms")
     .WithName("UpdateFormEntryStatus")
     .WithSummary("Update the status of a form entry")
     .WithDescription("Updates the status of a form entry (e.g. new → read → actioned → archived). Requires JWT authentication.");
 
+static IResult? AuthorizeUserAdmin(HttpContext context, string tenantId)
+{
+    if (context.User?.Identity?.IsAuthenticated != true)
+    {
+        return Results.Unauthorized();
+    }
+
+    var userTenantId = context.User.FindFirst("tenantId")?.Value;
+    var userRole = context.User.FindFirst(ClaimTypes.Role)?.Value;
+
+    if (string.IsNullOrEmpty(userTenantId))
+    {
+        return Results.BadRequest("User tenant ID not found in token");
+    }
+
+    if (userRole != "SuperAdmin" && userRole != "TenantAdmin")
+    {
+        return Results.Forbid();
+    }
+
+    if (tenantId != userTenantId && userRole != "SuperAdmin")
+    {
+        return Results.Forbid();
+    }
+
+    return null;
+}
+
+static bool TryParseUserRole(string role, out UserRole userRole)
+{
+    return Enum.TryParse(role, ignoreCase: true, out userRole)
+        && Enum.IsDefined(typeof(UserRole), userRole);
+}
+
+static AdminUserInfo ToAdminUserInfo(User user)
+{
+    return new AdminUserInfo(
+        user.Id,
+        user.TenantId,
+        user.Email,
+        user.Username,
+        user.FirstName,
+        user.LastName,
+        user.Role.ToString(),
+        user.IsActive,
+        user.CreatedDate,
+        user.LastLogin,
+        user.Permissions);
+}
+
 app.Run();
 
 /// <summary>Request body for updating a form entry's status.</summary>
 record StatusUpdateRequest(string Status);
+
+/// <summary>Sanitized admin user response. PasswordHash is intentionally omitted.</summary>
+record AdminUserInfo(
+    string Id,
+    string TenantId,
+    string Email,
+    string Username,
+    string? FirstName,
+    string? LastName,
+    string Role,
+    bool IsActive,
+    DateTime CreatedDate,
+    DateTime? LastLogin,
+    List<string> Permissions);
+
+/// <summary>Request body for creating an admin-managed user.</summary>
+record CreateAdminUserRequest(
+    string Email,
+    string Username,
+    string Password,
+    string Role,
+    string? FirstName,
+    string? LastName,
+    bool? IsActive,
+    List<string>? Permissions);
+
+/// <summary>Request body for updating an admin-managed user.</summary>
+record UpdateAdminUserRequest(
+    string Email,
+    string Username,
+    string Role,
+    string? FirstName,
+    string? LastName,
+    bool IsActive,
+    List<string>? Permissions);
+
+/// <summary>Request body for resetting an admin-managed user's password.</summary>
+record ResetAdminUserPasswordRequest(string Password);

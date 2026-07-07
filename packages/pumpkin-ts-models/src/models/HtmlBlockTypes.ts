@@ -3,7 +3,7 @@ import { HeroBlock } from './HeroBlocks';
 import { PrimaryCtaBlock, SecondaryCtaBlock } from './CtaBlocks';
 import { CardGridBlock, FaqBlock } from './ContentBlocks';
 import { BreadcrumbsBlock, TrustBarBlock, HowItWorksBlock, ServiceAreaMapBlock, LocalProTipsBlock } from './NavigationBlocks';
-import { GalleryBlock, TestimonialsBlock, ContactBlock } from './InteractionBlocks';
+import { GalleryBlock, TestimonialsBlock, ContactBlock, FormBlock } from './InteractionBlocks';
 import { BlogBlock } from './BlogBlocks';
 
 /**
@@ -23,6 +23,7 @@ export type HtmlBlock =
   | GalleryBlock
   | TestimonialsBlock
   | ContactBlock
+  | FormBlock
   | BlogBlock;
 
 /**
@@ -42,6 +43,7 @@ export const BLOCK_TYPE_MAP = {
   'Gallery': 'GalleryBlock',
   'Testimonials': 'TestimonialsBlock',
   'Contact': 'ContactBlock',
+  'Form': 'FormBlock',
   'Blog': 'BlogBlock'
 } as const;
 

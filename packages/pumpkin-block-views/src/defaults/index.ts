@@ -11,6 +11,7 @@ export { localProTipsDefaults, type LocalProTipsClassNames } from './localProTip
 export { galleryDefaults, type GalleryClassNames } from './gallery';
 export { testimonialsDefaults, type TestimonialsClassNames } from './testimonials';
 export { contactDefaults, type ContactClassNames } from './contact';
+export { formDefaults, type FormClassNames } from './form';
 export { blogDefaults, type BlogClassNames } from './blog';
 export { headerDefaults, type HeaderClassNames } from './header';
 export { footerDefaults, type FooterClassNames } from './footer';

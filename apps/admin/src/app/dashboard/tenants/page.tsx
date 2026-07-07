@@ -304,7 +304,7 @@ export default function TenantsPage() {
               <div>
                 <h3 className="text-lg font-semibold text-neutral-900">API Key Generated</h3>
                 <p className="text-sm text-amber-800 mt-1">
-                  ⚠️ This is the only time you'll be able to view this API key. Please copy it now and store it securely.
+                  ⚠️ This is the only time you&apos;ll be able to view this API key. Please copy it now and store it securely.
                 </p>
               </div>
             </div>
@@ -336,8 +336,8 @@ export default function TenantsPage() {
 
             <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-4">
               <p className="text-sm text-blue-800">
-                <strong>Important:</strong> Store this API key securely. You'll need it to authenticate API requests for this tenant. 
-                If you lose it, you'll need to regenerate a new one.
+                <strong>Important:</strong> Store this API key securely. You&apos;ll need it to authenticate API requests for this tenant. 
+                If you lose it, you&apos;ll need to regenerate a new one.
               </p>
             </div>
             
@@ -349,7 +349,7 @@ export default function TenantsPage() {
                 }}
                 className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700"
               >
-                I've Saved It
+                I&apos;ve Saved It
               </button>
             </div>
           </div>

@@ -21,6 +21,7 @@ exports.BLOCK_TYPE_MAP = {
     'Gallery': 'GalleryBlock',
     'Testimonials': 'TestimonialsBlock',
     'Contact': 'ContactBlock',
+    'Form': 'FormBlock',
     'Blog': 'BlogBlock'
 };
 /**

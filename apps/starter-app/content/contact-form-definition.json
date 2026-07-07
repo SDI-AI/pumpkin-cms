@@ -1,0 +1,91 @@
+{
+  "id": "pumpkin-contact-form",
+  "formDefinitionId": "pumpkin-contact-form",
+  "tenantId": "pumpkin",
+  "name": "Pumpkin Contact Form",
+  "type": "contact",
+  "description": "Public contact form used on the Pumpkin CMS home page.",
+  "fields": [
+    {
+      "name": "name",
+      "label": "Name",
+      "type": "text",
+      "required": true,
+      "placeholder": "Your name",
+      "helpText": "",
+      "autocomplete": "name",
+      "order": 1,
+      "hidden": false,
+      "width": "full",
+      "validation": {
+        "minLength": 2,
+        "maxLength": 120,
+        "pattern": "",
+        "message": "Please enter your name."
+      },
+      "attributes": {}
+    },
+    {
+      "name": "email",
+      "label": "Email",
+      "type": "email",
+      "required": true,
+      "placeholder": "you@example.com",
+      "helpText": "",
+      "autocomplete": "email",
+      "order": 2,
+      "hidden": false,
+      "width": "full",
+      "validation": {
+        "minLength": null,
+        "maxLength": 254,
+        "pattern": "",
+        "message": "Please enter a valid email address."
+      },
+      "attributes": {}
+    },
+    {
+      "name": "message",
+      "label": "Message",
+      "type": "textarea",
+      "required": true,
+      "placeholder": "What are you building?",
+      "helpText": "",
+      "autocomplete": "",
+      "order": 3,
+      "hidden": false,
+      "width": "full",
+      "validation": {
+        "minLength": 10,
+        "maxLength": 4000,
+        "pattern": "",
+        "message": "Please add a short message."
+      },
+      "attributes": {}
+    }
+  ],
+  "submitButtonText": "Send Message",
+  "successMessage": "Thanks. Your message has been sent.",
+  "submitBehavior": "message",
+  "redirectUrl": "",
+  "notificationEmails": [],
+  "notifications": {
+    "enabled": true,
+    "replyToField": "email",
+    "subjectTemplate": "New Pumpkin CMS contact form submission from {{name}}"
+  },
+  "spamProtection": {
+    "honeypotFieldName": "_website",
+    "rejectWhenHoneypotFilled": true,
+    "requireConsent": false,
+    "consentFieldName": "consent"
+  },
+  "rateLimit": {
+    "enabled": true,
+    "maxSubmissions": 5,
+    "windowSeconds": 300
+  },
+  "isActive": true,
+  "createdAt": "2026-07-03T00:00:00Z",
+  "updatedAt": "2026-07-03T00:00:00Z"
+}

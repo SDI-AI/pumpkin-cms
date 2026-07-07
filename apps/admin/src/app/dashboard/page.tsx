@@ -68,7 +68,7 @@ export default function DashboardPage() {
           Welcome back, {user?.firstName || user?.username}! 👋
         </h1>
         <p className="text-neutral-600">
-          Here's what's happening with {currentTenant?.name || 'your site'} today.
+          Here&apos;s what&apos;s happening with {currentTenant?.name || 'your site'} today.
         </p>
       </div>
 
