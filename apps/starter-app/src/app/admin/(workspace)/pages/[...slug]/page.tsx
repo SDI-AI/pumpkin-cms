@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { getStarterAdminPage } from '@/lib/starter-admin-pages';
-import { PageJsonEditor } from '../_components/PageJsonEditor';
+import { PageVisualEditor } from '../_components/PageVisualEditor';
 
 interface StarterAdminPageEditorProps {
   params: {
@@ -29,7 +29,7 @@ export default async function StarterAdminPageEditor({ params }: StarterAdminPag
           </Link>
         }
       />
-      <PageJsonEditor page={page} />
+      <PageVisualEditor initialPage={page} mode="edit" originalSlug={page.pageSlug} />
     </section>
   );
 }
