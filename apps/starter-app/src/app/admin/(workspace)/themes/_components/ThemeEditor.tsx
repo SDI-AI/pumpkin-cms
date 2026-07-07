@@ -150,6 +150,81 @@ export function ThemeEditor({ initialTheme, mode }: ThemeEditorProps) {
       </section>
 
       <section className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
+        <h2 className="text-base font-bold text-neutral-950">Typography</h2>
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
+          <TextField label="Heading Font" value={theme.typography.headingFont} onChange={(value) => update('typography', { ...theme.typography, headingFont: value })} />
+          <TextField label="Body Font" value={theme.typography.bodyFont} onChange={(value) => update('typography', { ...theme.typography, bodyFont: value })} />
+          <TextField label="Sans Font Stack" value={theme.typography.fontSans} onChange={(value) => update('typography', { ...theme.typography, fontSans: value })} />
+          <TextField label="Serif Font Stack" value={theme.typography.fontSerif} onChange={(value) => update('typography', { ...theme.typography, fontSerif: value })} />
+          <TextField label="Mono Font Stack" value={theme.typography.fontMono} onChange={(value) => update('typography', { ...theme.typography, fontMono: value })} />
+          <TextField label="Base Font Size" value={theme.typography.baseFontSize} onChange={(value) => update('typography', { ...theme.typography, baseFontSize: value })} />
+          <TextField label="Line Height" value={theme.typography.lineHeight} onChange={(value) => update('typography', { ...theme.typography, lineHeight: value })} />
+        </div>
+      </section>
+
+      <section className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
+        <h2 className="text-base font-bold text-neutral-950">Header</h2>
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
+          <TextField label="Logo URL" value={theme.header.logoUrl} onChange={(value) => update('header', { ...theme.header, logoUrl: value })} />
+          <TextField label="Logo Alt" value={theme.header.logoAlt} onChange={(value) => update('header', { ...theme.header, logoAlt: value })} />
+          <TextField label="CTA Text" value={theme.header.ctaText} onChange={(value) => update('header', { ...theme.header, ctaText: value })} />
+          <TextField label="CTA URL" value={theme.header.ctaUrl} onChange={(value) => update('header', { ...theme.header, ctaUrl: value })} />
+          <label className="block">
+            <span className="text-sm font-semibold text-neutral-800">CTA Target</span>
+            <select
+              value={theme.header.ctaTarget}
+              onChange={(event) => update('header', { ...theme.header, ctaTarget: event.target.value })}
+              className="mt-2 h-10 w-full rounded-md border border-neutral-300 px-3 text-sm"
+            >
+              <option value="_self">Same tab</option>
+              <option value="_blank">New tab</option>
+            </select>
+          </label>
+          <div className="pt-8">
+            <Checkbox label="Sticky Header" checked={theme.header.sticky} onChange={(checked) => update('header', { ...theme.header, sticky: checked })} />
+          </div>
+        </div>
+      </section>
+
+      <section className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
+        <h2 className="text-base font-bold text-neutral-950">Footer</h2>
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
+          <TextField label="Copyright" value={theme.footer.copyright} onChange={(value) => update('footer', { ...theme.footer, copyright: value })} />
+          <label className="block md:col-span-2">
+            <span className="text-sm font-semibold text-neutral-800">Description</span>
+            <textarea
+              value={theme.footer.description}
+              onChange={(event) => update('footer', { ...theme.footer, description: event.target.value })}
+              className="mt-2 min-h-24 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
+            />
+          </label>
+        </div>
+      </section>
+
+      <section className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
+        <h2 className="text-base font-bold text-neutral-950">Spacing, Borders, Shadows</h2>
+        <div className="mt-4 grid gap-4 md:grid-cols-3">
+          <TextField label="Base Spacing Unit" value={theme.spacing.baseUnit} onChange={(value) => update('spacing', { ...theme.spacing, baseUnit: value })} />
+          <TextField label="Border Style" value={theme.borders.style} onChange={(value) => update('borders', { ...theme.borders, style: value })} />
+          <TextField
+            label="Radius MD"
+            value={theme.borders.radius.md || ''}
+            onChange={(value) => update('borders', { ...theme.borders, radius: { ...theme.borders.radius, md: value } })}
+          />
+          <TextField
+            label="Shadow SM"
+            value={theme.shadows.scale.sm || ''}
+            onChange={(value) => update('shadows', { ...theme.shadows, scale: { ...theme.shadows.scale, sm: value } })}
+          />
+          <TextField
+            label="Shadow MD"
+            value={theme.shadows.scale.md || ''}
+            onChange={(value) => update('shadows', { ...theme.shadows, scale: { ...theme.shadows.scale, md: value } })}
+          />
+        </div>
+      </section>
+
+      <section className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
         <div className="flex items-center justify-between">
           <h2 className="text-base font-bold text-neutral-950">Advanced JSON</h2>
           <button

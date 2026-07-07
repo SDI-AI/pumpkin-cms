@@ -3,20 +3,79 @@
 import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { CheckCircle2, Palette, Search } from 'lucide-react';
+import { CheckCircle2, Download, Palette, Search } from 'lucide-react';
 import type { Theme } from 'pumpkin-ts-models';
+import { createTheme } from './ThemeEditor';
 
 interface ThemeListProps {
   themes: Theme[];
+  tenantId: string;
 }
 
-export function ThemeList({ themes }: ThemeListProps) {
+interface ThemePreset {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  palette: string[];
+  cssVariables: Record<string, string>;
+  tags: string[];
+}
+
+const themePresets: ThemePreset[] = [
+  {
+    id: 'pumpkin-classic',
+    name: 'Pumpkin Classic',
+    description: 'Warm editorial defaults with pumpkin accents and neutral content surfaces.',
+    category: 'starter',
+    palette: ['#f97316', '#171717', '#ffffff', '#15803d'],
+    cssVariables: {
+      '--color-background': '#ffffff',
+      '--color-foreground': '#171717',
+      '--color-primary': '#f97316',
+      '--color-accent': '#15803d',
+    },
+    tags: ['starter', 'warm', 'default'],
+  },
+  {
+    id: 'field-notes',
+    name: 'Field Notes',
+    description: 'Clean local-service styling with green accents and high-contrast text.',
+    category: 'starter',
+    palette: ['#166534', '#1f2937', '#f8fafc', '#ca8a04'],
+    cssVariables: {
+      '--color-background': '#f8fafc',
+      '--color-foreground': '#1f2937',
+      '--color-primary': '#166534',
+      '--color-accent': '#ca8a04',
+    },
+    tags: ['service', 'green', 'local'],
+  },
+  {
+    id: 'studio-light',
+    name: 'Studio Light',
+    description: 'Simple portfolio/product style with blue primary actions and quiet surfaces.',
+    category: 'starter',
+    palette: ['#2563eb', '#111827', '#f9fafb', '#db2777'],
+    cssVariables: {
+      '--color-background': '#f9fafb',
+      '--color-foreground': '#111827',
+      '--color-primary': '#2563eb',
+      '--color-accent': '#db2777',
+    },
+    tags: ['studio', 'product', 'light'],
+  },
+];
+
+export function ThemeList({ themes, tenantId }: ThemeListProps) {
   const router = useRouter();
   const [query, setQuery] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [activatingId, setActivatingId] = useState('');
+  const [installingId, setInstallingId] = useState('');
   const [isPending, startTransition] = useTransition();
+  const installedThemeIds = new Set(themes.map((theme) => theme.themeId));
 
   const filtered = themes
     .filter((theme) => {
@@ -58,6 +117,33 @@ export function ThemeList({ themes }: ThemeListProps) {
     }
   };
 
+  const installPreset = async (preset: ThemePreset) => {
+    setMessage('');
+    setError('');
+    setInstallingId(preset.id);
+
+    try {
+      const theme = createThemeFromPreset(tenantId, preset);
+      const response = await fetch('/api/admin/themes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(theme),
+      });
+
+      if (!response.ok) {
+        const data = (await response.json().catch(() => null)) as { message?: string } | null;
+        throw new Error(data?.message || 'Unable to install theme.');
+      }
+
+      setMessage(`${preset.name} installed.`);
+      startTransition(() => router.refresh());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to install theme.');
+    } finally {
+      setInstallingId('');
+    }
+  };
+
   return (
     <div className="space-y-5">
       {(message || error) && (
@@ -68,6 +154,60 @@ export function ThemeList({ themes }: ThemeListProps) {
           {error || message}
         </p>
       )}
+
+      <section className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 className="text-base font-bold text-neutral-950">Install Theme Presets</h2>
+            <p className="mt-1 text-sm text-neutral-600">
+              Install a prebuilt runtime theme document, then edit tokens, header, footer, and JSON.
+            </p>
+          </div>
+          <Link
+            href="/admin/themes/new"
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-neutral-300 bg-white px-3 text-sm font-bold text-neutral-800 hover:bg-neutral-50"
+          >
+            <Palette className="h-4 w-4" aria-hidden="true" />
+            <span>Custom Theme</span>
+          </Link>
+        </div>
+
+        <div className="mt-4 grid gap-3 lg:grid-cols-3">
+          {themePresets.map((preset) => {
+            const installed = installedThemeIds.has(preset.id);
+
+            return (
+              <article key={preset.id} className="rounded-md border border-neutral-200 bg-neutral-50 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h3 className="text-sm font-bold text-neutral-950">{preset.name}</h3>
+                    <p className="mt-1 text-xs leading-5 text-neutral-600">{preset.description}</p>
+                  </div>
+                  <div className="flex shrink-0 gap-1">
+                    {preset.palette.map((color) => (
+                      <span
+                        key={color}
+                        className="h-5 w-5 rounded-full border border-neutral-200"
+                        style={{ backgroundColor: color }}
+                        title={color}
+                      />
+                    ))}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => installPreset(preset)}
+                  disabled={installed || installingId === preset.id || isPending}
+                  className="mt-4 inline-flex h-9 w-full items-center justify-center gap-2 rounded-md bg-pumpkin-600 px-3 text-sm font-bold text-white hover:bg-pumpkin-700 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <Download className="h-4 w-4" aria-hidden="true" />
+                  <span>{installed ? 'Installed' : installingId === preset.id ? 'Installing...' : 'Install'}</span>
+                </button>
+              </article>
+            );
+          })}
+        </div>
+      </section>
 
       <div className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -153,4 +293,37 @@ export function ThemeList({ themes }: ThemeListProps) {
       )}
     </div>
   );
+}
+
+function createThemeFromPreset(tenantId: string, preset: ThemePreset): Theme {
+  const theme = createTheme(tenantId);
+  const now = new Date().toISOString();
+
+  return {
+    ...theme,
+    id: preset.id,
+    themeId: preset.id,
+    name: preset.name,
+    label: preset.name,
+    description: preset.description,
+    category: preset.category,
+    tags: preset.tags,
+    isCustom: true,
+    isSystem: false,
+    version: 1,
+    preview: {
+      ...theme.preview,
+      palette: preset.palette,
+      background: preset.cssVariables['--color-background'],
+      foreground: preset.cssVariables['--color-foreground'],
+      primary: preset.cssVariables['--color-primary'],
+      accent: preset.cssVariables['--color-accent'],
+    },
+    cssVariables: {
+      ...theme.cssVariables,
+      ...preset.cssVariables,
+    },
+    createdAt: now,
+    updatedAt: now,
+  };
 }
