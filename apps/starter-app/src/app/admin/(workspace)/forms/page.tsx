@@ -1,17 +1,18 @@
-import { AdminPlaceholder } from '@/components/admin/AdminPlaceholder';
+import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
+import { getStarterAdminFormDefinitions } from '@/lib/starter-admin-forms';
+import { FormDefinitionsList } from './_components/FormDefinitionsList';
 
-export default function StarterAdminFormsPage() {
+export default async function StarterAdminFormsPage() {
+  const definitions = await getStarterAdminFormDefinitions();
+
   return (
-    <AdminPlaceholder
-      nextPhase="Phase 4"
-      title="Form Definitions"
-      description="This route is ready for the form definition builder."
-      items={[
-        'List tenant form definitions by form type.',
-        'Edit fields, ordering, options, validation, hidden fields, and required flags.',
-        'Control success message and submit behavior.',
-        'Keep an advanced JSON view for escape-hatch edits.',
-      ]}
-    />
+    <section>
+      <AdminPageHeader
+        eyebrow="Phase 4"
+        title="Form Definitions"
+        description="Build tenant form schemas, field layout, submit behavior, and validation settings."
+      />
+      <FormDefinitionsList definitions={definitions} />
+    </section>
   );
 }

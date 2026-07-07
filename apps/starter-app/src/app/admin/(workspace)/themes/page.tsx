@@ -1,17 +1,18 @@
-import { AdminPlaceholder } from '@/components/admin/AdminPlaceholder';
+import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
+import { getStarterAdminThemes } from '@/lib/starter-admin-themes';
+import { ThemeList } from './_components/ThemeList';
 
-export default function StarterAdminThemesPage() {
+export default async function StarterAdminThemesPage() {
+  const themes = await getStarterAdminThemes();
+
   return (
-    <AdminPlaceholder
-      nextPhase="Phase 4"
-      title="Themes"
-      description="This route is ready for starter theme management once the runtime theme contract is tightened."
-      items={[
-        'Show active and installed themes for this deployment.',
-        'Activate bundled compiled theme CSS files instantly.',
-        'Edit header, footer, menu, and runtime CSS variables.',
-        'Leave theme plugin install/build triggers for a later pass.',
-      ]}
-    />
+    <section>
+      <AdminPageHeader
+        eyebrow="Phase 4"
+        title="Themes"
+        description="Manage installed runtime themes, activate a theme, and edit tenant theme JSON."
+      />
+      <ThemeList themes={themes} />
+    </section>
   );
 }
