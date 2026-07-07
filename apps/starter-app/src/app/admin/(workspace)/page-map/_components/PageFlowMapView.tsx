@@ -219,7 +219,7 @@ export function PageFlowMapView({ pages, unavailablePages }: PageFlowMapViewProp
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 bg-neutral-50">
+      <div className="min-h-0 flex-1 overflow-hidden bg-neutral-50">
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -249,6 +249,7 @@ export function PageFlowMapView({ pages, unavailablePages }: PageFlowMapViewProp
           />
           {nodes.length > 0 && (
             <MiniMap
+              position="bottom-left"
               nodeColor={(node) => {
                 const border = String(node.style?.border || '');
                 if (border.includes('#f97316')) return '#f97316';
@@ -256,7 +257,13 @@ export function PageFlowMapView({ pages, unavailablePages }: PageFlowMapViewProp
                 return '#d1d5db';
               }}
               maskColor="rgba(0, 0, 0, 0.08)"
-              style={{ borderRadius: 8, overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.10)' }}
+              style={{
+                width: 176,
+                height: 112,
+                borderRadius: 8,
+                overflow: 'hidden',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
+              }}
               pannable
               zoomable
             />
