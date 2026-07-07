@@ -2025,8 +2025,8 @@ public class CosmosDataConnection : IDataConnection, IDisposable
     public async Task<List<FormEntry>> GetFormEntriesByTenantAsync(string tenantId, string? type = null)
     {
         var queryText = string.IsNullOrWhiteSpace(type)
-            ? "SELECT * FROM c WHERE c.tenantId = @tenantId"
-            : "SELECT * FROM c WHERE c.tenantId = @tenantId AND c.type = @type";
+            ? "SELECT * FROM c WHERE (c.TenantId = @tenantId OR c.tenantId = @tenantId)"
+            : "SELECT * FROM c WHERE (c.TenantId = @tenantId OR c.tenantId = @tenantId) AND c.type = @type";
 
         var query = new QueryDefinition(queryText)
             .WithParameter("@tenantId", tenantId);
@@ -2050,7 +2050,7 @@ public class CosmosDataConnection : IDataConnection, IDisposable
         }
 
         var query = new QueryDefinition(
-                "SELECT * FROM c WHERE c.tenantId = @tenantId AND c.id = @entryId")
+                "SELECT * FROM c WHERE (c.TenantId = @tenantId OR c.tenantId = @tenantId) AND c.id = @entryId")
             .WithParameter("@tenantId", tenantId)
             .WithParameter("@entryId", entryId);
 

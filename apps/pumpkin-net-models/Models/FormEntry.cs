@@ -12,6 +12,19 @@ public class FormEntry
     [JsonPropertyName("id")]
     public string Id { get; set; } = Guid.NewGuid().ToString();
 
+    [JsonPropertyName("formEntryId")]
+    public string FormEntryId
+    {
+        get => Id;
+        set
+        {
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                Id = value;
+            }
+        }
+    }
+
     /// <summary>
     /// Machine-readable form type matching <see cref="FormDefinition.Type"/>,
     /// e.g. "contact_submission".
