@@ -1,8 +1,9 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import type { ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronUp, Copy, Plus, Save, Trash2 } from 'lucide-react';
 import type { FormDefinition, FormFieldDefinition, FormFieldType, FormFieldWidth } from 'pumpkin-ts-models';
 
 interface FormDefinitionEditorProps {
@@ -15,8 +16,9 @@ const fieldWidths: FormFieldWidth[] = ['full', 'half', 'third', 'two-thirds'];
 
 export function FormDefinitionEditor({ initialDefinition, mode }: FormDefinitionEditorProps) {
   const router = useRouter();
-  const [definition, setDefinition] = useState(initialDefinition);
-  const [advancedJson, setAdvancedJson] = useState(() => JSON.stringify(initialDefinition, null, 2));
+  const normalizedInitialDefinition = useMemo(() => normalizeFormDefinition(initialDefinition), [initialDefinition]);
+  const [definition, setDefinition] = useState(normalizedInitialDefinition);
+  const [advancedJson, setAdvancedJson] = useState(() => JSON.stringify(normalizedInitialDefinition, null, 2));
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
@@ -50,10 +52,42 @@ export function FormDefinitionEditor({ initialDefinition, mode }: FormDefinition
     }));
   };
 
+  const duplicateField = (name: string) => {
+    setDefinition((current) => {
+      const source = current.fields.find((field) => field.name === name);
+      if (!source) return current;
+
+      const nextOrder = current.fields.length + 1;
+      const field = {
+        ...source,
+        name: createUniqueFieldName(`${source.name}_copy`, current.fields),
+        label: `${source.label} Copy`,
+        order: nextOrder,
+      };
+
+      return syncJson({ ...current, fields: normalizeFieldOrder([...current.fields, field]) });
+    });
+  };
+
+  const moveField = (name: string, direction: 'up' | 'down') => {
+    setDefinition((current) => {
+      const fields = normalizeFieldOrder(current.fields);
+      const index = fields.findIndex((field) => field.name === name);
+      const targetIndex = direction === 'up' ? index - 1 : index + 1;
+
+      if (index < 0 || targetIndex < 0 || targetIndex >= fields.length) {
+        return current;
+      }
+
+      [fields[index], fields[targetIndex]] = [fields[targetIndex], fields[index]];
+      return syncJson({ ...current, fields: normalizeFieldOrder(fields) });
+    });
+  };
+
   const applyAdvancedJson = () => {
     setError('');
     try {
-      setDefinition(JSON.parse(advancedJson) as FormDefinition);
+      setDefinition(syncJson(normalizeFormDefinition(JSON.parse(advancedJson) as FormDefinition)));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Invalid JSON.');
     }
@@ -69,6 +103,8 @@ export function FormDefinitionEditor({ initialDefinition, mode }: FormDefinition
         ...definition,
         id: definition.id || definition.formDefinitionId,
         formDefinitionId: definition.formDefinitionId || definition.id,
+        fields: normalizeFieldOrder(definition.fields),
+        notificationEmails: definition.notificationEmails.map((email) => email.trim()).filter(Boolean),
         updatedAt: new Date().toISOString(),
       };
       const url = mode === 'create'
@@ -85,7 +121,7 @@ export function FormDefinitionEditor({ initialDefinition, mode }: FormDefinition
         throw new Error(data?.message || 'Unable to save form definition.');
       }
 
-      const saved = (await response.json()) as FormDefinition;
+      const saved = normalizeFormDefinition((await response.json()) as FormDefinition);
       setDefinition(syncJson(saved));
       setMessage('Form definition saved.');
       router.replace(`/admin/forms/${encodeURIComponent(saved.formDefinitionId)}`);
@@ -133,6 +169,11 @@ export function FormDefinitionEditor({ initialDefinition, mode }: FormDefinition
             </select>
           </label>
           <TextField label="Redirect URL" value={definition.redirectUrl} onChange={(value) => update('redirectUrl', value)} />
+          <TextField
+            label="Notification Emails"
+            value={definition.notificationEmails.join(', ')}
+            onChange={(value) => update('notificationEmails', splitCommaList(value))}
+          />
           <label className="flex items-center gap-2 pt-7">
             <input
               type="checkbox"
@@ -153,6 +194,80 @@ export function FormDefinitionEditor({ initialDefinition, mode }: FormDefinition
       </section>
 
       <section className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
+        <h2 className="text-base font-bold text-neutral-950">Submit Settings</h2>
+        <div className="mt-4 grid gap-4 md:grid-cols-3">
+          <Checkbox
+            label="Send Notifications"
+            checked={definition.notifications.enabled}
+            onChange={(checked) => update('notifications', { ...definition.notifications, enabled: checked })}
+          />
+          <TextField
+            label="Reply-To Field"
+            value={definition.notifications.replyToField}
+            onChange={(value) => update('notifications', { ...definition.notifications, replyToField: value })}
+          />
+          <TextField
+            label="Subject Template"
+            value={definition.notifications.subjectTemplate}
+            onChange={(value) => update('notifications', { ...definition.notifications, subjectTemplate: value })}
+          />
+        </div>
+
+        <div className="mt-5 grid gap-4 md:grid-cols-2">
+          <div className="rounded-md border border-neutral-200 bg-neutral-50 p-4">
+            <h3 className="text-sm font-bold text-neutral-950">Spam Protection</h3>
+            <div className="mt-3 space-y-3">
+              <TextField
+                label="Honeypot Field"
+                value={definition.spamProtection.honeypotFieldName}
+                onChange={(value) => update('spamProtection', { ...definition.spamProtection, honeypotFieldName: value })}
+              />
+              <TextField
+                label="Consent Field"
+                value={definition.spamProtection.consentFieldName}
+                onChange={(value) => update('spamProtection', { ...definition.spamProtection, consentFieldName: value })}
+              />
+              <div className="flex flex-wrap gap-4">
+                <Checkbox
+                  label="Reject Honeypot"
+                  checked={definition.spamProtection.rejectWhenHoneypotFilled}
+                  onChange={(checked) => update('spamProtection', { ...definition.spamProtection, rejectWhenHoneypotFilled: checked })}
+                />
+                <Checkbox
+                  label="Require Consent"
+                  checked={definition.spamProtection.requireConsent}
+                  onChange={(checked) => update('spamProtection', { ...definition.spamProtection, requireConsent: checked })}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-md border border-neutral-200 bg-neutral-50 p-4">
+            <h3 className="text-sm font-bold text-neutral-950">Rate Limit</h3>
+            <div className="mt-3 space-y-3">
+              <Checkbox
+                label="Enable Rate Limit"
+                checked={definition.rateLimit.enabled}
+                onChange={(checked) => update('rateLimit', { ...definition.rateLimit, enabled: checked })}
+              />
+              <div className="grid gap-3 sm:grid-cols-2">
+                <TextField
+                  label="Max Submissions"
+                  value={String(definition.rateLimit.maxSubmissions)}
+                  onChange={(value) => update('rateLimit', { ...definition.rateLimit, maxSubmissions: Number.parseInt(value, 10) || 0 })}
+                />
+                <TextField
+                  label="Window Seconds"
+                  value={String(definition.rateLimit.windowSeconds)}
+                  onChange={(value) => update('rateLimit', { ...definition.rateLimit, windowSeconds: Number.parseInt(value, 10) || 0 })}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
         <div className="flex items-center justify-between">
           <h2 className="text-base font-bold text-neutral-950">Fields</h2>
           <button
@@ -165,49 +280,69 @@ export function FormDefinitionEditor({ initialDefinition, mode }: FormDefinition
           </button>
         </div>
         <div className="mt-4 space-y-4">
-          {sortedFields.map((field) => (
+          {sortedFields.map((field, index) => (
             <div key={field.name} className="rounded-md border border-neutral-200 bg-neutral-50 p-4">
-              <div className="grid gap-3 md:grid-cols-6">
+              <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h3 className="text-sm font-bold text-neutral-950">{field.label || field.name}</h3>
+                  <p className="text-xs text-neutral-500">{field.name} - {field.type}</p>
+                </div>
+                <div className="flex items-center gap-1">
+                  <IconButton label="Move up" disabled={index === 0} onClick={() => moveField(field.name, 'up')}>
+                    <ChevronUp className="h-4 w-4" aria-hidden="true" />
+                  </IconButton>
+                  <IconButton label="Move down" disabled={index === sortedFields.length - 1} onClick={() => moveField(field.name, 'down')}>
+                    <ChevronDown className="h-4 w-4" aria-hidden="true" />
+                  </IconButton>
+                  <IconButton label="Duplicate" onClick={() => duplicateField(field.name)}>
+                    <Copy className="h-4 w-4" aria-hidden="true" />
+                  </IconButton>
+                  <IconButton label={`Remove ${field.label}`} danger onClick={() => removeField(field.name)}>
+                    <Trash2 className="h-4 w-4" aria-hidden="true" />
+                  </IconButton>
+                </div>
+              </div>
+
+              <div className="grid gap-3 md:grid-cols-5">
                 <TextField label="Label" value={field.label} onChange={(value) => updateField(field.name, { label: value })} />
-                <TextField label="Name" value={field.name} onChange={(value) => updateField(field.name, { name: value.trim() })} />
-                <label className="block">
-                  <span className="text-sm font-semibold text-neutral-800">Type</span>
-                  <select
-                    value={field.type}
-                    onChange={(event) => updateField(field.name, { type: event.target.value as FormFieldType })}
-                    className="mt-2 h-10 w-full rounded-md border border-neutral-300 px-3 text-sm"
-                  >
-                    {fieldTypes.map((type) => <option key={type} value={type}>{type}</option>)}
-                  </select>
-                </label>
-                <label className="block">
-                  <span className="text-sm font-semibold text-neutral-800">Width</span>
-                  <select
-                    value={field.width}
-                    onChange={(event) => updateField(field.name, { width: event.target.value })}
-                    className="mt-2 h-10 w-full rounded-md border border-neutral-300 px-3 text-sm"
-                  >
-                    {fieldWidths.map((width) => <option key={width} value={width}>{width}</option>)}
-                  </select>
-                </label>
+                <TextField label="Name" value={field.name} onChange={(value) => updateField(field.name, { name: toFieldName(value) })} />
+                <SelectControl
+                  label="Type"
+                  value={field.type}
+                  options={fieldTypes}
+                  onChange={(value) => updateField(field.name, { type: value as FormFieldType })}
+                />
+                <SelectControl
+                  label="Width"
+                  value={field.width}
+                  options={fieldWidths}
+                  onChange={(value) => updateField(field.name, { width: value })}
+                />
                 <TextField label="Order" value={String(field.order)} onChange={(value) => updateField(field.name, { order: Number(value) || 0 })} />
-                <button
-                  type="button"
-                  onClick={() => removeField(field.name)}
-                  className="mt-7 inline-flex h-10 items-center justify-center rounded-md border border-red-200 bg-white text-red-700 hover:bg-red-50"
-                  aria-label={`Remove ${field.label}`}
-                >
-                  <Trash2 className="h-4 w-4" aria-hidden="true" />
-                </button>
               </div>
               <div className="mt-3 grid gap-3 md:grid-cols-3">
                 <TextField label="Placeholder" value={field.placeholder} onChange={(value) => updateField(field.name, { placeholder: value })} />
                 <TextField label="Help Text" value={field.helpText} onChange={(value) => updateField(field.name, { helpText: value })} />
+                <TextField label="Default Value" value={field.defaultValue || ''} onChange={(value) => updateField(field.name, { defaultValue: value })} />
+                <TextField label="Autocomplete" value={field.autocomplete} onChange={(value) => updateField(field.name, { autocomplete: value })} />
                 <TextField
                   label="Options"
                   value={(field.options ?? []).map((option) => `${option.value}:${option.label}`).join(', ')}
                   onChange={(value) => updateField(field.name, { options: parseOptions(value) })}
                 />
+                <TextField
+                  label="Attributes"
+                  value={formatAttributes(field.attributes)}
+                  onChange={(value) => updateField(field.name, { attributes: parseAttributes(value) })}
+                />
+              </div>
+              <div className="mt-3 grid gap-3 md:grid-cols-4">
+                <TextField label="Min Length" value={String(field.validation.minLength ?? '')} onChange={(value) => updateField(field.name, { validation: { ...field.validation, minLength: parseOptionalNumber(value) } })} />
+                <TextField label="Max Length" value={String(field.validation.maxLength ?? '')} onChange={(value) => updateField(field.name, { validation: { ...field.validation, maxLength: parseOptionalNumber(value) } })} />
+                <TextField label="Min" value={String(field.validation.min ?? '')} onChange={(value) => updateField(field.name, { validation: { ...field.validation, min: parseOptionalNumber(value) } })} />
+                <TextField label="Max" value={String(field.validation.max ?? '')} onChange={(value) => updateField(field.name, { validation: { ...field.validation, max: parseOptionalNumber(value) } })} />
+                <TextField label="Pattern" value={field.validation.pattern} onChange={(value) => updateField(field.name, { validation: { ...field.validation, pattern: value } })} />
+                <TextField label="Validation Message" value={field.validation.message} onChange={(value) => updateField(field.name, { validation: { ...field.validation, message: value } })} />
               </div>
               <div className="mt-3 flex flex-wrap gap-4">
                 <Checkbox label="Required" checked={field.required} onChange={(checked) => updateField(field.name, { required: checked })} />
@@ -242,8 +377,9 @@ export function FormDefinitionEditor({ initialDefinition, mode }: FormDefinition
           type="button"
           onClick={save}
           disabled={saving}
-          className="inline-flex h-10 items-center rounded-md bg-pumpkin-600 px-4 text-sm font-bold text-white hover:bg-pumpkin-700 disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex h-10 items-center gap-2 rounded-md bg-pumpkin-600 px-4 text-sm font-bold text-white hover:bg-pumpkin-700 disabled:cursor-not-allowed disabled:opacity-60"
         >
+          <Save className="h-4 w-4" aria-hidden="true" />
           {saving ? 'Saving...' : 'Save Form'}
         </button>
       </div>
@@ -253,7 +389,7 @@ export function FormDefinitionEditor({ initialDefinition, mode }: FormDefinition
 
 export function createFormDefinition(tenantId: string): FormDefinition {
   const now = new Date().toISOString();
-  return {
+  return normalizeFormDefinition({
     id: 'new-form',
     formDefinitionId: 'new-form',
     tenantId,
@@ -277,6 +413,70 @@ export function createFormDefinition(tenantId: string): FormDefinition {
     isActive: true,
     createdAt: now,
     updatedAt: now,
+  });
+}
+
+function normalizeFormDefinition(definition: FormDefinition): FormDefinition {
+  const now = new Date().toISOString();
+  const defaultNotifications: FormDefinition['notifications'] = {
+    enabled: false,
+    replyToField: 'email',
+    subjectTemplate: '',
+  };
+  const defaultSpamProtection: FormDefinition['spamProtection'] = {
+    honeypotFieldName: 'company',
+    rejectWhenHoneypotFilled: true,
+    requireConsent: false,
+    consentFieldName: 'consent',
+  };
+  const defaultRateLimit: FormDefinition['rateLimit'] = {
+    enabled: false,
+    maxSubmissions: 5,
+    windowSeconds: 3600,
+  };
+
+  return {
+    ...definition,
+    id: definition.id || definition.formDefinitionId || 'new-form',
+    formDefinitionId: definition.formDefinitionId || definition.id || 'new-form',
+    name: definition.name || 'New Form',
+    type: definition.type || 'new_form',
+    description: definition.description || '',
+    fields: normalizeFieldOrder((definition.fields || []).map(normalizeField)),
+    submitButtonText: definition.submitButtonText || 'Submit',
+    successMessage: definition.successMessage || 'Thanks, your message was sent.',
+    submitBehavior: definition.submitBehavior || 'message',
+    redirectUrl: definition.redirectUrl || '',
+    notificationEmails: definition.notificationEmails || [],
+    notifications: { ...defaultNotifications, ...definition.notifications },
+    spamProtection: { ...defaultSpamProtection, ...definition.spamProtection },
+    rateLimit: { ...defaultRateLimit, ...definition.rateLimit },
+    isActive: definition.isActive ?? true,
+    createdAt: definition.createdAt || now,
+    updatedAt: definition.updatedAt || now,
+  };
+}
+
+function normalizeField(field: FormFieldDefinition): FormFieldDefinition {
+  const defaultValidation: FormFieldDefinition['validation'] = {
+    pattern: '',
+    message: '',
+  };
+
+  return {
+    ...field,
+    name: toFieldName(field.name || field.label || 'field'),
+    label: field.label || toTitle(field.name || 'field'),
+    type: field.type || 'text',
+    required: field.required ?? false,
+    placeholder: field.placeholder || '',
+    helpText: field.helpText || '',
+    autocomplete: field.autocomplete || '',
+    order: field.order || 0,
+    hidden: field.hidden ?? field.type === 'hidden',
+    width: field.width || 'full',
+    validation: { ...defaultValidation, ...field.validation },
+    attributes: field.attributes || {},
   };
 }
 
@@ -321,6 +521,31 @@ function TextField({
   );
 }
 
+function SelectControl({
+  label,
+  onChange,
+  options,
+  value,
+}: {
+  label: string;
+  onChange: (value: string) => void;
+  options: readonly string[];
+  value: string;
+}) {
+  return (
+    <label className="block">
+      <span className="text-sm font-semibold text-neutral-800">{label}</span>
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="mt-2 h-10 w-full rounded-md border border-neutral-300 px-3 text-sm"
+      >
+        {options.map((option) => <option key={option} value={option}>{option}</option>)}
+      </select>
+    </label>
+  );
+}
+
 function Checkbox({
   label,
   checked,
@@ -338,6 +563,36 @@ function Checkbox({
   );
 }
 
+function IconButton({
+  children,
+  danger,
+  disabled,
+  label,
+  onClick,
+}: {
+  children: ReactNode;
+  danger?: boolean;
+  disabled?: boolean;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      title={label}
+      aria-label={label}
+      className={[
+        'inline-flex h-9 w-9 items-center justify-center rounded-md border bg-white disabled:cursor-not-allowed disabled:opacity-35',
+        danger ? 'border-red-200 text-red-600 hover:bg-red-50' : 'border-neutral-200 text-neutral-600 hover:bg-neutral-50 hover:text-neutral-950',
+      ].join(' ')}
+    >
+      {children}
+    </button>
+  );
+}
+
 function parseOptions(value: string) {
   return value
     .split(',')
@@ -351,6 +606,65 @@ function parseOptions(value: string) {
         label: (labelPart || valuePart).trim(),
       };
     });
+}
+
+function parseAttributes(value: string) {
+  return value
+    .split(',')
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .reduce<Record<string, string>>((attributes, part) => {
+      const [key, ...valueParts] = part.split(':');
+      const attributeKey = key.trim();
+      if (!attributeKey) return attributes;
+
+      attributes[attributeKey] = valueParts.join(':').trim();
+      return attributes;
+    }, {});
+}
+
+function formatAttributes(attributes: Record<string, string>) {
+  return Object.entries(attributes || {})
+    .map(([key, value]) => `${key}:${value}`)
+    .join(', ');
+}
+
+function splitCommaList(value: string) {
+  return value.split(',').map((item) => item.trim()).filter(Boolean);
+}
+
+function normalizeFieldOrder(fields: FormFieldDefinition[]) {
+  return [...fields]
+    .sort((a, b) => a.order - b.order)
+    .map((field, index) => ({ ...field, order: index + 1 }));
+}
+
+function createUniqueFieldName(baseName: string, fields: FormFieldDefinition[]) {
+  const existingNames = new Set(fields.map((field) => field.name));
+  const normalizedBase = toFieldName(baseName) || 'field';
+  let name = normalizedBase;
+  let index = 2;
+
+  while (existingNames.has(name)) {
+    name = `${normalizedBase}_${index}`;
+    index += 1;
+  }
+
+  return name;
+}
+
+function toFieldName(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+}
+
+function parseOptionalNumber(value: string) {
+  if (!value.trim()) return undefined;
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) ? parsed : undefined;
 }
 
 function toTitle(value: string) {
