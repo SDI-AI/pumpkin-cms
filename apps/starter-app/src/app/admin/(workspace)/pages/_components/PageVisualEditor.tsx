@@ -3,9 +3,10 @@
 import { useMemo, useState } from 'react';
 import type { Dispatch, ReactNode, SetStateAction } from 'react';
 import { useRouter } from 'next/navigation';
-import { Check, Code2, Eye, Save } from 'lucide-react';
+import { Check, Code2, Eye, Pencil, Plus, Save, Trash2 } from 'lucide-react';
 import type { IHtmlBlock, Page } from 'pumpkin-ts-models';
 import { ContentBlocksEditor } from '@/components/blocks';
+import { StructuredDataModal } from './StructuredDataModal';
 
 interface PageVisualEditorProps {
   initialPage: Page;
@@ -38,6 +39,11 @@ export function PageVisualEditor({ initialPage, mode, originalSlug }: PageVisual
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [structuredDataModal, setStructuredDataModal] = useState({
+    isOpen: false,
+    index: -1,
+    value: '',
+  });
 
   const blockTypes = useMemo(
     () => Array.from(new Set(page.ContentData.ContentBlocks.map((block) => block.type))),
@@ -259,10 +265,145 @@ export function PageVisualEditor({ initialPage, mode, originalSlug }: PageVisual
                 <TextField label="Robots" value={page.seo.robots} onChange={(value) => updateField('seo.robots', value)} />
               </div>
               <TextField label="Keywords" value={page.seo.keywords.join(', ')} onChange={(value) => updateField('seo.keywords', splitCommaList(value))} />
-              <div className="grid gap-4 md:grid-cols-2">
-                <TextField label="Open Graph Image" value={page.seo.openGraph['og:image']} onChange={(value) => updateField('seo.openGraph.og:image', value)} />
-                <TextField label="Twitter Image" value={page.seo.twitterCard['twitter:image']} onChange={(value) => updateField('seo.twitterCard.twitter:image', value)} />
-              </div>
+
+              <SeoPanel title="Alternate URLs">
+                <div className="space-y-2">
+                  {page.seo.alternateUrls.length === 0 ? (
+                    <EmptyState text="No alternate URLs added." />
+                  ) : (
+                    page.seo.alternateUrls.map((alternateUrl, index) => (
+                      <div key={`${alternateUrl.hrefLang}-${index}`} className="grid gap-2 rounded-md border border-neutral-200 bg-neutral-50 p-3 md:grid-cols-[120px_minmax(0,1fr)_auto]">
+                        <TextField
+                          label="Href Lang"
+                          value={alternateUrl.hrefLang}
+                          onChange={(value) => {
+                            const alternateUrls = [...page.seo.alternateUrls];
+                            alternateUrls[index] = { ...alternateUrls[index], hrefLang: value };
+                            updateField('seo.alternateUrls', alternateUrls);
+                          }}
+                        />
+                        <TextField
+                          label="Href"
+                          value={alternateUrl.href}
+                          onChange={(value) => {
+                            const alternateUrls = [...page.seo.alternateUrls];
+                            alternateUrls[index] = { ...alternateUrls[index], href: value };
+                            updateField('seo.alternateUrls', alternateUrls);
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => updateField('seo.alternateUrls', page.seo.alternateUrls.filter((_, alternateIndex) => alternateIndex !== index))}
+                          className="mt-5 inline-flex h-10 w-10 items-center justify-center rounded-md text-red-500 hover:bg-red-50 hover:text-red-700"
+                          aria-label="Remove alternate URL"
+                          title="Remove alternate URL"
+                        >
+                          <Trash2 className="h-4 w-4" aria-hidden="true" />
+                        </button>
+                      </div>
+                    ))
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => updateField('seo.alternateUrls', [...page.seo.alternateUrls, { hrefLang: 'en-US', href: '' }])}
+                    className="inline-flex h-9 items-center gap-2 rounded-md border border-neutral-300 bg-white px-3 text-sm font-semibold text-neutral-800 hover:bg-neutral-50"
+                  >
+                    <Plus className="h-4 w-4" aria-hidden="true" />
+                    <span>Add Alternate URL</span>
+                  </button>
+                </div>
+              </SeoPanel>
+
+              <SeoPanel title="Open Graph">
+                <div className="space-y-4">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <TextField label="OG Title" value={page.seo.openGraph['og:title']} onChange={(value) => updateField('seo.openGraph.og:title', value)} />
+                    <TextField label="OG Type" value={page.seo.openGraph['og:type']} onChange={(value) => updateField('seo.openGraph.og:type', value)} />
+                  </div>
+                  <TextAreaField label="OG Description" value={page.seo.openGraph['og:description']} onChange={(value) => updateField('seo.openGraph.og:description', value)} rows={2} />
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <TextField label="OG URL" value={page.seo.openGraph['og:url']} onChange={(value) => updateField('seo.openGraph.og:url', value)} />
+                    <TextField label="OG Image" value={page.seo.openGraph['og:image']} onChange={(value) => updateField('seo.openGraph.og:image', value)} />
+                    <TextField label="OG Image Alt" value={page.seo.openGraph['og:image:alt']} onChange={(value) => updateField('seo.openGraph.og:image:alt', value)} />
+                    <TextField label="OG Site Name" value={page.seo.openGraph['og:site_name']} onChange={(value) => updateField('seo.openGraph.og:site_name', value)} />
+                    <TextField label="OG Locale" value={page.seo.openGraph['og:locale']} onChange={(value) => updateField('seo.openGraph.og:locale', value)} />
+                  </div>
+                </div>
+              </SeoPanel>
+
+              <SeoPanel title="Twitter Card">
+                <div className="space-y-4">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <SelectField
+                      label="Card Type"
+                      value={page.seo.twitterCard['twitter:card']}
+                      onChange={(value) => updateField('seo.twitterCard.twitter:card', value)}
+                      options={['summary', 'summary_large_image', 'app', 'player']}
+                    />
+                    <TextField label="Twitter Image" value={page.seo.twitterCard['twitter:image']} onChange={(value) => updateField('seo.twitterCard.twitter:image', value)} />
+                  </div>
+                  <TextField label="Twitter Title" value={page.seo.twitterCard['twitter:title']} onChange={(value) => updateField('seo.twitterCard.twitter:title', value)} />
+                  <TextAreaField label="Twitter Description" value={page.seo.twitterCard['twitter:description']} onChange={(value) => updateField('seo.twitterCard.twitter:description', value)} rows={2} />
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <TextField label="Twitter Site" value={page.seo.twitterCard['twitter:site']} onChange={(value) => updateField('seo.twitterCard.twitter:site', value)} />
+                    <TextField label="Twitter Creator" value={page.seo.twitterCard['twitter:creator']} onChange={(value) => updateField('seo.twitterCard.twitter:creator', value)} />
+                  </div>
+                </div>
+              </SeoPanel>
+
+              <SeoPanel
+                title="Structured Data"
+                action={(
+                  <button
+                    type="button"
+                    onClick={() => setStructuredDataModal({ isOpen: true, index: -1, value: '' })}
+                    className="inline-flex h-9 items-center gap-2 rounded-md bg-pumpkin-600 px-3 text-sm font-bold text-white hover:bg-pumpkin-700"
+                  >
+                    <Plus className="h-4 w-4" aria-hidden="true" />
+                    <span>Add Schema</span>
+                  </button>
+                )}
+              >
+                {page.seo.structuredData.length === 0 ? (
+                  <EmptyState text="No schema.org JSON-LD entries added." />
+                ) : (
+                  <div className="space-y-2">
+                    {page.seo.structuredData.map((schema, index) => {
+                      const summary = summarizeSchema(schema);
+
+                      return (
+                        <div key={`${summary.type}-${index}`} className="flex items-center gap-3 rounded-md border border-neutral-200 bg-neutral-50 p-3">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-bold text-neutral-950">{summary.type}</span>
+                              {summary.label && <span className="truncate text-xs text-neutral-500">{summary.label}</span>}
+                            </div>
+                            <p className="mt-1 truncate font-mono text-xs text-neutral-500">{schema}</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setStructuredDataModal({ isOpen: true, index, value: schema })}
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-md text-neutral-600 hover:bg-white hover:text-neutral-950"
+                            aria-label="Edit schema"
+                            title="Edit schema"
+                          >
+                            <Pencil className="h-4 w-4" aria-hidden="true" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => updateField('seo.structuredData', page.seo.structuredData.filter((_, schemaIndex) => schemaIndex !== index))}
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-md text-red-500 hover:bg-red-50 hover:text-red-700"
+                            aria-label="Remove schema"
+                            title="Remove schema"
+                          >
+                            <Trash2 className="h-4 w-4" aria-hidden="true" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </SeoPanel>
             </div>
           </EditorSection>
 
@@ -308,8 +449,59 @@ export function PageVisualEditor({ initialPage, mode, originalSlug }: PageVisual
           </pre>
         </aside>
       </div>
+
+      <StructuredDataModal
+        isOpen={structuredDataModal.isOpen}
+        initialValue={structuredDataModal.value}
+        title={structuredDataModal.index === -1 ? 'Add Structured Data' : 'Edit Structured Data'}
+        onClose={() => setStructuredDataModal({ isOpen: false, index: -1, value: '' })}
+        onSave={(value) => {
+          const structuredData = [...page.seo.structuredData];
+          if (structuredDataModal.index === -1) {
+            structuredData.push(value);
+          } else {
+            structuredData[structuredDataModal.index] = value;
+          }
+          updateField('seo.structuredData', structuredData);
+        }}
+      />
     </div>
   );
+}
+
+function SeoPanel({ action, children, title }: { action?: ReactNode; children: ReactNode; title: string }) {
+  return (
+    <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-4">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <h3 className="text-sm font-bold text-neutral-950">{title}</h3>
+        {action}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function EmptyState({ text }: { text: string }) {
+  return (
+    <div className="rounded-md border border-dashed border-neutral-300 bg-white px-4 py-6 text-center text-sm text-neutral-500">
+      {text}
+    </div>
+  );
+}
+
+function summarizeSchema(schema: string) {
+  try {
+    const parsed = JSON.parse(schema) as Record<string, unknown>;
+    return {
+      type: String(parsed['@type'] || 'JSON-LD'),
+      label: String(parsed.headline || parsed.name || parsed.title || ''),
+    };
+  } catch {
+    return {
+      type: 'Invalid JSON',
+      label: '',
+    };
+  }
 }
 
 function EditorSection({
