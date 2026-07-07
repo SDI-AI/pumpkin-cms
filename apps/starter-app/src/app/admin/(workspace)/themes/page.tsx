@@ -1,8 +1,11 @@
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
+import { requireStarterAdmin } from '@/lib/admin-auth';
 import { getStarterAdminThemes } from '@/lib/starter-admin-themes';
 import { ThemeList } from './_components/ThemeList';
 
 export default async function StarterAdminThemesPage() {
+  requireStarterAdmin();
+
   const themes = await getStarterAdminThemes();
 
   return (

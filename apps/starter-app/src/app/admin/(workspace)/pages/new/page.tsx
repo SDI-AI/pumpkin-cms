@@ -1,4 +1,5 @@
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
+import { requireStarterAdmin } from '@/lib/admin-auth';
 import { createStarterAdminPageDraft } from '@/lib/starter-admin-pages';
 import { loadTenantConfig } from '@/lib/tenant-config';
 import { PageVisualEditor } from '../_components/PageVisualEditor';
@@ -11,6 +12,8 @@ interface StarterAdminNewPagePageProps {
 }
 
 export default function StarterAdminNewPagePage({ searchParams }: StarterAdminNewPagePageProps) {
+  requireStarterAdmin();
+
   const config = loadTenantConfig();
   if (!config) {
     throw new Error('Pumpkin tenant configuration is missing.');

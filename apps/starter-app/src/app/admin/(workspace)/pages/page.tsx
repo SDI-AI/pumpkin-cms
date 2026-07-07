@@ -1,8 +1,11 @@
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
+import { requireStarterAdmin } from '@/lib/admin-auth';
 import { getStarterAdminPages } from '@/lib/starter-admin-pages';
 import { PageListView } from './_components/PageListView';
 
 export default async function StarterAdminPagesPage() {
+  requireStarterAdmin();
+
   const { pages, unavailablePages } = await getStarterAdminPages();
 
   return (

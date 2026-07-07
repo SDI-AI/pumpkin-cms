@@ -1,4 +1,5 @@
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
+import { requireStarterAdmin } from '@/lib/admin-auth';
 import { getStarterAdminTheme } from '@/lib/starter-admin-themes';
 import { ThemeEditor } from '../_components/ThemeEditor';
 
@@ -9,6 +10,8 @@ interface StarterAdminThemeEditPageProps {
 }
 
 export default async function StarterAdminThemeEditPage({ params }: StarterAdminThemeEditPageProps) {
+  requireStarterAdmin();
+
   const theme = await getStarterAdminTheme(params.id);
 
   return (

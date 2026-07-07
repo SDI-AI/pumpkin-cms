@@ -1,7 +1,10 @@
+import { requireStarterAdmin } from '@/lib/admin-auth';
 import { getStarterAdminPages } from '@/lib/starter-admin-pages';
 import { PageFlowMapView } from './_components/PageFlowMapView';
 
 export default async function StarterAdminPageMapPage() {
+  requireStarterAdmin();
+
   const { pages, unavailablePages } = await getStarterAdminPages();
 
   return (

@@ -1,4 +1,5 @@
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
+import { requireStarterAdmin } from '@/lib/admin-auth';
 import { getStarterAdminFormDefinition } from '@/lib/starter-admin-forms';
 import { FormDefinitionEditor } from '../_components/FormDefinitionEditor';
 
@@ -9,6 +10,8 @@ interface StarterAdminFormEditPageProps {
 }
 
 export default async function StarterAdminFormEditPage({ params }: StarterAdminFormEditPageProps) {
+  requireStarterAdmin();
+
   const definition = await getStarterAdminFormDefinition(params.id);
 
   return (

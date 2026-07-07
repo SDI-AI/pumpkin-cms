@@ -1,8 +1,11 @@
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
+import { requireStarterAdmin } from '@/lib/admin-auth';
 import { getStarterAdminApiContext } from '@/lib/starter-admin-api';
 import { ThemeEditor, createTheme } from '../_components/ThemeEditor';
 
 export default function StarterAdminNewThemePage() {
+  requireStarterAdmin();
+
   const { tenantId } = getStarterAdminApiContext();
 
   return (

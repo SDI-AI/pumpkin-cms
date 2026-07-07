@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
+import { requireStarterAdmin } from '@/lib/admin-auth';
 import { getStarterAdminPage } from '@/lib/starter-admin-pages';
 import { PageVisualEditor } from '../_components/PageVisualEditor';
 
@@ -10,6 +11,8 @@ interface StarterAdminPageEditorProps {
 }
 
 export default async function StarterAdminPageEditor({ params }: StarterAdminPageEditorProps) {
+  requireStarterAdmin();
+
   const pageSlug = params.slug.map((segment) => decodeURIComponent(segment)).join('/');
   const page = await getStarterAdminPage(pageSlug);
 
