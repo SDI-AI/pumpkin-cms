@@ -21,6 +21,7 @@ yarn-debug.log*
 yarn-error.log*
 dev.stdout.log
 dev.stderr.log
+starter-dev.*.log
 
 # typescript
 *.tsbuildinfo
