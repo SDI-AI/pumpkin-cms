@@ -47,6 +47,10 @@ public class MediaAssetUploader
         var assetId = Guid.NewGuid().ToString("N");
         var cleanFileName = Path.GetFileName(request.FileName);
         var blobPath = _settings.BuildTenantMediaPath(request.TenantId, assetId, cleanFileName, createdAt);
+        var publicUrl = _settings.BuildMediaPublicUrl(blobPath);
+        if (string.IsNullOrWhiteSpace(publicUrl))
+            throw new InvalidOperationException("AssetStorage:AzureBlob:PublicBaseUrl or MediaPublicBaseUrl is required to create media asset public URLs.");
+
         var contentType = string.IsNullOrWhiteSpace(request.ContentType)
             ? ResolveContentType(cleanFileName)
             : request.ContentType;
@@ -78,7 +82,7 @@ public class MediaAssetUploader
             FileName = cleanFileName,
             OriginalFileName = cleanFileName,
             BlobPath = blobPath,
-            PublicUrl = _settings.BuildMediaPublicUrl(blobPath),
+            PublicUrl = publicUrl,
             ContentType = contentType,
             SizeBytes = request.SizeBytes,
             AltText = request.AltText,

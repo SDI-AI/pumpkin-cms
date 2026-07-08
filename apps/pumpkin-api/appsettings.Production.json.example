@@ -26,7 +26,7 @@
   "AssetStorage": {
     "Provider": "AzureBlob",
     "ThemePathTemplate": "tenants/{tenantId}/themes/{themeId}/{version}",
-    "MediaPathTemplate": "tenants/{tenantId}/media/{yyyy}/{mm}/{assetId}-{fileName}",
+    "MediaPathTemplate": "tenants/{tenantId}/media/{assetId}/{fileName}",
     "MaxThemePackageBytes": 52428800,
     "MaxMediaAssetBytes": 26214400,
     "AzureBlob": {

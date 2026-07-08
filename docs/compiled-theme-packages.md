@@ -86,7 +86,7 @@ Media files use the same storage account with a separate container:
 
 ```text
 pumpkin-media/
-  tenants/{tenantId}/media/{yyyy}/{mm}/{assetId}-{fileName}
+  tenants/{tenantId}/media/{assetId}/{fileName}
 ```
 
 The admin API can return a media target path for upload flows:
