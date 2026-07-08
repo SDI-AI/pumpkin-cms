@@ -3,9 +3,10 @@
 import { useMemo, useState } from 'react';
 import type { Dispatch, ReactNode, SetStateAction } from 'react';
 import { useRouter } from 'next/navigation';
-import { Check, Code2, Eye, Pencil, Plus, Save, Trash2 } from 'lucide-react';
-import type { IHtmlBlock, Page } from 'pumpkin-ts-models';
+import { Check, Code2, Eye, Image as ImageIcon, Pencil, Plus, Save, Trash2 } from 'lucide-react';
+import type { IHtmlBlock, MediaAsset, Page } from 'pumpkin-ts-models';
 import { ContentBlocksEditor } from '@/components/blocks';
+import { MediaPickerDialog } from '@/components/admin/MediaPickerDialog';
 import { StructuredDataModal } from './StructuredDataModal';
 
 interface PageVisualEditorProps {
@@ -323,7 +324,17 @@ export function PageVisualEditor({ initialPage, mode, originalSlug }: PageVisual
                   <TextAreaField label="OG Description" value={page.seo.openGraph['og:description']} onChange={(value) => updateField('seo.openGraph.og:description', value)} rows={2} />
                   <div className="grid gap-4 md:grid-cols-2">
                     <TextField label="OG URL" value={page.seo.openGraph['og:url']} onChange={(value) => updateField('seo.openGraph.og:url', value)} />
-                    <TextField label="OG Image" value={page.seo.openGraph['og:image']} onChange={(value) => updateField('seo.openGraph.og:image', value)} />
+                    <MediaTextField
+                      label="OG Image"
+                      value={page.seo.openGraph['og:image']}
+                      onChange={(value) => updateField('seo.openGraph.og:image', value)}
+                      onSelect={(asset) => {
+                        updateField('seo.openGraph.og:image', asset.publicUrl);
+                        if (!page.seo.openGraph['og:image:alt']) {
+                          updateField('seo.openGraph.og:image:alt', mediaAlt(asset));
+                        }
+                      }}
+                    />
                     <TextField label="OG Image Alt" value={page.seo.openGraph['og:image:alt']} onChange={(value) => updateField('seo.openGraph.og:image:alt', value)} />
                     <TextField label="OG Site Name" value={page.seo.openGraph['og:site_name']} onChange={(value) => updateField('seo.openGraph.og:site_name', value)} />
                     <TextField label="OG Locale" value={page.seo.openGraph['og:locale']} onChange={(value) => updateField('seo.openGraph.og:locale', value)} />
@@ -340,7 +351,7 @@ export function PageVisualEditor({ initialPage, mode, originalSlug }: PageVisual
                       onChange={(value) => updateField('seo.twitterCard.twitter:card', value)}
                       options={['summary', 'summary_large_image', 'app', 'player']}
                     />
-                    <TextField label="Twitter Image" value={page.seo.twitterCard['twitter:image']} onChange={(value) => updateField('seo.twitterCard.twitter:image', value)} />
+                    <MediaTextField label="Twitter Image" value={page.seo.twitterCard['twitter:image']} onChange={(value) => updateField('seo.twitterCard.twitter:image', value)} />
                   </div>
                   <TextField label="Twitter Title" value={page.seo.twitterCard['twitter:title']} onChange={(value) => updateField('seo.twitterCard.twitter:title', value)} />
                   <TextAreaField label="Twitter Description" value={page.seo.twitterCard['twitter:description']} onChange={(value) => updateField('seo.twitterCard.twitter:description', value)} rows={2} />
@@ -559,6 +570,62 @@ function TextField({
       />
     </label>
   );
+}
+
+function MediaTextField({
+  label,
+  onChange,
+  onSelect,
+  value,
+}: {
+  label: string;
+  onChange: (value: string) => void;
+  onSelect?: (asset: MediaAsset) => void;
+  value: string;
+}) {
+  const [pickerOpen, setPickerOpen] = useState(false);
+
+  const selectAsset = (asset: MediaAsset) => {
+    if (onSelect) {
+      onSelect(asset);
+    } else {
+      onChange(asset.publicUrl);
+    }
+    setPickerOpen(false);
+  };
+
+  return (
+    <label className="block">
+      <span className="mb-1 block text-xs font-bold uppercase tracking-wide text-neutral-600">{label}</span>
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={value || ''}
+          onChange={(event) => onChange(event.target.value)}
+          className="h-10 min-w-0 flex-1 rounded-md border border-neutral-300 px-3 text-sm outline-none focus:border-pumpkin-500 focus:ring-2 focus:ring-pumpkin-100"
+        />
+        <button
+          type="button"
+          onClick={() => setPickerOpen(true)}
+          className="inline-flex h-10 shrink-0 items-center gap-2 rounded-md border border-neutral-300 bg-white px-3 text-sm font-semibold text-neutral-800 hover:bg-neutral-50"
+        >
+          <ImageIcon className="h-4 w-4" aria-hidden="true" />
+          <span>Media</span>
+        </button>
+      </div>
+      {pickerOpen && (
+        <MediaPickerDialog
+          onClose={() => setPickerOpen(false)}
+          onSelect={selectAsset}
+          title={label}
+        />
+      )}
+    </label>
+  );
+}
+
+function mediaAlt(asset: MediaAsset) {
+  return asset.altText || asset.caption || asset.fileName;
 }
 
 function TextAreaField({
