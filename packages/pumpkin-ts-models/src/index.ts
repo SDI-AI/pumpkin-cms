@@ -156,6 +156,7 @@ export type {
   ThemeSpacing,
   ThemeBorders,
   ThemeShadows,
+  ThemeCompiledAssets,
   BlockStyleMap,
   MenuItem
 } from './models/Theme';

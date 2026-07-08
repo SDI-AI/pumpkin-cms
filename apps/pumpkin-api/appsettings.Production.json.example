@@ -22,5 +22,20 @@
       "MaxRetryWaitTimeOnRateLimitedRequests": 30,
       "PreferredRegions": ""
     }
+  },
+  "AssetStorage": {
+    "Provider": "AzureBlob",
+    "ThemePathTemplate": "tenants/{tenantId}/themes/{themeId}/{version}",
+    "MediaPathTemplate": "tenants/{tenantId}/media/{yyyy}/{mm}/{assetId}-{fileName}",
+    "AzureBlob": {
+      "ConnectionString": "",
+      "AccountName": "USE-AZURE-STORAGE-ACCOUNT-NAME",
+      "ThemesContainerName": "pumpkin-themes",
+      "MediaContainerName": "pumpkin-media",
+      "PublicBaseUrl": "https://USE-STORAGE-ACCOUNT.blob.core.windows.net",
+      "ThemesPublicBaseUrl": "",
+      "MediaPublicBaseUrl": "",
+      "UseManagedIdentity": true
+    }
   }
 }

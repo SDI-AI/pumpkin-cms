@@ -8,6 +8,7 @@ using System.Security.Claims;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Cors.Infrastructure;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -72,6 +73,10 @@ builder.Services.Configure<CosmosDbSettings>(
 // Configure MongoDB settings
 builder.Services.Configure<MongoDbSettings>(
     builder.Configuration.GetSection($"{DatabaseSettings.SectionName}:MongoDb"));
+
+// Configure tenant-scoped theme and media asset storage
+builder.Services.Configure<AssetStorageSettings>(
+    builder.Configuration.GetSection(AssetStorageSettings.SectionName));
 
 // Configure JWT authentication
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -1456,6 +1461,90 @@ app.MapGet("/api/admin/themes/{tenantId}/active",
     .WithName("GetActiveThemeAdmin")
     .WithSummary("Get the active theme for a tenant (admin)")
     .WithDescription("Retrieves the active theme for a tenant. Requires JWT authentication.");
+
+// Admin: Get tenant-scoped theme storage target paths
+app.MapGet("/api/admin/themes/{tenantId}/{themeId}/storage-target",
+    (IOptions<AssetStorageSettings> assetStorageOptions, string tenantId, string themeId, int? version, HttpContext context) =>
+    {
+        if (context.User?.Identity?.IsAuthenticated != true)
+            return Results.Unauthorized();
+
+        var userTenantId = context.User.FindFirst("tenantId")?.Value;
+        var userRole = context.User.FindFirst(ClaimTypes.Role)?.Value;
+
+        if (string.IsNullOrEmpty(userTenantId))
+            return Results.BadRequest("User tenant ID not found in token");
+
+        if (tenantId != userTenantId && userRole != "SuperAdmin")
+            return Results.Forbid();
+
+        var settings = assetStorageOptions.Value;
+        var tenantThemePath = settings.BuildTenantThemePath(tenantId, themeId, (version ?? 1).ToString());
+
+        return Results.Ok(new
+        {
+            provider = settings.Provider,
+            containerName = settings.AzureBlob.ThemesContainerName,
+            publicBaseUrl = string.IsNullOrWhiteSpace(settings.AzureBlob.ThemesPublicBaseUrl)
+                ? settings.AzureBlob.PublicBaseUrl
+                : settings.AzureBlob.ThemesPublicBaseUrl,
+            tenantThemePath,
+            cssBlobPath = $"{tenantThemePath}/theme.css",
+            manifestBlobPath = $"{tenantThemePath}/theme-manifest.json",
+            packageBlobPath = $"{tenantThemePath}/theme-package.zip",
+            assetsBlobPath = $"{tenantThemePath}/assets/",
+            cssUrl = settings.BuildThemePublicUrl(tenantThemePath, "theme.css"),
+            manifestUrl = settings.BuildThemePublicUrl(tenantThemePath, "theme-manifest.json"),
+            packageUrl = settings.BuildThemePublicUrl(tenantThemePath, "theme-package.zip"),
+            assetsBaseUrl = settings.BuildThemePublicUrl(tenantThemePath, "assets/")
+        });
+    })
+    .RequireAuthorization("TenantContentOwner")
+    .WithTags("Admin - Themes")
+    .WithName("GetThemeStorageTarget")
+    .WithSummary("Get tenant-scoped storage target paths for a compiled theme")
+    .WithDescription("Returns safe blob paths and public URLs for a tenant theme package. Storage credentials are never returned.");
+
+// Admin: Get tenant-scoped media storage target paths
+app.MapGet("/api/admin/media/{tenantId}/storage-target",
+    (IOptions<AssetStorageSettings> assetStorageOptions, string tenantId, string fileName, HttpContext context) =>
+    {
+        if (context.User?.Identity?.IsAuthenticated != true)
+            return Results.Unauthorized();
+
+        var userTenantId = context.User.FindFirst("tenantId")?.Value;
+        var userRole = context.User.FindFirst(ClaimTypes.Role)?.Value;
+
+        if (string.IsNullOrEmpty(userTenantId))
+            return Results.BadRequest("User tenant ID not found in token");
+
+        if (tenantId != userTenantId && userRole != "SuperAdmin")
+            return Results.Forbid();
+
+        if (string.IsNullOrWhiteSpace(fileName))
+            return Results.BadRequest("File name is required");
+
+        var settings = assetStorageOptions.Value;
+        var assetId = Guid.NewGuid().ToString("N");
+        var mediaPath = settings.BuildTenantMediaPath(tenantId, assetId, Path.GetFileName(fileName), DateTimeOffset.UtcNow);
+
+        return Results.Ok(new
+        {
+            provider = settings.Provider,
+            containerName = settings.AzureBlob.MediaContainerName,
+            publicBaseUrl = string.IsNullOrWhiteSpace(settings.AzureBlob.MediaPublicBaseUrl)
+                ? settings.AzureBlob.PublicBaseUrl
+                : settings.AzureBlob.MediaPublicBaseUrl,
+            assetId,
+            blobPath = mediaPath,
+            publicUrl = settings.BuildMediaPublicUrl(mediaPath)
+        });
+    })
+    .RequireAuthorization("TenantContentOwner")
+    .WithTags("Admin - Media")
+    .WithName("GetMediaStorageTarget")
+    .WithSummary("Get tenant-scoped storage target path for a media asset")
+    .WithDescription("Returns a safe blob path and public URL for a tenant media upload. Storage credentials are never returned.");
 
 // Admin: Get a specific theme by ID
 app.MapGet("/api/admin/themes/{tenantId}/{themeId}",
