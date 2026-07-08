@@ -1,3 +1,4 @@
+using Azure;
 using Azure.Identity;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
@@ -95,6 +96,31 @@ public class MediaAssetUploader
             CreatedAt = createdAt.UtcDateTime,
             UpdatedAt = createdAt.UtcDateTime
         };
+    }
+
+    public async Task<bool> DeleteAsync(string blobPath, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(blobPath))
+        {
+            _logger.LogWarning("Media blob delete skipped because blob path is empty.");
+            return false;
+        }
+
+        var container = BuildMediaContainerClient();
+        var blobClient = container.GetBlobClient(blobPath.Trim('/'));
+
+        try
+        {
+            var response = await blobClient.DeleteIfExistsAsync(DeleteSnapshotsOption.IncludeSnapshots, cancellationToken: cancellationToken);
+
+            _logger.LogInformation("Media blob delete attempted - BlobPath: {BlobPath}, Deleted: {Deleted}", blobPath, response.Value);
+            return response.Value;
+        }
+        catch (RequestFailedException ex) when (ex.Status == StatusCodes.Status404NotFound)
+        {
+            _logger.LogInformation("Media blob delete skipped because the blob or container was not found - BlobPath: {BlobPath}", blobPath);
+            return false;
+        }
     }
 
     private BlobContainerClient BuildMediaContainerClient()

@@ -1808,9 +1808,9 @@ app.MapPut("/api/admin/media/{tenantId}/{mediaAssetId}",
     .WithSummary("Update media asset metadata")
     .WithDescription("Updates editable metadata for a media file. Requires JWT authentication.");
 
-// Admin: Delete media asset metadata
+// Admin: Delete media asset and blob
 app.MapDelete("/api/admin/media/{tenantId}/{mediaAssetId}",
-    async (IDatabaseService databaseService, string tenantId, string mediaAssetId, HttpContext context) =>
+    async (IDatabaseService databaseService, MediaAssetUploader uploader, string tenantId, string mediaAssetId, HttpContext context) =>
     {
         if (context.User?.Identity?.IsAuthenticated != true)
             return Results.Unauthorized();
@@ -1826,9 +1826,22 @@ app.MapDelete("/api/admin/media/{tenantId}/{mediaAssetId}",
 
         try
         {
+            var asset = await databaseService.GetMediaAssetAsync(tenantId, mediaAssetId);
+            if (asset == null)
+                return Results.NotFound("Media asset not found");
+
+            var blobDeleted = await uploader.DeleteAsync(asset.BlobPath, context.RequestAborted);
             var deleted = await databaseService.DeleteMediaAssetAsync(tenantId, mediaAssetId);
             return deleted
-                ? Results.Ok(new { message = "Media asset deleted successfully", tenantId, mediaAssetId })
+                ? Results.Ok(new
+                {
+                    message = blobDeleted
+                        ? "Media asset and blob deleted successfully"
+                        : "Media asset metadata deleted successfully; blob was not found",
+                    tenantId,
+                    mediaAssetId,
+                    blobDeleted
+                })
                 : Results.NotFound("Media asset not found");
         }
         catch (KeyNotFoundException ex)
@@ -1839,8 +1852,8 @@ app.MapDelete("/api/admin/media/{tenantId}/{mediaAssetId}",
     .RequireAuthorization("TenantContentOwner")
     .WithTags("Admin - Media")
     .WithName("DeleteMediaAsset")
-    .WithSummary("Delete media asset metadata")
-    .WithDescription("Deletes metadata for a media file. Blob deletion will be handled by the media upload/delete service phase.");
+    .WithSummary("Delete media asset")
+    .WithDescription("Deletes the media file from tenant asset storage, then deletes its metadata document. Missing blobs are treated as already deleted.");
 
 // Admin: Get a specific theme by ID
 app.MapGet("/api/admin/themes/{tenantId}/{themeId}",

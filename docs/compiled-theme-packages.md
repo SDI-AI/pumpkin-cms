@@ -117,7 +117,7 @@ PUT    /api/admin/media/{tenantId}/{mediaAssetId}
 DELETE /api/admin/media/{tenantId}/{mediaAssetId}
 ```
 
-The `MediaAsset` document stores `blobPath` and `publicUrl`; it does not store file bytes.
+The `MediaAsset` document stores `blobPath` and `publicUrl`; it does not store file bytes. Deleting a media asset removes the blob first, then removes the metadata document. If the blob is already missing, metadata deletion still succeeds.
 
 The upload endpoint accepts multipart form data:
 
