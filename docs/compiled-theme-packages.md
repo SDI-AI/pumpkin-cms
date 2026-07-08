@@ -95,7 +95,7 @@ The admin API can return a media target path for upload flows:
 GET /api/admin/media/{tenantId}/storage-target?fileName=hero.jpg
 ```
 
-Blob Storage holds the file bytes. Cosmos DB should hold media metadata later, such as tenant ID, blob path, public URL, content type, size, alt text, dimensions, folders, tags, and audit fields.
+Blob Storage holds the file bytes. Cosmos DB holds media metadata such as tenant ID, blob path, public URL, content type, size, alt text, dimensions, folders, tags, and audit fields.
 
 ## Media Metadata API
 
@@ -110,6 +110,7 @@ The admin API exposes metadata CRUD:
 
 ```http
 GET    /api/admin/media/{tenantId}?folder=&contentType=
+POST   /api/admin/media/{tenantId}/upload
 POST   /api/admin/media/{tenantId}
 GET    /api/admin/media/{tenantId}/{mediaAssetId}
 PUT    /api/admin/media/{tenantId}/{mediaAssetId}
@@ -117,3 +118,15 @@ DELETE /api/admin/media/{tenantId}/{mediaAssetId}
 ```
 
 The `MediaAsset` document stores `blobPath` and `publicUrl`; it does not store file bytes.
+
+The upload endpoint accepts multipart form data:
+
+```text
+file      required
+folder    optional
+altText   optional
+caption   optional
+tags      optional comma-separated list
+```
+
+The API streams the file to the tenant media container, builds the public URL from `AssetStorage`, and creates the `MediaAsset` document in Cosmos DB. `MaxMediaAssetBytes` controls the upload size limit.

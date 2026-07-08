@@ -20,6 +20,7 @@ public class AssetStorageSettings
     public string MediaPathTemplate { get; set; } = "tenants/{tenantId}/media/{yyyy}/{mm}/{assetId}-{fileName}";
 
     public long MaxThemePackageBytes { get; set; } = 50 * 1024 * 1024;
+    public long MaxMediaAssetBytes { get; set; } = 25 * 1024 * 1024;
 
     public AzureBlobAssetStorageSettings AzureBlob { get; set; } = new();
 

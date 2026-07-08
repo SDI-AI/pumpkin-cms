@@ -127,6 +127,7 @@ builder.Services.AddSingleton<MongoDataConnection>();
 // Register the main database service (singleton for connection reuse)
 builder.Services.AddSingleton<IDatabaseService, DatabaseService>();
 builder.Services.AddScoped<ThemePackageInstaller>();
+builder.Services.AddScoped<MediaAssetUploader>();
 
 var app = builder.Build();
 
@@ -1613,6 +1614,70 @@ app.MapGet("/api/admin/media/{tenantId}/storage-target",
     .WithName("GetMediaStorageTarget")
     .WithSummary("Get tenant-scoped storage target path for a media asset")
     .WithDescription("Returns a safe blob path and public URL for a tenant media upload. Storage credentials are never returned.");
+
+// Admin: Upload media asset and register metadata
+app.MapPost("/api/admin/media/{tenantId}/upload",
+    async (IDatabaseService databaseService, MediaAssetUploader uploader, string tenantId, HttpContext context) =>
+    {
+        if (context.User?.Identity?.IsAuthenticated != true)
+            return Results.Unauthorized();
+
+        var userTenantId = context.User.FindFirst("tenantId")?.Value;
+        var userRole = context.User.FindFirst(ClaimTypes.Role)?.Value;
+
+        if (string.IsNullOrEmpty(userTenantId))
+            return Results.BadRequest("User tenant ID not found in token");
+
+        if (tenantId != userTenantId && userRole != "SuperAdmin")
+            return Results.Forbid();
+
+        if (!context.Request.HasFormContentType)
+            return Results.BadRequest("Media file must be uploaded as multipart/form-data.");
+
+        try
+        {
+            var form = await context.Request.ReadFormAsync(context.RequestAborted);
+            var file = form.Files.GetFile("file") ?? form.Files.FirstOrDefault();
+            if (file == null || file.Length == 0)
+                return Results.BadRequest("A media file is required.");
+
+            var tags = form.TryGetValue("tags", out var tagsValue)
+                ? tagsValue.ToString().Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList()
+                : new List<string>();
+            var userId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
+            var uploadRequest = new MediaAssetUploadRequest
+            {
+                TenantId = tenantId,
+                FileName = file.FileName,
+                ContentType = file.ContentType,
+                SizeBytes = file.Length,
+                Folder = form.TryGetValue("folder", out var folderValue) ? folderValue.ToString() : string.Empty,
+                AltText = form.TryGetValue("altText", out var altTextValue) ? altTextValue.ToString() : string.Empty,
+                Caption = form.TryGetValue("caption", out var captionValue) ? captionValue.ToString() : string.Empty,
+                Tags = tags,
+                UserId = userId
+            };
+
+            await using var fileStream = file.OpenReadStream();
+            var mediaAsset = await uploader.UploadAsync(fileStream, uploadRequest, context.RequestAborted);
+            var created = await databaseService.CreateMediaAssetAsync(tenantId, mediaAsset);
+
+            return Results.Created($"/api/admin/media/{tenantId}/{created.MediaAssetId}", created);
+        }
+        catch (ArgumentException ex)
+        {
+            return Results.BadRequest(ex.Message);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Results.BadRequest(ex.Message);
+        }
+    })
+    .RequireAuthorization("TenantContentOwner")
+    .WithTags("Admin - Media")
+    .WithName("UploadMediaAsset")
+    .WithSummary("Upload a media file")
+    .WithDescription("Uploads a media file to tenant asset storage and creates the media metadata document.");
 
 // Admin: List tenant media assets
 app.MapGet("/api/admin/media/{tenantId}",
