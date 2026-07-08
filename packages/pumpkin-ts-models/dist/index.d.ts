@@ -3,6 +3,7 @@ export type { User, LoginRequest, LoginResponse, UserInfo } from './models/User'
 export { UserRole, userRoleToString, stringToUserRole, isUserRole, userToUserInfo } from './models/User';
 export type { Tenant, ApiKeyMeta, TenantSettings, Features, Contact, Billing, TenantInfo } from './models/Tenant';
 export { tenantToTenantInfo } from './models/Tenant';
+export type { MediaAsset } from './models/MediaAsset';
 export type { FormEntry, FormEntryMetadata, FormEntryStatus } from './models/FormEntry';
 export type { FormDefinition, FormFieldDefinition, FormFieldOption, FormFieldType, FormFieldWidth, FormFieldValidation, FormSubmitBehavior, FormNotificationSettings, FormSpamProtection, FormRateLimit } from './models/FormDefinition';
 export type { Page, PageMetaData, SearchData, ContentData, SeoData, AlternateUrl, OpenGraphData, TwitterCardData, ContentRelationships, NodePosition } from './models/Page';

@@ -32,6 +32,11 @@ export {
   tenantToTenantInfo
 } from './models/Tenant';
 
+// Media models
+export type {
+  MediaAsset
+} from './models/MediaAsset';
+
 // Form Entry models
 export type {
   FormEntry,

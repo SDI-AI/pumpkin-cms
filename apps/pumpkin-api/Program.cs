@@ -1614,6 +1614,169 @@ app.MapGet("/api/admin/media/{tenantId}/storage-target",
     .WithSummary("Get tenant-scoped storage target path for a media asset")
     .WithDescription("Returns a safe blob path and public URL for a tenant media upload. Storage credentials are never returned.");
 
+// Admin: List tenant media assets
+app.MapGet("/api/admin/media/{tenantId}",
+    async (IDatabaseService databaseService, string tenantId, string? folder, string? contentType, HttpContext context) =>
+    {
+        if (context.User?.Identity?.IsAuthenticated != true)
+            return Results.Unauthorized();
+
+        var userTenantId = context.User.FindFirst("tenantId")?.Value;
+        var userRole = context.User.FindFirst(ClaimTypes.Role)?.Value;
+
+        if (string.IsNullOrEmpty(userTenantId))
+            return Results.BadRequest("User tenant ID not found in token");
+
+        if (tenantId != userTenantId && userRole != "SuperAdmin")
+            return Results.Forbid();
+
+        var assets = await databaseService.GetMediaAssetsByTenantAsync(tenantId, folder, contentType);
+        return Results.Ok(new { assets, count = assets.Count, tenantId, folder, contentType });
+    })
+    .RequireAuthorization("TenantContentReader")
+    .WithTags("Admin - Media")
+    .WithName("GetMediaAssetsByTenant")
+    .WithSummary("List media assets for a tenant")
+    .WithDescription("Lists metadata for media files stored in tenant asset storage. Requires JWT authentication.");
+
+// Admin: Register media asset metadata
+app.MapPost("/api/admin/media/{tenantId}",
+    async (IDatabaseService databaseService, string tenantId, MediaAsset mediaAsset, HttpContext context) =>
+    {
+        if (context.User?.Identity?.IsAuthenticated != true)
+            return Results.Unauthorized();
+
+        var userTenantId = context.User.FindFirst("tenantId")?.Value;
+        var userRole = context.User.FindFirst(ClaimTypes.Role)?.Value;
+
+        if (string.IsNullOrEmpty(userTenantId))
+            return Results.BadRequest("User tenant ID not found in token");
+
+        if (tenantId != userTenantId && userRole != "SuperAdmin")
+            return Results.Forbid();
+
+        try
+        {
+            var userId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
+            mediaAsset.CreatedByUserId = string.IsNullOrWhiteSpace(mediaAsset.CreatedByUserId)
+                ? userId
+                : mediaAsset.CreatedByUserId;
+            mediaAsset.UpdatedByUserId = userId;
+
+            var created = await databaseService.CreateMediaAssetAsync(tenantId, mediaAsset);
+            return Results.Created($"/api/admin/media/{tenantId}/{created.MediaAssetId}", created);
+        }
+        catch (ArgumentException ex)
+        {
+            return Results.BadRequest(ex.Message);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Results.Conflict(ex.Message);
+        }
+    })
+    .RequireAuthorization("TenantContentOwner")
+    .WithTags("Admin - Media")
+    .WithName("CreateMediaAsset")
+    .WithSummary("Register media asset metadata")
+    .WithDescription("Creates metadata for a media file already uploaded to tenant asset storage.");
+
+// Admin: Get media asset metadata
+app.MapGet("/api/admin/media/{tenantId}/{mediaAssetId}",
+    async (IDatabaseService databaseService, string tenantId, string mediaAssetId, HttpContext context) =>
+    {
+        if (context.User?.Identity?.IsAuthenticated != true)
+            return Results.Unauthorized();
+
+        var userTenantId = context.User.FindFirst("tenantId")?.Value;
+        var userRole = context.User.FindFirst(ClaimTypes.Role)?.Value;
+
+        if (string.IsNullOrEmpty(userTenantId))
+            return Results.BadRequest("User tenant ID not found in token");
+
+        if (tenantId != userTenantId && userRole != "SuperAdmin")
+            return Results.Forbid();
+
+        var asset = await databaseService.GetMediaAssetAsync(tenantId, mediaAssetId);
+        return asset == null ? Results.NotFound("Media asset not found") : Results.Ok(asset);
+    })
+    .RequireAuthorization("TenantContentReader")
+    .WithTags("Admin - Media")
+    .WithName("GetMediaAsset")
+    .WithSummary("Get media asset metadata")
+    .WithDescription("Retrieves metadata for a media file. Requires JWT authentication.");
+
+// Admin: Update media asset metadata
+app.MapPut("/api/admin/media/{tenantId}/{mediaAssetId}",
+    async (IDatabaseService databaseService, string tenantId, string mediaAssetId, MediaAsset mediaAsset, HttpContext context) =>
+    {
+        if (context.User?.Identity?.IsAuthenticated != true)
+            return Results.Unauthorized();
+
+        var userTenantId = context.User.FindFirst("tenantId")?.Value;
+        var userRole = context.User.FindFirst(ClaimTypes.Role)?.Value;
+
+        if (string.IsNullOrEmpty(userTenantId))
+            return Results.BadRequest("User tenant ID not found in token");
+
+        if (tenantId != userTenantId && userRole != "SuperAdmin")
+            return Results.Forbid();
+
+        try
+        {
+            mediaAsset.UpdatedByUserId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
+            var updated = await databaseService.UpdateMediaAssetAsync(tenantId, mediaAssetId, mediaAsset);
+            return Results.Ok(updated);
+        }
+        catch (ArgumentException ex)
+        {
+            return Results.BadRequest(ex.Message);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return Results.NotFound(ex.Message);
+        }
+    })
+    .RequireAuthorization("TenantContentOwner")
+    .WithTags("Admin - Media")
+    .WithName("UpdateMediaAsset")
+    .WithSummary("Update media asset metadata")
+    .WithDescription("Updates editable metadata for a media file. Requires JWT authentication.");
+
+// Admin: Delete media asset metadata
+app.MapDelete("/api/admin/media/{tenantId}/{mediaAssetId}",
+    async (IDatabaseService databaseService, string tenantId, string mediaAssetId, HttpContext context) =>
+    {
+        if (context.User?.Identity?.IsAuthenticated != true)
+            return Results.Unauthorized();
+
+        var userTenantId = context.User.FindFirst("tenantId")?.Value;
+        var userRole = context.User.FindFirst(ClaimTypes.Role)?.Value;
+
+        if (string.IsNullOrEmpty(userTenantId))
+            return Results.BadRequest("User tenant ID not found in token");
+
+        if (tenantId != userTenantId && userRole != "SuperAdmin")
+            return Results.Forbid();
+
+        try
+        {
+            var deleted = await databaseService.DeleteMediaAssetAsync(tenantId, mediaAssetId);
+            return deleted
+                ? Results.Ok(new { message = "Media asset deleted successfully", tenantId, mediaAssetId })
+                : Results.NotFound("Media asset not found");
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return Results.NotFound(ex.Message);
+        }
+    })
+    .RequireAuthorization("TenantContentOwner")
+    .WithTags("Admin - Media")
+    .WithName("DeleteMediaAsset")
+    .WithSummary("Delete media asset metadata")
+    .WithDescription("Deletes metadata for a media file. Blob deletion will be handled by the media upload/delete service phase.");
+
 // Admin: Get a specific theme by ID
 app.MapGet("/api/admin/themes/{tenantId}/{themeId}",
     async (IDatabaseService databaseService, string tenantId, string themeId, HttpContext context) =>

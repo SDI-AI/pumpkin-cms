@@ -96,3 +96,24 @@ GET /api/admin/media/{tenantId}/storage-target?fileName=hero.jpg
 ```
 
 Blob Storage holds the file bytes. Cosmos DB should hold media metadata later, such as tenant ID, blob path, public URL, content type, size, alt text, dimensions, folders, tags, and audit fields.
+
+## Media Metadata API
+
+Media metadata is stored in Cosmos DB separately from the file bytes:
+
+```text
+Container: MediaAsset
+Partition key: /tenantId
+```
+
+The admin API exposes metadata CRUD:
+
+```http
+GET    /api/admin/media/{tenantId}?folder=&contentType=
+POST   /api/admin/media/{tenantId}
+GET    /api/admin/media/{tenantId}/{mediaAssetId}
+PUT    /api/admin/media/{tenantId}/{mediaAssetId}
+DELETE /api/admin/media/{tenantId}/{mediaAssetId}
+```
+
+The `MediaAsset` document stores `blobPath` and `publicUrl`; it does not store file bytes.
