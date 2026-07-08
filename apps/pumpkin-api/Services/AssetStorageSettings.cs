@@ -19,6 +19,8 @@ public class AssetStorageSettings
     /// </summary>
     public string MediaPathTemplate { get; set; } = "tenants/{tenantId}/media/{yyyy}/{mm}/{assetId}-{fileName}";
 
+    public long MaxThemePackageBytes { get; set; } = 50 * 1024 * 1024;
+
     public AzureBlobAssetStorageSettings AzureBlob { get; set; } = new();
 
     public string BuildTenantThemePath(string tenantId, string themeId, string version)

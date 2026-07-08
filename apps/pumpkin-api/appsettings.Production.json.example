@@ -27,6 +27,7 @@
     "Provider": "AzureBlob",
     "ThemePathTemplate": "tenants/{tenantId}/themes/{themeId}/{version}",
     "MediaPathTemplate": "tenants/{tenantId}/media/{yyyy}/{mm}/{assetId}-{fileName}",
+    "MaxThemePackageBytes": 52428800,
     "AzureBlob": {
       "ConnectionString": "",
       "AccountName": "USE-AZURE-STORAGE-ACCOUNT-NAME",

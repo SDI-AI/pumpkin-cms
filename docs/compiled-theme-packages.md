@@ -13,7 +13,7 @@ Compiled assets live under `theme.compiledAssets`:
   "compiledAssets": {
     "mode": "compiled",
     "cssUrl": "https://cdn.example.com/pumpkin-themes/tenants/tenant-a/themes/modern-clean/1/theme.css",
-    "cssIntegrity": "sha384-...",
+    "cssIntegrity": "sha256-...",
     "assetsBaseUrl": "https://cdn.example.com/pumpkin-themes/tenants/tenant-a/themes/modern-clean/1/assets/",
     "manifestUrl": "https://cdn.example.com/pumpkin-themes/tenants/tenant-a/themes/modern-clean/1/theme-manifest.json",
     "packageUrl": "https://cdn.example.com/pumpkin-themes/tenants/tenant-a/themes/modern-clean/1/theme-package.zip",
@@ -61,7 +61,18 @@ The tenant theme document stores public/CDN URLs, not storage credentials. Azure
 
 ## API Storage Target
 
-The admin API can return the safe target paths for an install flow:
+The admin API can install a compiled theme package:
+
+```http
+POST /api/admin/themes/{tenantId}/install
+Content-Type: multipart/form-data
+
+package=<theme-package.zip>
+```
+
+The installer validates `theme.json` and `theme.css`, uploads the CSS/assets/package to Blob Storage, computes a CSS hash and subresource integrity value, then creates or updates the tenant theme document with `compiledAssets`.
+
+The admin API can also return the safe target paths for external install flows:
 
 ```http
 GET /api/admin/themes/{tenantId}/{themeId}/storage-target?version=1

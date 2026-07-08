@@ -126,6 +126,7 @@ builder.Services.AddSingleton<MongoDataConnection>();
 
 // Register the main database service (singleton for connection reuse)
 builder.Services.AddSingleton<IDatabaseService, DatabaseService>();
+builder.Services.AddScoped<ThemePackageInstaller>();
 
 var app = builder.Build();
 
@@ -1461,6 +1462,73 @@ app.MapGet("/api/admin/themes/{tenantId}/active",
     .WithName("GetActiveThemeAdmin")
     .WithSummary("Get the active theme for a tenant (admin)")
     .WithDescription("Retrieves the active theme for a tenant. Requires JWT authentication.");
+
+// Admin: Install a compiled theme package
+app.MapPost("/api/admin/themes/{tenantId}/install",
+    async (IDatabaseService databaseService, ThemePackageInstaller installer, string tenantId, HttpContext context) =>
+    {
+        if (context.User?.Identity?.IsAuthenticated != true)
+            return Results.Unauthorized();
+
+        var userTenantId = context.User.FindFirst("tenantId")?.Value;
+        var userRole = context.User.FindFirst(ClaimTypes.Role)?.Value;
+
+        if (string.IsNullOrEmpty(userTenantId))
+            return Results.BadRequest("User tenant ID not found in token");
+
+        if (tenantId != userTenantId && userRole != "SuperAdmin")
+            return Results.Forbid();
+
+        if (!context.Request.HasFormContentType)
+            return Results.BadRequest("Theme package must be uploaded as multipart/form-data.");
+
+        try
+        {
+            var form = await context.Request.ReadFormAsync(context.RequestAborted);
+            var packageFile = form.Files.GetFile("package") ?? form.Files.FirstOrDefault();
+
+            if (packageFile == null || packageFile.Length == 0)
+                return Results.BadRequest("A theme package zip file is required.");
+
+            await using var packageStream = packageFile.OpenReadStream();
+            var installResult = await installer.InstallAsync(packageStream, tenantId, context.RequestAborted);
+            var existing = await databaseService.GetThemeAdminAsync(tenantId, installResult.Theme.ThemeId);
+            var saved = existing == null
+                ? await databaseService.CreateThemeAsync(tenantId, installResult.Theme)
+                : await databaseService.UpdateThemeAsync(tenantId, installResult.Theme.ThemeId, installResult.Theme);
+
+            var response = new
+            {
+                created = existing == null,
+                theme = saved,
+                storage = new
+                {
+                    installResult.TenantThemePath,
+                    installResult.CssBlobPath,
+                    installResult.ManifestBlobPath,
+                    installResult.PackageBlobPath,
+                    installResult.AssetBlobPaths
+                }
+            };
+
+            return existing == null
+                ? Results.Created($"/api/admin/themes/{tenantId}/{saved.ThemeId}", response)
+                : Results.Ok(response);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Results.BadRequest(ex.Message);
+        }
+        catch (InvalidDataException)
+        {
+            return Results.BadRequest("Theme package must be a valid zip file.");
+        }
+    })
+    .RequireAuthorization("TenantContentOwner")
+    .WithTags("Admin - Themes")
+    .WithName("InstallCompiledThemePackage")
+    .WithSummary("Install a compiled theme package")
+    .WithDescription("Uploads theme.css/assets to blob storage, computes compiled asset metadata, and creates or updates the tenant theme.");
 
 // Admin: Get tenant-scoped theme storage target paths
 app.MapGet("/api/admin/themes/{tenantId}/{themeId}/storage-target",
