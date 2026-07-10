@@ -1,4 +1,5 @@
 export type { IHtmlBlock, GenericHtmlBlock } from './models/IHtmlBlock';
+export type { ImageAspect, ImageFit, ImagePosition, ImagePresentation } from './models/ImagePresentation';
 export type { User, LoginRequest, LoginResponse, UserInfo } from './models/User';
 export { UserRole, userRoleToString, stringToUserRole, isUserRole, userToUserInfo } from './models/User';
 export type { Tenant, ApiKeyMeta, TenantSettings, Features, Contact, Billing, TenantInfo } from './models/Tenant';

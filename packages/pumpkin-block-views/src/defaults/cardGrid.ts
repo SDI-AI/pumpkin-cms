@@ -6,7 +6,7 @@ export const cardGridDefaults = {
   subtitle: 'text-base text-neutral-600 mt-2',
   grid: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6',
   card: 'bg-white rounded-xl shadow-md border border-neutral-200 overflow-hidden hover:shadow-lg transition-shadow',
-  cardImage: 'w-full h-48 object-cover',
+  cardImage: 'w-full',
   cardBody: 'p-5',
   cardIcon: 'text-2xl mb-2',
   cardTitle: 'text-lg font-semibold text-neutral-900',

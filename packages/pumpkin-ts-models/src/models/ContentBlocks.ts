@@ -1,4 +1,5 @@
 import { IHtmlBlock } from './IHtmlBlock';
+import type { ImageAspect, ImageFit, ImagePosition } from './ImagePresentation';
 
 /**
  * Individual card within a card grid
@@ -20,6 +21,9 @@ export interface CardGridContent {
   title: string;
   subtitle: string;
   layout: string;
+  imageAspect?: ImageAspect;
+  imageFit?: ImageFit;
+  imagePosition?: ImagePosition;
   cards: Card[];
 }
 

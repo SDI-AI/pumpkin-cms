@@ -1,5 +1,11 @@
 // Core interfaces and types
 export type { IHtmlBlock, GenericHtmlBlock } from './models/IHtmlBlock';
+export type {
+  ImageAspect,
+  ImageFit,
+  ImagePosition,
+  ImagePresentation
+} from './models/ImagePresentation';
 
 // User models
 export type {

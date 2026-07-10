@@ -1,6 +1,7 @@
 import React from 'react';
 import type { GalleryBlock } from 'pumpkin-ts-models';
 import { galleryDefaults, type GalleryClassNames } from '../defaults/gallery';
+import { imagePresentationClasses } from '../utils/imagePresentation';
 import { mergeClasses } from '../utils/mergeClasses';
 
 export interface GalleryBlockViewProps {
@@ -24,7 +25,18 @@ export function GalleryBlockView({ block, classNames }: GalleryBlockViewProps) {
         <div className={cx.grid}>
           {content.images.map((img, i) => (
             <div key={i} className={cx.imageWrapper}>
-              <img src={img.src} alt={img.alt || ''} className={cx.image} />
+              <img
+                src={img.src}
+                alt={img.alt || ''}
+                className={[
+                  cx.image,
+                  imagePresentationClasses({
+                    aspect: content.imageAspect || 'square',
+                    fit: content.imageFit || 'cover',
+                    position: content.imagePosition || 'center',
+                  }),
+                ].join(' ')}
+              />
               {img.caption && <div className={cx.caption}>{img.caption}</div>}
             </div>
           ))}

@@ -195,6 +195,7 @@ function HeroFields({ content, update, onChange }: { content: any; update: (k: s
         />
         <Field label="Background Image Alt" value={content.backgroundImageAltText} onChange={v => update('backgroundImageAltText', v)} />
       </div>
+      <ImagePositionControl label="Background Position" value={content.backgroundImagePosition} onChange={v => update('backgroundImagePosition', v)} />
       <div className="grid grid-cols-2 gap-3">
         <MediaField
           label="Main Image URL"
@@ -208,6 +209,14 @@ function HeroFields({ content, update, onChange }: { content: any; update: (k: s
         />
         <Field label="Main Image Alt" value={content.mainImageAltText} onChange={v => update('mainImageAltText', v)} />
       </div>
+      <ImagePresentationControls
+        label="Main Image"
+        aspect={content.mainImageAspect}
+        fit={content.mainImageFit}
+        position={content.mainImagePosition}
+        onChange={(values) => onChange({ ...content, ...values })}
+        prefix="mainImage"
+      />
       <div className="grid grid-cols-2 gap-3">
         <Field label="Button Text" value={content.buttonText} onChange={v => update('buttonText', v)} />
         <Field label="Button Link" value={content.buttonLink} onChange={v => update('buttonLink', v)} />
@@ -245,6 +254,15 @@ function PrimaryCtaFields({ content, update, onChange }: { content: any; update:
           })}
         />
       </div>
+      <ImagePositionControl label="Background Position" value={content.backgroundImagePosition} onChange={v => update('backgroundImagePosition', v)} />
+      <ImagePresentationControls
+        label="Main Image"
+        aspect={content.mainImageAspect}
+        fit={content.mainImageFit}
+        position={content.mainImagePosition}
+        onChange={(values) => onChange({ ...content, ...values })}
+        prefix="mainImage"
+      />
       <Field label="Image Alt" value={content.alt} onChange={v => update('alt', v)} />
     </div>
   )
@@ -281,6 +299,13 @@ function CardGridFields({ content, onChange }: { content: any; onChange: (c: any
           <option value="grid-4">4 Columns</option>
         </select>
       </div>
+      <ImagePresentationControls
+        label="Card Images"
+        aspect={content.imageAspect}
+        fit={content.imageFit}
+        position={content.imagePosition}
+        onChange={(values) => onChange({ ...content, ...values })}
+      />
       <ArrayManager
         label="Cards"
         items={content.cards || []}
@@ -318,6 +343,13 @@ function FaqFields({ content, onChange }: { content: any; onChange: (c: any) => 
     <div className="space-y-3">
       <Field label="Title" value={content.title} onChange={v => update('title', v)} />
       <Field label="Subtitle" value={content.subtitle} onChange={v => update('subtitle', v)} />
+      <ImagePresentationControls
+        label="Gallery Images"
+        aspect={content.imageAspect}
+        fit={content.imageFit}
+        position={content.imagePosition}
+        onChange={(values) => onChange({ ...content, ...values })}
+      />
       <ArrayManager
         label="FAQ Items"
         items={content.items || []}
@@ -663,6 +695,85 @@ function mediaAlt(asset: MediaAsset) {
   return asset.altText || asset.caption || asset.fileName
 }
 
+const aspectOptions = ['auto', 'square', '4:3', '16:9', '21:9']
+const fitOptions = ['cover', 'contain']
+const positionOptions = ['center', 'top', 'bottom', 'left', 'right']
+
+function ImagePresentationControls({
+  aspect,
+  fit,
+  label,
+  onChange,
+  position,
+  prefix = 'image',
+}: {
+  aspect?: string
+  fit?: string
+  label: string
+  onChange: (values: Record<string, string>) => void
+  position?: string
+  prefix?: string
+}) {
+  const aspectKey = `${prefix}Aspect`
+  const fitKey = `${prefix}Fit`
+  const positionKey = `${prefix}Position`
+
+  return (
+    <div>
+      <label className={labelClass}>{label} Presentation</label>
+      <div className="grid grid-cols-3 gap-2">
+        <PresetSelect
+          label="Aspect"
+          value={aspect || 'auto'}
+          options={aspectOptions}
+          onChange={(value) => onChange({ [aspectKey]: value, [fitKey]: fit || 'cover', [positionKey]: position || 'center' })}
+        />
+        <PresetSelect
+          label="Fit"
+          value={fit || 'cover'}
+          options={fitOptions}
+          onChange={(value) => onChange({ [aspectKey]: aspect || 'auto', [fitKey]: value, [positionKey]: position || 'center' })}
+        />
+        <PresetSelect
+          label="Position"
+          value={position || 'center'}
+          options={positionOptions}
+          onChange={(value) => onChange({ [aspectKey]: aspect || 'auto', [fitKey]: fit || 'cover', [positionKey]: value })}
+        />
+      </div>
+    </div>
+  )
+}
+
+function ImagePositionControl({ label, value, onChange }: { label: string; value?: string; onChange: (value: string) => void }) {
+  return (
+    <PresetSelect label={label} value={value || 'center'} options={positionOptions} onChange={onChange} />
+  )
+}
+
+function PresetSelect({
+  label,
+  onChange,
+  options,
+  value,
+}: {
+  label: string
+  onChange: (value: string) => void
+  options: string[]
+  value: string
+}) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-[11px] font-medium text-neutral-500">{label}</span>
+      <select value={value} onChange={e => onChange(e.target.value)} className={inputClass}>
+        {options.map((option) => (
+          <option key={option} value={option}>{option}</option>
+        ))}
+      </select>
+    </label>
+  )
+}
+
 /* Blog */
 
 function BlogFields({ content, update, onChange }: { content: any; update: (k: string, v: any) => void; onChange: (c: any) => void }) {
@@ -693,9 +804,25 @@ function BlogFields({ content, update, onChange }: { content: any; update: (k: s
         />
         <Field label="Featured Image Alt" value={content.featuredImageAlt} onChange={v => update('featuredImageAlt', v)} />
       </div>
+      <ImagePresentationControls
+        label="Featured Image"
+        aspect={content.featuredImageAspect}
+        fit={content.featuredImageFit}
+        position={content.featuredImagePosition}
+        onChange={(values) => onChange({ ...content, ...values })}
+        prefix="featuredImage"
+      />
       <Field label="Body (HTML/Markdown)" value={content.body} onChange={v => update('body', v)} multiline />
       <TagsInput label="Tags" value={content.tags || []} onChange={v => onChange({ ...content, tags: v })} />
       <TagsInput label="Categories" value={content.categories || []} onChange={v => onChange({ ...content, categories: v })} />
+      <ImagePresentationControls
+        label="Related Images"
+        aspect={content.relatedImageAspect}
+        fit={content.relatedImageFit}
+        position={content.relatedImagePosition}
+        onChange={(values) => onChange({ ...content, ...values })}
+        prefix="relatedImage"
+      />
       <ArrayManager
         label="Related Posts"
         items={content.relatedPosts || []}
