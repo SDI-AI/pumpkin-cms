@@ -38,6 +38,27 @@ export function ThemeEditor({ initialTheme, mode }: ThemeEditorProps) {
     }));
   };
 
+  const updateCompiledAsset = (
+    key: keyof NonNullable<Theme['compiledAssets']>,
+    value: string,
+  ) => {
+    setTheme((current) => syncJson({
+      ...current,
+      compiledAssets: {
+        mode: 'compiled',
+        ...current.compiledAssets,
+        [key]: value,
+      },
+    }));
+  };
+
+  const clearCompiledAssets = () => {
+    setTheme((current) => {
+      const { compiledAssets: _compiledAssets, ...next } = current;
+      return syncJson(next);
+    });
+  };
+
   const applyAdvancedJson = () => {
     setError('');
     try {
@@ -146,6 +167,42 @@ export function ThemeEditor({ initialTheme, mode }: ThemeEditorProps) {
               </div>
             </label>
           ))}
+        </div>
+      </section>
+
+      <section className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-base font-bold text-neutral-950">Compiled Assets</h2>
+          {theme.compiledAssets && (
+            <button
+              type="button"
+              onClick={clearCompiledAssets}
+              className="inline-flex h-9 items-center rounded-md border border-neutral-300 px-3 text-sm font-semibold text-neutral-800 hover:bg-neutral-50"
+            >
+              Clear Assets
+            </button>
+          )}
+        </div>
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
+          <label className="block">
+            <span className="text-sm font-semibold text-neutral-800">Mode</span>
+            <select
+              value={theme.compiledAssets?.mode ?? 'runtime'}
+              onChange={(event) => updateCompiledAsset('mode', event.target.value)}
+              className="mt-2 h-10 w-full rounded-md border border-neutral-300 px-3 text-sm"
+            >
+              <option value="runtime">Runtime</option>
+              <option value="compiled">Compiled</option>
+            </select>
+          </label>
+          <TextField label="CSS URL" value={theme.compiledAssets?.cssUrl ?? ''} onChange={(value) => updateCompiledAsset('cssUrl', value)} />
+          <TextField label="CSS Integrity" value={theme.compiledAssets?.cssIntegrity ?? ''} onChange={(value) => updateCompiledAsset('cssIntegrity', value)} />
+          <TextField label="Assets Base URL" value={theme.compiledAssets?.assetsBaseUrl ?? ''} onChange={(value) => updateCompiledAsset('assetsBaseUrl', value)} />
+          <TextField label="Manifest URL" value={theme.compiledAssets?.manifestUrl ?? ''} onChange={(value) => updateCompiledAsset('manifestUrl', value)} />
+          <TextField label="Package URL" value={theme.compiledAssets?.packageUrl ?? ''} onChange={(value) => updateCompiledAsset('packageUrl', value)} />
+          <TextField label="Compiled At" value={theme.compiledAssets?.compiledAt ?? ''} onChange={(value) => updateCompiledAsset('compiledAt', value)} />
+          <TextField label="Compiler" value={theme.compiledAssets?.compiler ?? ''} onChange={(value) => updateCompiledAsset('compiler', value)} />
+          <TextField label="Content Hash" value={theme.compiledAssets?.contentHash ?? ''} onChange={(value) => updateCompiledAsset('contentHash', value)} />
         </div>
       </section>
 

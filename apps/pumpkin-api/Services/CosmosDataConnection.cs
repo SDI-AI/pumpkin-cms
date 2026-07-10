@@ -2020,6 +2020,125 @@ public class CosmosDataConnection : IDataConnection, IDisposable
         return true;
     }
 
+    // ===== MEDIA LIBRARY — admin (JWT) =====
+
+    public async Task<List<MediaAsset>> GetMediaAssetsByTenantAsync(string tenantId, string? folder = null, string? contentType = null)
+    {
+        var queryText = "SELECT * FROM c WHERE c.tenantId = @tenantId";
+        if (!string.IsNullOrWhiteSpace(folder))
+        {
+            queryText += " AND c.folder = @folder";
+        }
+        if (!string.IsNullOrWhiteSpace(contentType))
+        {
+            queryText += " AND STARTSWITH(c.contentType, @contentType)";
+        }
+
+        var query = new QueryDefinition(queryText)
+            .WithParameter("@tenantId", tenantId);
+
+        if (!string.IsNullOrWhiteSpace(folder))
+        {
+            query.WithParameter("@folder", folder.Trim());
+        }
+        if (!string.IsNullOrWhiteSpace(contentType))
+        {
+            query.WithParameter("@contentType", contentType.Trim());
+        }
+
+        var assets = await QueryAllAsync<MediaAsset>("MediaAsset", query, tenantId);
+        return assets
+            .OrderByDescending(asset => asset.UpdatedAt)
+            .ThenBy(asset => asset.FileName)
+            .ToList();
+    }
+
+    public async Task<MediaAsset?> GetMediaAssetAsync(string tenantId, string mediaAssetId)
+    {
+        if (string.IsNullOrWhiteSpace(mediaAssetId))
+        {
+            throw new ArgumentException("Media asset ID is required", nameof(mediaAssetId));
+        }
+
+        var query = new QueryDefinition(
+                "SELECT * FROM c WHERE c.tenantId = @tenantId AND (c.mediaAssetId = @mediaAssetId OR c.id = @mediaAssetId)")
+            .WithParameter("@tenantId", tenantId)
+            .WithParameter("@mediaAssetId", mediaAssetId);
+
+        return await QuerySingleAsync<MediaAsset>("MediaAsset", query, tenantId);
+    }
+
+    public async Task<MediaAsset> CreateMediaAssetAsync(string tenantId, MediaAsset mediaAsset)
+    {
+        if (mediaAsset == null)
+        {
+            throw new ArgumentNullException(nameof(mediaAsset));
+        }
+
+        ApplyMediaAssetDefaults(mediaAsset, tenantId);
+
+        var existing = await GetMediaAssetAsync(tenantId, mediaAsset.MediaAssetId);
+        if (existing != null)
+        {
+            throw new InvalidOperationException($"Media asset with ID '{mediaAsset.MediaAssetId}' already exists");
+        }
+
+        var container = _database.GetContainer("MediaAsset");
+        var response = await container.CreateItemAsync(mediaAsset, new PartitionKey(tenantId));
+
+        _logger.LogInformation("CreateMediaAssetAsync - Media asset created - MediaAssetId: {MediaAssetId}, TenantId: {TenantId}, RU: {RU}",
+            mediaAsset.MediaAssetId, tenantId, response.RequestCharge);
+
+        return response.Resource;
+    }
+
+    public async Task<MediaAsset> UpdateMediaAssetAsync(string tenantId, string mediaAssetId, MediaAsset mediaAsset)
+    {
+        if (mediaAsset == null)
+        {
+            throw new ArgumentNullException(nameof(mediaAsset));
+        }
+
+        var existing = await GetMediaAssetAsync(tenantId, mediaAssetId);
+        if (existing == null)
+        {
+            throw new KeyNotFoundException($"Media asset with ID '{mediaAssetId}' not found");
+        }
+
+        mediaAsset.Id = existing.Id;
+        mediaAsset.MediaAssetId = existing.MediaAssetId;
+        mediaAsset.TenantId = tenantId;
+        mediaAsset.CreatedAt = existing.CreatedAt;
+        mediaAsset.CreatedByUserId = existing.CreatedByUserId;
+        mediaAsset.UpdatedAt = DateTime.UtcNow;
+        NormalizeMediaAssetFields(mediaAsset);
+
+        var container = _database.GetContainer("MediaAsset");
+        var response = await container.ReplaceItemAsync(mediaAsset, existing.Id, new PartitionKey(tenantId));
+
+        _logger.LogInformation("UpdateMediaAssetAsync - Media asset updated - MediaAssetId: {MediaAssetId}, TenantId: {TenantId}, RU: {RU}",
+            existing.MediaAssetId, tenantId, response.RequestCharge);
+
+        return response.Resource;
+    }
+
+    public async Task<bool> DeleteMediaAssetAsync(string tenantId, string mediaAssetId)
+    {
+        var existing = await GetMediaAssetAsync(tenantId, mediaAssetId);
+        if (existing == null)
+        {
+            throw new KeyNotFoundException($"Media asset with ID '{mediaAssetId}' not found");
+        }
+
+        var container = _database.GetContainer("MediaAsset");
+        var response = await container.DeleteItemAsync<MediaAsset>(existing.Id, new PartitionKey(tenantId));
+
+        _logger.LogInformation("DeleteMediaAssetAsync - Media asset deleted - MediaAssetId: {MediaAssetId}, TenantId: {TenantId}, RU: {RU}",
+            existing.MediaAssetId, tenantId, response.RequestCharge);
+
+        return true;
+    }
+
     // ===== FORM ENTRY — admin (JWT) =====
 
     public async Task<List<FormEntry>> GetFormEntriesByTenantAsync(string tenantId, string? type = null)
@@ -2131,6 +2250,65 @@ public class CosmosDataConnection : IDataConnection, IDisposable
                 throw new ArgumentException($"Field '{field.Name}' requires options");
             }
         }
+    }
+
+    private static void ApplyMediaAssetDefaults(MediaAsset mediaAsset, string tenantId)
+    {
+        if (string.IsNullOrWhiteSpace(mediaAsset.MediaAssetId))
+        {
+            mediaAsset.MediaAssetId = string.IsNullOrWhiteSpace(mediaAsset.Id)
+                ? Guid.NewGuid().ToString("N")
+                : mediaAsset.Id;
+        }
+
+        mediaAsset.Id = mediaAsset.MediaAssetId;
+        mediaAsset.TenantId = tenantId;
+        NormalizeMediaAssetFields(mediaAsset);
+
+        if (mediaAsset.CreatedAt == default)
+        {
+            mediaAsset.CreatedAt = DateTime.UtcNow;
+        }
+        mediaAsset.UpdatedAt = DateTime.UtcNow;
+    }
+
+    private static void NormalizeMediaAssetFields(MediaAsset mediaAsset)
+    {
+        mediaAsset.FileName = (mediaAsset.FileName ?? string.Empty).Trim();
+        mediaAsset.OriginalFileName = string.IsNullOrWhiteSpace(mediaAsset.OriginalFileName)
+            ? mediaAsset.FileName
+            : mediaAsset.OriginalFileName.Trim();
+        mediaAsset.BlobPath = (mediaAsset.BlobPath ?? string.Empty).Trim();
+        mediaAsset.PublicUrl = (mediaAsset.PublicUrl ?? string.Empty).Trim();
+        mediaAsset.ContentType = (mediaAsset.ContentType ?? string.Empty).Trim().ToLowerInvariant();
+        mediaAsset.Folder = (mediaAsset.Folder ?? string.Empty).Trim().Trim('/');
+        mediaAsset.AltText = mediaAsset.AltText ?? string.Empty;
+        mediaAsset.Caption = mediaAsset.Caption ?? string.Empty;
+        mediaAsset.Source = string.IsNullOrWhiteSpace(mediaAsset.Source) ? "admin" : mediaAsset.Source.Trim();
+        mediaAsset.Tags = NormalizeTags(mediaAsset.Tags);
+
+        if (string.IsNullOrWhiteSpace(mediaAsset.FileName))
+        {
+            throw new ArgumentException("Media asset fileName is required", nameof(mediaAsset));
+        }
+        if (string.IsNullOrWhiteSpace(mediaAsset.BlobPath))
+        {
+            throw new ArgumentException("Media asset blobPath is required", nameof(mediaAsset));
+        }
+        if (string.IsNullOrWhiteSpace(mediaAsset.PublicUrl))
+        {
+            throw new ArgumentException("Media asset publicUrl is required", nameof(mediaAsset));
+        }
+    }
+
+    private static List<string> NormalizeTags(IEnumerable<string>? tags)
+    {
+        return (tags ?? Enumerable.Empty<string>())
+            .Select(tag => tag.Trim())
+            .Where(tag => !string.IsNullOrWhiteSpace(tag))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(tag => tag)
+            .ToList();
     }
 
     private async Task<T?> QuerySingleAsync<T>(string containerName, QueryDefinition queryDefinition, string tenantId)

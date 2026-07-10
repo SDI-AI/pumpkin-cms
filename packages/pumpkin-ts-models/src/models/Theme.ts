@@ -77,6 +77,33 @@ export interface ThemeShadows {
   scale: Record<string, string>;
 }
 
+// ─── Compiled theme assets ──────────────────────────────────
+
+/**
+ * References to precompiled theme files. Tailwind/theme generation happens
+ * outside the running app; tenants load the optimized CSS from blob/CDN.
+ */
+export interface ThemeCompiledAssets {
+  /** Runtime mode for this theme. "compiled" means cssUrl should be loaded. */
+  mode: 'runtime' | 'compiled' | string;
+  /** Absolute or app-relative URL to the optimized stylesheet. */
+  cssUrl?: string;
+  /** Optional subresource integrity hash for the stylesheet. */
+  cssIntegrity?: string;
+  /** Base URL for fonts, images, and other files referenced by the stylesheet. */
+  assetsBaseUrl?: string;
+  /** URL to the generated package manifest. */
+  manifestUrl?: string;
+  /** URL to the uploaded source/package archive. */
+  packageUrl?: string;
+  /** ISO timestamp from the theme compiler/build process. */
+  compiledAt?: string;
+  /** Compiler identifier, for example "pumpkin-theme-compiler@1.0.0". */
+  compiler?: string;
+  /** Content hash used for cache busting and package verification. */
+  contentHash?: string;
+}
+
 // ─── Theme (top-level document) ──────────────────────────────
 
 /**
@@ -105,6 +132,7 @@ export interface Theme {
   spacing: ThemeSpacing;
   borders: ThemeBorders;
   shadows: ThemeShadows;
+  compiledAssets?: ThemeCompiledAssets;
 
   header: ThemeHeader;
   footer: ThemeFooter;

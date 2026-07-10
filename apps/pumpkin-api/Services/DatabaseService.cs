@@ -265,6 +265,32 @@ public class DatabaseService : IDatabaseService, IDisposable
         return _dataConnection.DeleteFormDefinitionAsync(tenantId, formDefinitionId);
     }
 
+    // Media library admin (JWT required)
+    public Task<List<MediaAsset>> GetMediaAssetsByTenantAsync(string tenantId, string? folder = null, string? contentType = null)
+    {
+        return _dataConnection.GetMediaAssetsByTenantAsync(tenantId, folder, contentType);
+    }
+
+    public Task<MediaAsset?> GetMediaAssetAsync(string tenantId, string mediaAssetId)
+    {
+        return _dataConnection.GetMediaAssetAsync(tenantId, mediaAssetId);
+    }
+
+    public Task<MediaAsset> CreateMediaAssetAsync(string tenantId, MediaAsset mediaAsset)
+    {
+        return _dataConnection.CreateMediaAssetAsync(tenantId, mediaAsset);
+    }
+
+    public Task<MediaAsset> UpdateMediaAssetAsync(string tenantId, string mediaAssetId, MediaAsset mediaAsset)
+    {
+        return _dataConnection.UpdateMediaAssetAsync(tenantId, mediaAssetId, mediaAsset);
+    }
+
+    public Task<bool> DeleteMediaAssetAsync(string tenantId, string mediaAssetId)
+    {
+        return _dataConnection.DeleteMediaAssetAsync(tenantId, mediaAssetId);
+    }
+
     // FormEntry admin (JWT required)
     public Task<List<FormEntry>> GetFormEntriesByTenantAsync(string tenantId, string? type = null)
     {

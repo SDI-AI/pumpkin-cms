@@ -71,6 +71,13 @@ public interface IDataConnection
     Task<FormDefinition> UpdateFormDefinitionAsync(string tenantId, string formDefinitionId, FormDefinition formDefinition);
     Task<bool> DeleteFormDefinitionAsync(string tenantId, string formDefinitionId);
 
+    // Media library admin (JWT required)
+    Task<List<MediaAsset>> GetMediaAssetsByTenantAsync(string tenantId, string? folder = null, string? contentType = null);
+    Task<MediaAsset?> GetMediaAssetAsync(string tenantId, string mediaAssetId);
+    Task<MediaAsset> CreateMediaAssetAsync(string tenantId, MediaAsset mediaAsset);
+    Task<MediaAsset> UpdateMediaAssetAsync(string tenantId, string mediaAssetId, MediaAsset mediaAsset);
+    Task<bool> DeleteMediaAssetAsync(string tenantId, string mediaAssetId);
+
     // FormEntry admin (JWT required)
     Task<List<FormEntry>> GetFormEntriesByTenantAsync(string tenantId, string? type = null);
     Task<FormEntry?> GetFormEntryAsync(string tenantId, string entryId);

@@ -1,6 +1,7 @@
 import React from 'react';
 import type { BlogBlock } from 'pumpkin-ts-models';
 import { blogDefaults, type BlogClassNames } from '../defaults/blog';
+import { imagePresentationClasses } from '../utils/imagePresentation';
 import { mergeClasses } from '../utils/mergeClasses';
 
 export interface BlogBlockViewProps {
@@ -18,7 +19,18 @@ export function BlogBlockView({ block, classNames, renderBody }: BlogBlockViewPr
     <article className={cx.root}>
       <div className={cx.container}>
         {content.featuredImage && (
-          <img src={content.featuredImage} alt={content.featuredImageAlt || ''} className={cx.featuredImage} />
+          <img
+            src={content.featuredImage}
+            alt={content.featuredImageAlt || ''}
+            className={[
+              cx.featuredImage,
+              imagePresentationClasses({
+                aspect: content.featuredImageAspect || '16:9',
+                fit: content.featuredImageFit || 'cover',
+                position: content.featuredImagePosition || 'center',
+              }),
+            ].join(' ')}
+          />
         )}
 
         <header className={cx.header}>
@@ -62,7 +74,18 @@ export function BlogBlockView({ block, classNames, renderBody }: BlogBlockViewPr
               {content.relatedPosts.map((post, i) => (
                 <a key={i} href={post.slug} className={cx.relatedCard}>
                   {post.image && (
-                    <img src={post.image} alt={post.imageAlt || ''} className={cx.relatedCardImage} />
+                    <img
+                      src={post.image}
+                      alt={post.imageAlt || ''}
+                      className={[
+                        cx.relatedCardImage,
+                        imagePresentationClasses({
+                          aspect: content.relatedImageAspect || '16:9',
+                          fit: content.relatedImageFit || 'cover',
+                          position: content.relatedImagePosition || 'center',
+                        }),
+                      ].join(' ')}
+                    />
                   )}
                   <div className={cx.relatedCardBody}>
                     <h3 className={cx.relatedCardTitle}>{post.title}</h3>

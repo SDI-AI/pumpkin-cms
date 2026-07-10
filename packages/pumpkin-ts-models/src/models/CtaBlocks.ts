@@ -1,4 +1,5 @@
 import { IHtmlBlock } from './IHtmlBlock';
+import type { ImageAspect, ImageFit, ImagePosition } from './ImagePresentation';
 
 /**
  * Primary CTA block content structure
@@ -12,7 +13,11 @@ export interface PrimaryCtaContent {
   secondaryLinkText: string;
   secondaryLink: string;
   backgroundImage: string;
+  backgroundImagePosition?: ImagePosition;
   mainImage: string;
+  mainImageAspect?: ImageAspect;
+  mainImageFit?: ImageFit;
+  mainImagePosition?: ImagePosition;
   alt: string;
 }
 

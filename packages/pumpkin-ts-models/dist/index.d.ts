@@ -1,8 +1,10 @@
 export type { IHtmlBlock, GenericHtmlBlock } from './models/IHtmlBlock';
+export type { ImageAspect, ImageFit, ImagePosition, ImagePresentation } from './models/ImagePresentation';
 export type { User, LoginRequest, LoginResponse, UserInfo } from './models/User';
 export { UserRole, userRoleToString, stringToUserRole, isUserRole, userToUserInfo } from './models/User';
 export type { Tenant, ApiKeyMeta, TenantSettings, Features, Contact, Billing, TenantInfo } from './models/Tenant';
 export { tenantToTenantInfo } from './models/Tenant';
+export type { MediaAsset } from './models/MediaAsset';
 export type { FormEntry, FormEntryMetadata, FormEntryStatus } from './models/FormEntry';
 export type { FormDefinition, FormFieldDefinition, FormFieldOption, FormFieldType, FormFieldWidth, FormFieldValidation, FormSubmitBehavior, FormNotificationSettings, FormSpamProtection, FormRateLimit } from './models/FormDefinition';
 export type { Page, PageMetaData, SearchData, ContentData, SeoData, AlternateUrl, OpenGraphData, TwitterCardData, ContentRelationships, NodePosition } from './models/Page';
@@ -14,7 +16,7 @@ export type { GalleryImage, GalleryContent, GalleryBlock, TestimonialItem, Testi
 export type { RelatedPost, BlogContent, BlogBlock } from './models/BlogBlocks';
 export type { HtmlBlock } from './models/HtmlBlockTypes';
 export { BLOCK_TYPE_MAP, SUPPORTED_BLOCK_TYPES, isBlockOfType, isHtmlBlock, createGenericBlock } from './models/HtmlBlockTypes';
-export type { Theme, ThemeHeader, ThemeFooter, ThemePreview, ThemeTypography, ThemeSpacing, ThemeBorders, ThemeShadows, BlockStyleMap, MenuItem } from './models/Theme';
+export type { Theme, ThemeHeader, ThemeFooter, ThemePreview, ThemeTypography, ThemeSpacing, ThemeBorders, ThemeShadows, ThemeCompiledAssets, BlockStyleMap, MenuItem } from './models/Theme';
 export { PageJsonConverter } from './PageJsonConverter';
 export type { JsonConverterOptions } from './PageJsonConverter';
 //# sourceMappingURL=index.d.ts.map

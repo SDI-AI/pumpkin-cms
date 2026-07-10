@@ -7,6 +7,18 @@ interface ThemesResponse {
   tenantId: string;
 }
 
+export interface ThemeInstallResponse {
+  created: boolean;
+  theme: Theme;
+  storage: {
+    tenantThemePath: string;
+    cssBlobPath: string;
+    manifestBlobPath: string;
+    packageBlobPath: string;
+    assetBlobPaths: string[];
+  };
+}
+
 export async function getStarterAdminThemes() {
   const { tenantId } = getStarterAdminApiContext();
   const response = await starterAdminFetch<ThemesResponse>(
@@ -52,6 +64,17 @@ export async function activateStarterAdminTheme(id: string) {
   return starterAdminFetch<Theme>(
     `/api/admin/themes/${encodeURIComponent(tenantId)}/${encodeURIComponent(id)}/activate`,
     { method: 'POST' },
+  );
+}
+
+export async function installStarterAdminThemePackage(formData: FormData) {
+  const { tenantId } = getStarterAdminApiContext();
+  return starterAdminFetch<ThemeInstallResponse>(
+    `/api/admin/themes/${encodeURIComponent(tenantId)}/install`,
+    {
+      method: 'POST',
+      body: formData,
+    },
   );
 }
 

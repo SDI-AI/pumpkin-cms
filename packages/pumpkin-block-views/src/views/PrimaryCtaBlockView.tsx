@@ -1,6 +1,7 @@
 import React from 'react';
 import type { PrimaryCtaBlock } from 'pumpkin-ts-models';
 import { primaryCtaDefaults, type PrimaryCtaClassNames } from '../defaults/primaryCta';
+import { backgroundPosition, imagePresentationClasses } from '../utils/imagePresentation';
 import { mergeClasses } from '../utils/mergeClasses';
 
 export interface PrimaryCtaBlockViewProps {
@@ -15,7 +16,12 @@ export function PrimaryCtaBlockView({ block, classNames }: PrimaryCtaBlockViewPr
   return (
     <section
       className={cx.root}
-      style={content.backgroundImage ? { backgroundImage: `url(${content.backgroundImage})` } : undefined}
+      style={content.backgroundImage
+        ? {
+            backgroundImage: `url(${content.backgroundImage})`,
+            backgroundPosition: backgroundPosition(content.backgroundImagePosition),
+          }
+        : undefined}
     >
       {content.backgroundImage && <div className={cx.overlay} aria-hidden="true" />}
       <div className={cx.container}>
@@ -33,7 +39,18 @@ export function PrimaryCtaBlockView({ block, classNames }: PrimaryCtaBlockViewPr
           )}
         </div>
         {content.mainImage && (
-          <img src={content.mainImage} alt={content.alt || ''} className={cx.mainImage} />
+          <img
+            src={content.mainImage}
+            alt={content.alt || ''}
+            className={[
+              cx.mainImage,
+              imagePresentationClasses({
+                aspect: content.mainImageAspect || '4:3',
+                fit: content.mainImageFit || 'cover',
+                position: content.mainImagePosition || 'center',
+              }),
+            ].join(' ')}
+          />
         )}
       </div>
     </section>

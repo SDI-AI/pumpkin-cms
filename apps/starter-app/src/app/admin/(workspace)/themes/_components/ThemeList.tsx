@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { ChangeEvent, useRef, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { CheckCircle2, Download, Palette, Search } from 'lucide-react';
+import { CheckCircle2, Download, Palette, Search, Upload } from 'lucide-react';
 import type { Theme } from 'pumpkin-ts-models';
 import { createTheme } from './ThemeEditor';
 
@@ -74,7 +74,9 @@ export function ThemeList({ themes, tenantId }: ThemeListProps) {
   const [error, setError] = useState('');
   const [activatingId, setActivatingId] = useState('');
   const [installingId, setInstallingId] = useState('');
+  const [installingPackage, setInstallingPackage] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const packageInputRef = useRef<HTMLInputElement>(null);
   const installedThemeIds = new Set(themes.map((theme) => theme.themeId));
 
   const filtered = themes
@@ -144,6 +146,40 @@ export function ThemeList({ themes, tenantId }: ThemeListProps) {
     }
   };
 
+  const installPackage = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setMessage('');
+    setError('');
+    setInstallingPackage(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('package', file);
+
+      const response = await fetch('/api/admin/themes/install', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const data = (await response.json().catch(() => null)) as { message?: string } | null;
+        throw new Error(data?.message || 'Unable to install theme package.');
+      }
+
+      const result = (await response.json()) as { theme?: Theme; created?: boolean };
+      const themeName = result.theme?.name || result.theme?.themeId || file.name;
+      setMessage(`${themeName} ${result.created ? 'installed' : 'updated'}.`);
+      startTransition(() => router.refresh());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to install theme package.');
+    } finally {
+      setInstallingPackage(false);
+      event.target.value = '';
+    }
+  };
+
   return (
     <div className="space-y-5">
       {(message || error) && (
@@ -163,13 +199,31 @@ export function ThemeList({ themes, tenantId }: ThemeListProps) {
               Install a prebuilt runtime theme document, then edit tokens, header, footer, and JSON.
             </p>
           </div>
-          <Link
-            href="/admin/themes/new"
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-neutral-300 bg-white px-3 text-sm font-bold text-neutral-800 hover:bg-neutral-50"
-          >
-            <Palette className="h-4 w-4" aria-hidden="true" />
-            <span>Custom Theme</span>
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <input
+              ref={packageInputRef}
+              type="file"
+              accept=".zip,application/zip"
+              className="hidden"
+              onChange={installPackage}
+            />
+            <button
+              type="button"
+              onClick={() => packageInputRef.current?.click()}
+              disabled={installingPackage || isPending}
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-neutral-300 bg-white px-3 text-sm font-bold text-neutral-800 hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <Upload className="h-4 w-4" aria-hidden="true" />
+              <span>{installingPackage ? 'Installing...' : 'Install Package'}</span>
+            </button>
+            <Link
+              href="/admin/themes/new"
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-neutral-300 bg-white px-3 text-sm font-bold text-neutral-800 hover:bg-neutral-50"
+            >
+              <Palette className="h-4 w-4" aria-hidden="true" />
+              <span>Custom Theme</span>
+            </Link>
+          </div>
         </div>
 
         <div className="mt-4 grid gap-3 lg:grid-cols-3">

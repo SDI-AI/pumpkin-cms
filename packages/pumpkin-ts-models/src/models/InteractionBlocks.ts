@@ -1,4 +1,5 @@
 import { IHtmlBlock } from './IHtmlBlock';
+import type { ImageAspect, ImageFit, ImagePosition } from './ImagePresentation';
 
 // Gallery Block
 export interface GalleryImage {
@@ -10,6 +11,9 @@ export interface GalleryImage {
 export interface GalleryContent {
   title: string;
   subtitle: string;
+  imageAspect?: ImageAspect;
+  imageFit?: ImageFit;
+  imagePosition?: ImagePosition;
   images: GalleryImage[];
 }
 

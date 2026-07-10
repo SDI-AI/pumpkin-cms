@@ -38,13 +38,13 @@ export const BLOCK_CATEGORIES = [
 export function createDefaultBlock(type: string): IHtmlBlock {
   switch (type) {
     case 'Hero':
-      return { type: 'Hero', content: { type: 'Main', headline: '', subheadline: '', backgroundImage: '', backgroundImageAltText: '', mainImage: '', mainImageAltText: '', buttonText: '', buttonLink: '' } };
+      return { type: 'Hero', content: { type: 'Main', headline: '', subheadline: '', backgroundImage: '', backgroundImageAltText: '', backgroundImagePosition: 'center', mainImage: '', mainImageAltText: '', mainImageAspect: '16:9', mainImageFit: 'cover', mainImagePosition: 'center', buttonText: '', buttonLink: '' } };
     case 'PrimaryCTA':
-      return { type: 'PrimaryCTA', content: { title: '', description: '', buttonText: '', buttonLink: '', secondaryText: '', secondaryLinkText: '', secondaryLink: '', backgroundImage: '', mainImage: '', alt: '' } };
+      return { type: 'PrimaryCTA', content: { title: '', description: '', buttonText: '', buttonLink: '', secondaryText: '', secondaryLinkText: '', secondaryLink: '', backgroundImage: '', backgroundImagePosition: 'center', mainImage: '', mainImageAspect: '4:3', mainImageFit: 'cover', mainImagePosition: 'center', alt: '' } };
     case 'SecondaryCTA':
       return { type: 'SecondaryCTA', content: { title: '', description: '', buttonText: '', buttonLink: '' } };
     case 'CardGrid':
-      return { type: 'CardGrid', content: { title: '', subtitle: '', layout: 'grid-3', cards: [] } };
+      return { type: 'CardGrid', content: { title: '', subtitle: '', layout: 'grid-3', imageAspect: '16:9', imageFit: 'cover', imagePosition: 'center', cards: [] } };
     case 'FAQ':
       return { type: 'FAQ', content: { title: '', subtitle: '', layout: 'accordion', items: [] } };
     case 'Breadcrumbs':
@@ -58,7 +58,7 @@ export function createDefaultBlock(type: string): IHtmlBlock {
     case 'LocalProTips':
       return { type: 'LocalProTips', content: { title: '', items: [] } };
     case 'Gallery':
-      return { type: 'Gallery', content: { title: '', subtitle: '', images: [] } };
+      return { type: 'Gallery', content: { title: '', subtitle: '', imageAspect: 'square', imageFit: 'cover', imagePosition: 'center', images: [] } };
     case 'Testimonials':
       return { type: 'Testimonials', content: { title: '', subtitle: '', layout: 'carousel', items: [] } };
     case 'Contact':
@@ -66,7 +66,7 @@ export function createDefaultBlock(type: string): IHtmlBlock {
     case 'Form':
       return { type: 'Form', content: { formType: 'contact', title: '', subtitle: '', description: '', layout: 'default', successMessage: '' } };
     case 'Blog':
-      return { type: 'Blog', content: { title: '', subtitle: '', author: '', authorImage: '', authorBio: '', publishedDate: '', featuredImage: '', featuredImageAlt: '', excerpt: '', body: '', tags: [], categories: [], readingTime: 0, relatedPosts: [] } };
+      return { type: 'Blog', content: { title: '', subtitle: '', author: '', authorImage: '', authorBio: '', publishedDate: '', featuredImage: '', featuredImageAlt: '', featuredImageAspect: '16:9', featuredImageFit: 'cover', featuredImagePosition: 'center', excerpt: '', body: '', tags: [], categories: [], readingTime: 0, relatedImageAspect: '16:9', relatedImageFit: 'cover', relatedImagePosition: 'center', relatedPosts: [] } };
     default:
       return { type, content: {} };
   }

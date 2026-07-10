@@ -1,5 +1,11 @@
 // Core interfaces and types
 export type { IHtmlBlock, GenericHtmlBlock } from './models/IHtmlBlock';
+export type {
+  ImageAspect,
+  ImageFit,
+  ImagePosition,
+  ImagePresentation
+} from './models/ImagePresentation';
 
 // User models
 export type {
@@ -31,6 +37,11 @@ export type {
 export {
   tenantToTenantInfo
 } from './models/Tenant';
+
+// Media models
+export type {
+  MediaAsset
+} from './models/MediaAsset';
 
 // Form Entry models
 export type {
@@ -156,6 +167,7 @@ export type {
   ThemeSpacing,
   ThemeBorders,
   ThemeShadows,
+  ThemeCompiledAssets,
   BlockStyleMap,
   MenuItem
 } from './models/Theme';

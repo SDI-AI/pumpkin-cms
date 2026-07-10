@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { AlertTriangle, CheckCircle2, FileText, FormInput, Map, Palette } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, FileText, FormInput, Image as ImageIcon, Map, Palette } from 'lucide-react';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { getStarterAdminContext } from '@/lib/admin-auth';
 
@@ -21,6 +21,12 @@ const workflowCards = [
     href: '/admin/forms',
     icon: FormInput,
     description: 'Add the form definition builder for fields, validation, and submit behavior.',
+  },
+  {
+    title: 'Media',
+    href: '/admin/media',
+    icon: ImageIcon,
+    description: 'Upload tenant media, register metadata, and copy published asset URLs.',
   },
   {
     title: 'Themes',

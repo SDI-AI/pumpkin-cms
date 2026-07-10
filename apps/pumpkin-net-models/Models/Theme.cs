@@ -72,6 +72,9 @@ public class Theme
     [JsonPropertyName("shadows")]
     public ThemeShadows Shadows { get; set; } = new();
 
+    [JsonPropertyName("compiledAssets")]
+    public ThemeCompiledAssets? CompiledAssets { get; set; }
+
     // ── Layout sections ──────────────────────────────────────
 
     [JsonPropertyName("header")]
@@ -172,6 +175,45 @@ public class ThemeShadows
 {
     [JsonPropertyName("scale")]
     public Dictionary<string, string> Scale { get; set; } = new();
+}
+
+public class ThemeCompiledAssets
+{
+    /// <summary>Runtime mode for this theme. "compiled" means CssUrl should be loaded.</summary>
+    [JsonPropertyName("mode")]
+    public string Mode { get; set; } = "runtime";
+
+    /// <summary>Absolute or app-relative URL to the optimized stylesheet.</summary>
+    [JsonPropertyName("cssUrl")]
+    public string CssUrl { get; set; } = string.Empty;
+
+    /// <summary>Optional subresource integrity hash for the stylesheet.</summary>
+    [JsonPropertyName("cssIntegrity")]
+    public string CssIntegrity { get; set; } = string.Empty;
+
+    /// <summary>Base URL for fonts, images, and other files referenced by the stylesheet.</summary>
+    [JsonPropertyName("assetsBaseUrl")]
+    public string AssetsBaseUrl { get; set; } = string.Empty;
+
+    /// <summary>URL to the generated package manifest.</summary>
+    [JsonPropertyName("manifestUrl")]
+    public string ManifestUrl { get; set; } = string.Empty;
+
+    /// <summary>URL to the uploaded source/package archive.</summary>
+    [JsonPropertyName("packageUrl")]
+    public string PackageUrl { get; set; } = string.Empty;
+
+    /// <summary>ISO timestamp from the theme compiler/build process.</summary>
+    [JsonPropertyName("compiledAt")]
+    public DateTime? CompiledAt { get; set; }
+
+    /// <summary>Compiler identifier, for example "pumpkin-theme-compiler@1.0.0".</summary>
+    [JsonPropertyName("compiler")]
+    public string Compiler { get; set; } = string.Empty;
+
+    /// <summary>Content hash used for cache busting and package verification.</summary>
+    [JsonPropertyName("contentHash")]
+    public string ContentHash { get; set; } = string.Empty;
 }
 
 // ─── Header ──────────────────────────────────────────────────

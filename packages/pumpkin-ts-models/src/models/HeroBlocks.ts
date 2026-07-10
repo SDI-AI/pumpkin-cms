@@ -1,4 +1,5 @@
 import { IHtmlBlock } from './IHtmlBlock';
+import type { ImageAspect, ImageFit, ImagePosition } from './ImagePresentation';
 
 /**
  * Hero block variant types
@@ -14,8 +15,12 @@ export interface HeroContent {
   subheadline: string;
   backgroundImage: string;
   backgroundImageAltText: string;
+  backgroundImagePosition?: ImagePosition;
   mainImage: string;
   mainImageAltText: string;
+  mainImageAspect?: ImageAspect;
+  mainImageFit?: ImageFit;
+  mainImagePosition?: ImagePosition;
   buttonText: string;
   buttonLink: string;
 }

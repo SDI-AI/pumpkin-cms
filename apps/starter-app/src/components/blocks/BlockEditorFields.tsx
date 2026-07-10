@@ -2,8 +2,9 @@
 
 import { useState } from 'react'
 import type { ReactNode } from 'react'
-import { ChevronDown, ChevronUp, X } from 'lucide-react'
-import type { IHtmlBlock } from 'pumpkin-ts-models'
+import { ChevronDown, ChevronUp, Image as ImageIcon, X } from 'lucide-react'
+import type { IHtmlBlock, MediaAsset } from 'pumpkin-ts-models'
+import { MediaPickerDialog } from '@/components/admin/MediaPickerDialog'
 
 interface BlockEditorFieldsProps {
   block: IHtmlBlock
@@ -19,9 +20,9 @@ export default function BlockEditorFields({ block, onChange }: BlockEditorFields
 
   switch (block.type) {
     case 'Hero':
-      return <HeroFields content={content} update={update} />
+      return <HeroFields content={content} update={update} onChange={onChange} />
     case 'PrimaryCTA':
-      return <PrimaryCtaFields content={content} update={update} />
+      return <PrimaryCtaFields content={content} update={update} onChange={onChange} />
     case 'SecondaryCTA':
       return <SecondaryCtaFields content={content} update={update} />
     case 'CardGrid':
@@ -168,7 +169,7 @@ function TagsInput({ label, value, onChange }: { label: string; value: string[];
 
 /* Hero */
 
-function HeroFields({ content, update }: { content: any; update: (k: string, v: any) => void }) {
+function HeroFields({ content, update, onChange }: { content: any; update: (k: string, v: any) => void; onChange: (c: any) => void }) {
   return (
     <div className="space-y-3">
       <div>
@@ -182,13 +183,40 @@ function HeroFields({ content, update }: { content: any; update: (k: string, v: 
       <Field label="Headline" value={content.headline} onChange={v => update('headline', v)} placeholder="Main headline" />
       <Field label="Subheadline" value={content.subheadline} onChange={v => update('subheadline', v)} placeholder="Supporting text" />
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Background Image URL" value={content.backgroundImage} onChange={v => update('backgroundImage', v)} />
+        <MediaField
+          label="Background Image URL"
+          value={content.backgroundImage}
+          onChange={v => update('backgroundImage', v)}
+          onSelect={asset => onChange({
+            ...content,
+            backgroundImage: asset.publicUrl,
+            backgroundImageAltText: content.backgroundImageAltText || mediaAlt(asset),
+          })}
+        />
         <Field label="Background Image Alt" value={content.backgroundImageAltText} onChange={v => update('backgroundImageAltText', v)} />
       </div>
+      <ImagePositionControl label="Background Position" value={content.backgroundImagePosition} onChange={v => update('backgroundImagePosition', v)} />
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Main Image URL" value={content.mainImage} onChange={v => update('mainImage', v)} />
+        <MediaField
+          label="Main Image URL"
+          value={content.mainImage}
+          onChange={v => update('mainImage', v)}
+          onSelect={asset => onChange({
+            ...content,
+            mainImage: asset.publicUrl,
+            mainImageAltText: content.mainImageAltText || mediaAlt(asset),
+          })}
+        />
         <Field label="Main Image Alt" value={content.mainImageAltText} onChange={v => update('mainImageAltText', v)} />
       </div>
+      <ImagePresentationControls
+        label="Main Image"
+        aspect={content.mainImageAspect}
+        fit={content.mainImageFit}
+        position={content.mainImagePosition}
+        onChange={(values) => onChange({ ...content, ...values })}
+        prefix="mainImage"
+      />
       <div className="grid grid-cols-2 gap-3">
         <Field label="Button Text" value={content.buttonText} onChange={v => update('buttonText', v)} />
         <Field label="Button Link" value={content.buttonLink} onChange={v => update('buttonLink', v)} />
@@ -199,7 +227,7 @@ function HeroFields({ content, update }: { content: any; update: (k: string, v: 
 
 /* Primary CTA */
 
-function PrimaryCtaFields({ content, update }: { content: any; update: (k: string, v: any) => void }) {
+function PrimaryCtaFields({ content, update, onChange }: { content: any; update: (k: string, v: any) => void; onChange: (c: any) => void }) {
   return (
     <div className="space-y-3">
       <Field label="Title" value={content.title} onChange={v => update('title', v)} />
@@ -214,9 +242,27 @@ function PrimaryCtaFields({ content, update }: { content: any; update: (k: strin
         <Field label="Secondary Link" value={content.secondaryLink} onChange={v => update('secondaryLink', v)} />
       </div>
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Background Image" value={content.backgroundImage} onChange={v => update('backgroundImage', v)} />
-        <Field label="Main Image" value={content.mainImage} onChange={v => update('mainImage', v)} />
+        <MediaField label="Background Image" value={content.backgroundImage} onChange={v => update('backgroundImage', v)} />
+        <MediaField
+          label="Main Image"
+          value={content.mainImage}
+          onChange={v => update('mainImage', v)}
+          onSelect={asset => onChange({
+            ...content,
+            mainImage: asset.publicUrl,
+            alt: content.alt || mediaAlt(asset),
+          })}
+        />
       </div>
+      <ImagePositionControl label="Background Position" value={content.backgroundImagePosition} onChange={v => update('backgroundImagePosition', v)} />
+      <ImagePresentationControls
+        label="Main Image"
+        aspect={content.mainImageAspect}
+        fit={content.mainImageFit}
+        position={content.mainImagePosition}
+        onChange={(values) => onChange({ ...content, ...values })}
+        prefix="mainImage"
+      />
       <Field label="Image Alt" value={content.alt} onChange={v => update('alt', v)} />
     </div>
   )
@@ -253,6 +299,13 @@ function CardGridFields({ content, onChange }: { content: any; onChange: (c: any
           <option value="grid-4">4 Columns</option>
         </select>
       </div>
+      <ImagePresentationControls
+        label="Card Images"
+        aspect={content.imageAspect}
+        fit={content.imageFit}
+        position={content.imagePosition}
+        onChange={(values) => onChange({ ...content, ...values })}
+      />
       <ArrayManager
         label="Cards"
         items={content.cards || []}
@@ -263,7 +316,12 @@ function CardGridFields({ content, onChange }: { content: any; onChange: (c: any
             <Field label="Title" value={card.title} onChange={v => updateCard({ ...card, title: v })} />
             <Field label="Description" value={card.description} onChange={v => updateCard({ ...card, description: v })} />
             <div className="grid grid-cols-2 gap-2">
-              <Field label="Image URL" value={card.image} onChange={v => updateCard({ ...card, image: v })} />
+              <MediaField
+                label="Image URL"
+                value={card.image}
+                onChange={v => updateCard({ ...card, image: v })}
+                onSelect={asset => updateCard({ ...card, image: asset.publicUrl, 'image-alt': card['image-alt'] || mediaAlt(asset) })}
+              />
               <Field label="Image Alt" value={card['image-alt']} onChange={v => updateCard({ ...card, 'image-alt': v })} />
             </div>
             <div className="grid grid-cols-2 gap-2">
@@ -285,6 +343,13 @@ function FaqFields({ content, onChange }: { content: any; onChange: (c: any) => 
     <div className="space-y-3">
       <Field label="Title" value={content.title} onChange={v => update('title', v)} />
       <Field label="Subtitle" value={content.subtitle} onChange={v => update('subtitle', v)} />
+      <ImagePresentationControls
+        label="Gallery Images"
+        aspect={content.imageAspect}
+        fit={content.imageFit}
+        position={content.imagePosition}
+        onChange={(values) => onChange({ ...content, ...values })}
+      />
       <ArrayManager
         label="FAQ Items"
         items={content.items || []}
@@ -366,7 +431,12 @@ function HowItWorksFields({ content, onChange }: { content: any; onChange: (c: a
             <Field label="Title" value={step.title} onChange={v => updateStep({ ...step, title: v })} />
             <Field label="Text" value={step.text} onChange={v => updateStep({ ...step, text: v })} multiline />
             <div className="grid grid-cols-2 gap-2">
-              <Field label="Image URL" value={step.image} onChange={v => updateStep({ ...step, image: v })} />
+              <MediaField
+                label="Image URL"
+                value={step.image}
+                onChange={v => updateStep({ ...step, image: v })}
+                onSelect={asset => updateStep({ ...step, image: asset.publicUrl, alt: step.alt || mediaAlt(asset) })}
+              />
               <Field label="Image Alt" value={step.alt} onChange={v => updateStep({ ...step, alt: v })} />
             </div>
           </div>
@@ -407,7 +477,7 @@ function LocalProTipsFields({ content, onChange }: { content: any; onChange: (c:
           <div className="space-y-2">
             <div className="grid grid-cols-2 gap-2">
               <Field label="Icon" value={item.icon} onChange={v => updateItem({ ...item, icon: v })} />
-              <Field label="Image" value={item.image} onChange={v => updateItem({ ...item, image: v })} />
+              <MediaField label="Image" value={item.image} onChange={v => updateItem({ ...item, image: v })} />
             </div>
             <Field label="Title" value={item.title} onChange={v => updateItem({ ...item, title: v })} />
             <Field label="Text" value={item.text} onChange={v => updateItem({ ...item, text: v })} multiline />
@@ -432,7 +502,12 @@ function GalleryFields({ content, update, onChange }: { content: any; update: (k
         createItem={() => ({ src: '', alt: '', caption: '' })}
         renderItem={(img: any, _, updateImg) => (
           <div className="space-y-2">
-            <Field label="Image URL" value={img.src} onChange={v => updateImg({ ...img, src: v })} />
+            <MediaField
+              label="Image URL"
+              value={img.src}
+              onChange={v => updateImg({ ...img, src: v })}
+              onSelect={asset => updateImg({ ...img, src: asset.publicUrl, alt: img.alt || mediaAlt(asset), caption: img.caption || asset.caption })}
+            />
             <div className="grid grid-cols-2 gap-2">
               <Field label="Alt Text" value={img.alt} onChange={v => updateImg({ ...img, alt: v })} />
               <Field label="Caption" value={img.caption} onChange={v => updateImg({ ...img, caption: v })} />
@@ -564,6 +639,141 @@ function FormFields({ content, update }: { content: any; update: (k: string, v: 
   )
 }
 
+function MediaField({
+  label,
+  value,
+  onChange,
+  onSelect,
+}: {
+  label: string
+  value: string
+  onChange: (v: string) => void
+  onSelect?: (asset: MediaAsset) => void
+}) {
+  const [pickerOpen, setPickerOpen] = useState(false)
+
+  const selectAsset = (asset: MediaAsset) => {
+    if (onSelect) {
+      onSelect(asset)
+    } else {
+      onChange(asset.publicUrl)
+    }
+    setPickerOpen(false)
+  }
+
+  return (
+    <div>
+      <label className={labelClass}>{label}</label>
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={value || ''}
+          onChange={e => onChange(e.target.value)}
+          className={inputClass}
+        />
+        <button
+          type="button"
+          onClick={() => setPickerOpen(true)}
+          className="inline-flex h-10 shrink-0 items-center gap-2 rounded-md border border-neutral-300 bg-white px-3 text-sm font-semibold text-neutral-800 hover:bg-neutral-50"
+        >
+          <ImageIcon className="h-4 w-4" aria-hidden="true" />
+          <span>Media</span>
+        </button>
+      </div>
+      {pickerOpen && (
+        <MediaPickerDialog
+          onClose={() => setPickerOpen(false)}
+          onSelect={selectAsset}
+          title={label}
+        />
+      )}
+    </div>
+  )
+}
+
+function mediaAlt(asset: MediaAsset) {
+  return asset.altText || asset.caption || asset.fileName
+}
+
+const aspectOptions = ['auto', 'square', '4:3', '16:9', '21:9']
+const fitOptions = ['cover', 'contain']
+const positionOptions = ['center', 'top', 'bottom', 'left', 'right']
+
+function ImagePresentationControls({
+  aspect,
+  fit,
+  label,
+  onChange,
+  position,
+  prefix = 'image',
+}: {
+  aspect?: string
+  fit?: string
+  label: string
+  onChange: (values: Record<string, string>) => void
+  position?: string
+  prefix?: string
+}) {
+  const aspectKey = `${prefix}Aspect`
+  const fitKey = `${prefix}Fit`
+  const positionKey = `${prefix}Position`
+
+  return (
+    <div>
+      <label className={labelClass}>{label} Presentation</label>
+      <div className="grid grid-cols-3 gap-2">
+        <PresetSelect
+          label="Aspect"
+          value={aspect || 'auto'}
+          options={aspectOptions}
+          onChange={(value) => onChange({ [aspectKey]: value, [fitKey]: fit || 'cover', [positionKey]: position || 'center' })}
+        />
+        <PresetSelect
+          label="Fit"
+          value={fit || 'cover'}
+          options={fitOptions}
+          onChange={(value) => onChange({ [aspectKey]: aspect || 'auto', [fitKey]: value, [positionKey]: position || 'center' })}
+        />
+        <PresetSelect
+          label="Position"
+          value={position || 'center'}
+          options={positionOptions}
+          onChange={(value) => onChange({ [aspectKey]: aspect || 'auto', [fitKey]: fit || 'cover', [positionKey]: value })}
+        />
+      </div>
+    </div>
+  )
+}
+
+function ImagePositionControl({ label, value, onChange }: { label: string; value?: string; onChange: (value: string) => void }) {
+  return (
+    <PresetSelect label={label} value={value || 'center'} options={positionOptions} onChange={onChange} />
+  )
+}
+
+function PresetSelect({
+  label,
+  onChange,
+  options,
+  value,
+}: {
+  label: string
+  onChange: (value: string) => void
+  options: string[]
+  value: string
+}) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-[11px] font-medium text-neutral-500">{label}</span>
+      <select value={value} onChange={e => onChange(e.target.value)} className={inputClass}>
+        {options.map((option) => (
+          <option key={option} value={option}>{option}</option>
+        ))}
+      </select>
+    </label>
+  )
+}
+
 /* Blog */
 
 function BlogFields({ content, update, onChange }: { content: any; update: (k: string, v: any) => void; onChange: (c: any) => void }) {
@@ -576,18 +786,43 @@ function BlogFields({ content, update, onChange }: { content: any; update: (k: s
         <Field label="Published Date" value={content.publishedDate} onChange={v => update('publishedDate', v)} type="date" />
       </div>
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Author Image URL" value={content.authorImage} onChange={v => update('authorImage', v)} />
+        <MediaField label="Author Image URL" value={content.authorImage} onChange={v => update('authorImage', v)} />
         <NumberField label="Reading Time (min)" value={content.readingTime} onChange={v => update('readingTime', v)} />
       </div>
       <Field label="Author Bio" value={content.authorBio} onChange={v => update('authorBio', v)} multiline />
       <Field label="Excerpt" value={content.excerpt} onChange={v => update('excerpt', v)} multiline />
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Featured Image URL" value={content.featuredImage} onChange={v => update('featuredImage', v)} />
+        <MediaField
+          label="Featured Image URL"
+          value={content.featuredImage}
+          onChange={v => update('featuredImage', v)}
+          onSelect={asset => onChange({
+            ...content,
+            featuredImage: asset.publicUrl,
+            featuredImageAlt: content.featuredImageAlt || mediaAlt(asset),
+          })}
+        />
         <Field label="Featured Image Alt" value={content.featuredImageAlt} onChange={v => update('featuredImageAlt', v)} />
       </div>
+      <ImagePresentationControls
+        label="Featured Image"
+        aspect={content.featuredImageAspect}
+        fit={content.featuredImageFit}
+        position={content.featuredImagePosition}
+        onChange={(values) => onChange({ ...content, ...values })}
+        prefix="featuredImage"
+      />
       <Field label="Body (HTML/Markdown)" value={content.body} onChange={v => update('body', v)} multiline />
       <TagsInput label="Tags" value={content.tags || []} onChange={v => onChange({ ...content, tags: v })} />
       <TagsInput label="Categories" value={content.categories || []} onChange={v => onChange({ ...content, categories: v })} />
+      <ImagePresentationControls
+        label="Related Images"
+        aspect={content.relatedImageAspect}
+        fit={content.relatedImageFit}
+        position={content.relatedImagePosition}
+        onChange={(values) => onChange({ ...content, ...values })}
+        prefix="relatedImage"
+      />
       <ArrayManager
         label="Related Posts"
         items={content.relatedPosts || []}
@@ -601,7 +836,12 @@ function BlogFields({ content, update, onChange }: { content: any; update: (k: s
             </div>
             <Field label="Excerpt" value={post.excerpt} onChange={v => updatePost({ ...post, excerpt: v })} />
             <div className="grid grid-cols-2 gap-2">
-              <Field label="Image" value={post.image} onChange={v => updatePost({ ...post, image: v })} />
+              <MediaField
+                label="Image"
+                value={post.image}
+                onChange={v => updatePost({ ...post, image: v })}
+                onSelect={asset => updatePost({ ...post, image: asset.publicUrl, imageAlt: post.imageAlt || mediaAlt(asset) })}
+              />
               <Field label="Published Date" value={post.publishedDate} onChange={v => updatePost({ ...post, publishedDate: v })} type="date" />
             </div>
           </div>

@@ -1,4 +1,5 @@
 import { IHtmlBlock } from './IHtmlBlock';
+import type { ImageAspect, ImageFit, ImagePosition } from './ImagePresentation';
 /**
  * Related blog post reference
  */
@@ -22,11 +23,17 @@ export interface BlogContent {
     publishedDate: string;
     featuredImage: string;
     featuredImageAlt: string;
+    featuredImageAspect?: ImageAspect;
+    featuredImageFit?: ImageFit;
+    featuredImagePosition?: ImagePosition;
     excerpt: string;
     body: string;
     tags: string[];
     categories: string[];
     readingTime: number;
+    relatedImageAspect?: ImageAspect;
+    relatedImageFit?: ImageFit;
+    relatedImagePosition?: ImagePosition;
     relatedPosts: RelatedPost[];
 }
 /**

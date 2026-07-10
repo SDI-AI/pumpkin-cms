@@ -1,6 +1,7 @@
 import React from 'react';
 import type { HeroBlock } from 'pumpkin-ts-models';
 import { heroDefaults, type HeroClassNames } from '../defaults/hero';
+import { backgroundPosition, imagePresentationClasses } from '../utils/imagePresentation';
 import { mergeClasses } from '../utils/mergeClasses';
 
 export interface HeroBlockViewProps {
@@ -15,14 +16,30 @@ export function HeroBlockView({ block, classNames }: HeroBlockViewProps) {
   return (
     <section
       className={cx.root}
-      style={content.backgroundImage ? { backgroundImage: `url(${content.backgroundImage})` } : undefined}
+      style={content.backgroundImage
+        ? {
+            backgroundImage: `url(${content.backgroundImage})`,
+            backgroundPosition: backgroundPosition(content.backgroundImagePosition),
+          }
+        : undefined}
     >
       {content.backgroundImage && <div className={cx.overlay} aria-hidden="true" />}
       <div className={cx.container}>
         <h1 className={cx.headline}>{content.headline}</h1>
         {content.subheadline && <p className={cx.subheadline}>{content.subheadline}</p>}
         {content.mainImage && (
-          <img src={content.mainImage} alt={content.mainImageAltText || ''} className={cx.mainImage} />
+          <img
+            src={content.mainImage}
+            alt={content.mainImageAltText || ''}
+            className={[
+              cx.mainImage,
+              imagePresentationClasses({
+                aspect: content.mainImageAspect || '16:9',
+                fit: content.mainImageFit || 'cover',
+                position: content.mainImagePosition || 'center',
+              }),
+            ].join(' ')}
+          />
         )}
         {content.buttonText && (
           <a href={content.buttonLink} className={cx.button}>{content.buttonText}</a>
