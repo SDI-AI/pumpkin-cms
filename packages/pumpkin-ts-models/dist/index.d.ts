@@ -10,7 +10,7 @@ export type { FormDefinition, FormFieldDefinition, FormFieldOption, FormFieldTyp
 export type { Page, PageMetaData, SearchData, ContentData, SeoData, AlternateUrl, OpenGraphData, TwitterCardData, ContentRelationships, NodePosition } from './models/Page';
 export type { HeroType, HeroContent, HeroBlock } from './models/HeroBlocks';
 export type { PrimaryCtaContent, PrimaryCtaBlock, SecondaryCtaContent, SecondaryCtaBlock } from './models/CtaBlocks';
-export type { Card, CardGridContent, CardGridBlock, FaqItem, FaqContent, FaqBlock } from './models/ContentBlocks';
+export type { Card, CardGridContent, CardGridBlock, FaqItem, FaqContent, FaqBlock, HubSpokeLink, HubSpokesContent, HubSpokesLayout, HubSpokesBlock } from './models/ContentBlocks';
 export type { BreadcrumbItem, BreadcrumbsContent, BreadcrumbsBlock, TrustBarItem, TrustBarContent, TrustBarBlock, Step, HowItWorksContent, HowItWorksBlock, ServiceAreaMapContent, ServiceAreaMapBlock, ProTipItem, LocalProTipsContent, LocalProTipsBlock } from './models/NavigationBlocks';
 export type { GalleryImage, GalleryContent, GalleryBlock, TestimonialItem, TestimonialsContent, TestimonialsBlock, FormField, SocialLink, ContactContent, ContactBlock, FormBlockContent, FormBlock } from './models/InteractionBlocks';
 export type { RelatedPost, BlogContent, BlogBlock } from './models/BlogBlocks';

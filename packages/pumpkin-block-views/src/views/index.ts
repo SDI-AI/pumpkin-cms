@@ -13,6 +13,9 @@ export type { CardGridBlockViewProps } from './CardGridBlockView';
 export { FaqBlockView } from './FaqBlockView';
 export type { FaqBlockViewProps } from './FaqBlockView';
 
+export { HubSpokesBlockView } from './HubSpokesBlockView';
+export type { HubSpokesBlockViewProps } from './HubSpokesBlockView';
+
 export { BreadcrumbsBlockView } from './BreadcrumbsBlockView';
 export type { BreadcrumbsBlockViewProps } from './BreadcrumbsBlockView';
 

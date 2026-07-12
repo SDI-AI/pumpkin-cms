@@ -63,6 +63,11 @@ public class DatabaseService : IDatabaseService, IDisposable
         return _dataConnection.GetSitemapPagesAsync(apiKey, tenantId);
     }
 
+    public Task<List<Page>> GetPublishedSpokePagesAsync(string apiKey, string tenantId, string hubPageSlug, int limit)
+    {
+        return _dataConnection.GetPublishedSpokePagesAsync(apiKey, tenantId, hubPageSlug, limit);
+    }
+
     // Admin methods (JWT authentication required at endpoint level)
     public Task<Tenant?> GetTenantAsync(string tenantId)
     {

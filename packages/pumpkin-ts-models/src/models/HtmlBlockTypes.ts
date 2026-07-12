@@ -1,7 +1,7 @@
 import { IHtmlBlock } from './IHtmlBlock';
 import { HeroBlock } from './HeroBlocks';
 import { PrimaryCtaBlock, SecondaryCtaBlock } from './CtaBlocks';
-import { CardGridBlock, FaqBlock } from './ContentBlocks';
+import { CardGridBlock, FaqBlock, HubSpokesBlock } from './ContentBlocks';
 import { BreadcrumbsBlock, TrustBarBlock, HowItWorksBlock, ServiceAreaMapBlock, LocalProTipsBlock } from './NavigationBlocks';
 import { GalleryBlock, TestimonialsBlock, ContactBlock, FormBlock } from './InteractionBlocks';
 import { BlogBlock } from './BlogBlocks';
@@ -15,6 +15,7 @@ export type HtmlBlock =
   | SecondaryCtaBlock
   | CardGridBlock
   | FaqBlock
+  | HubSpokesBlock
   | BreadcrumbsBlock
   | TrustBarBlock
   | HowItWorksBlock
@@ -35,6 +36,7 @@ export const BLOCK_TYPE_MAP = {
   'SecondaryCTA': 'SecondaryCtaBlock',
   'CardGrid': 'CardGridBlock',
   'FAQ': 'FaqBlock',
+  'HubSpokes': 'HubSpokesBlock',
   'Breadcrumbs': 'BreadcrumbsBlock',
   'TrustBar': 'TrustBarBlock',
   'HowItWorks': 'HowItWorksBlock',

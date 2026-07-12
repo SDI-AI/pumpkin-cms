@@ -326,6 +326,27 @@ app.MapGet("/api/tenant/{tenantId}/sitemap",
     .WithDescription("Returns a list of all published page slugs where isPublished=true and includeInSitemap=true. Useful for generating XML sitemaps. Requires API key authentication via Authorization header (Bearer {apiKey})")
     .RequireCors("TenantCors");
 
+// Get published spoke pages for a hub
+app.MapGet("/api/hubs/{tenantId}/spokes/{**hubPageSlug}",
+    async (IDatabaseService databaseService, string tenantId, string hubPageSlug, HttpContext context, int limit = 12) =>
+    {
+        var authHeader = context.Request.Headers.Authorization.FirstOrDefault();
+        var apiKey = string.Empty;
+
+        if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+        {
+            apiKey = authHeader.Substring("Bearer ".Length).Trim();
+        }
+
+        var decodedHubPageSlug = Uri.UnescapeDataString(hubPageSlug);
+        return await PumpkinManager.GetPublishedSpokePagesAsync(databaseService, apiKey, tenantId, decodedHubPageSlug, limit);
+    })
+    .WithTags("Hubs")
+    .WithName("GetPublishedSpokePages")
+    .WithSummary("Get published spoke pages for a hub")
+    .WithDescription("Returns published non-hub spoke pages linked to a hub slug for public rendering. Requires API key authentication via Authorization header (Bearer {apiKey})")
+    .RequireCors("TenantCors");
+
 // ===== CONTENT SERVING: THEME ENDPOINTS =====
 
 // Get the active theme for a tenant (public, API key required)

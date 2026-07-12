@@ -232,6 +232,50 @@ public static class PumpkinManager
         }
     }
 
+    public static async Task<IResult> GetPublishedSpokePagesAsync(
+        IDatabaseService databaseService,
+        string apiKey,
+        string tenantId,
+        string hubPageSlug,
+        int limit)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(apiKey))
+                return Results.BadRequest("API key is required");
+
+            if (string.IsNullOrEmpty(tenantId))
+                return Results.BadRequest("Tenant ID is required");
+
+            if (string.IsNullOrWhiteSpace(hubPageSlug))
+                return Results.BadRequest("Hub page slug is required");
+
+            var safeLimit = Math.Clamp(limit <= 0 ? 12 : limit, 1, 50);
+            var spokes = await databaseService.GetPublishedSpokePagesAsync(apiKey, tenantId, hubPageSlug, safeLimit);
+
+            return Results.Ok(new
+            {
+                tenantId,
+                hubPageSlug,
+                spokePages = spokes,
+                count = spokes.Count,
+                limit = safeLimit
+            });
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Results.Unauthorized();
+        }
+        catch (ArgumentException ex)
+        {
+            return Results.BadRequest(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Error retrieving spoke pages: {ex.Message}");
+        }
+    }
+
     public static async Task<(bool IsValid, Tenant? Tenant, bool IsAdmin)> ValidateTenantAsync(
         IDatabaseService databaseService,
         string tenantId, 

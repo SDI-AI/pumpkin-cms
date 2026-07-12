@@ -88,6 +88,7 @@ function getSectionId(block: CmsBlock) {
     CardGrid: 'features',
     HowItWorks: 'how-it-works',
     FAQ: 'faq',
+    HubSpokes: 'related-pages',
     Blog: 'blog',
     Contact: 'contact',
     Form: 'contact',

@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { PageRenderer } from '@/components/PageRenderer';
 import { buildMetadata } from '@/lib/metadata';
-import { fetchPumpkinPage, getFormDefinitionsForPage, getSiteTheme } from '@/lib/pumpkin-api';
+import { fetchPumpkinPage, getFormDefinitionsForPage, getSiteTheme, hydrateHubSpokesForPage } from '@/lib/pumpkin-api';
 
 export const revalidate = 604800;
 
@@ -32,11 +32,12 @@ export default async function SlugPage({ params }: SlugPageProps) {
     notFound();
   }
 
-  const formDefinitions = await getFormDefinitionsForPage(page);
+  const hydratedPage = await hydrateHubSpokesForPage(page);
+  const formDefinitions = await getFormDefinitionsForPage(hydratedPage);
 
   return (
     <PageRenderer
-      page={page}
+      page={hydratedPage}
       blockStyles={theme.blockStyles}
       formDefinitions={formDefinitions}
     />
