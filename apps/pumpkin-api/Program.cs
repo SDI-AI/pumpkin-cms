@@ -148,7 +148,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI(options =>
     {
-        options.SwaggerEndpoint("/swagger/v1/swagger.json", "Pumpkin CMS API v.9");
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "Pumpkin CMS API v1");
         options.RoutePrefix = "swagger";
         options.DocumentTitle = "Pumpkin CMS API Documentation";
         options.DefaultModelsExpandDepth(2);

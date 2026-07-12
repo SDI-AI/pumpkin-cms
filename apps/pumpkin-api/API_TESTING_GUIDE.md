@@ -180,7 +180,7 @@ This will be deserialized as a `GenericHtmlBlock` with a dictionary of propertie
 curl http://localhost:5000/
 ```
 
-**Expected:** `"?? Welcome to Pumpkin CMS v0.1 ??"`
+**Expected:** `"Welcome to Pumpkin CMS v1"`
 
 ### Verify tenant exists:
 Use Azure Portal or Cosmos DB Emulator Data Explorer to query:

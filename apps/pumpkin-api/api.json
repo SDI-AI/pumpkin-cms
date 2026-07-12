@@ -7,7 +7,7 @@
       "name": "Pumpkin CMS",
       "url": "https://github.com/sdi-ai/pumpkin-cms"
     },
-    "version": "v0.2"
+    "version": "v1"
   },
   "paths": {
     "/api/forms/{tenantId}/entries": {
