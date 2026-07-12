@@ -7,7 +7,7 @@ export default async function StarterAdminThemesPage() {
   requireStarterAdmin();
 
   const context = getStarterAdminContext();
-  const themes = await getStarterAdminThemes();
+  const { themes, activeThemeId } = await getStarterAdminThemes();
 
   return (
     <section>
@@ -16,7 +16,7 @@ export default async function StarterAdminThemesPage() {
         title="Themes"
         description="Manage installed runtime themes, activate a theme, and edit tenant theme JSON."
       />
-      <ThemeList themes={themes} tenantId={context.tenantId} />
+      <ThemeList themes={themes} tenantId={context.tenantId} activeThemeId={activeThemeId} />
     </section>
   );
 }

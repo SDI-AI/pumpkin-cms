@@ -40,6 +40,20 @@ theme-package.zip
 
 `theme.css` should be the optimized output from the theme build. Tailwind classes that the theme needs must already be present in that file; the deployed app will not regenerate them.
 
+The repository includes installable package sources for the built-in default theme and an alternate test theme:
+
+- `theme-packages/pumpkin-default`
+- `theme-packages/pumpkin-evergreen`
+
+Build local zips for admin install testing with:
+
+```powershell
+Compress-Archive -Path theme-packages\pumpkin-default\* -DestinationPath .tmp\pumpkin-default-theme.zip -Force
+Compress-Archive -Path theme-packages\pumpkin-evergreen\* -DestinationPath .tmp\pumpkin-evergreen-theme.zip -Force
+```
+
+The starter app should still keep its built-in fallback theme document and local default stylesheet. The packages are for runtime install/switching; the fallback is for first-run, empty-database, or storage recovery scenarios.
+
 ## Blob Layout
 
 The API is provisioned for tenant-scoped Azure Blob storage with this default path template:

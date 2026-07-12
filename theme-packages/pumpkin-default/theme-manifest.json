@@ -1,0 +1,12 @@
+{
+  "packageId": "pumpkin-default",
+  "themeId": "pumpkin-default",
+  "name": "Pumpkin Default",
+  "version": 1,
+  "entrypoints": {
+    "css": "theme.css"
+  },
+  "assets": [],
+  "compiledAt": "2026-07-10T00:00:00Z",
+  "compiler": "manual-pumpkin-theme-package@1.0.0"
+}

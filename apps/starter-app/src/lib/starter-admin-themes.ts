@@ -5,6 +5,7 @@ interface ThemesResponse {
   themes: Theme[];
   count: number;
   tenantId: string;
+  activeThemeId?: string;
 }
 
 export interface ThemeInstallResponse {
@@ -25,7 +26,10 @@ export async function getStarterAdminThemes() {
     `/api/admin/themes/${encodeURIComponent(tenantId)}`,
   );
 
-  return response.themes;
+  return {
+    themes: response.themes,
+    activeThemeId: response.activeThemeId,
+  };
 }
 
 export async function getStarterAdminTheme(id: string) {

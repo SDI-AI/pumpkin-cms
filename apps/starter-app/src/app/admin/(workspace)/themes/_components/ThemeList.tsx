@@ -10,6 +10,7 @@ import { createTheme } from './ThemeEditor';
 interface ThemeListProps {
   themes: Theme[];
   tenantId: string;
+  activeThemeId?: string;
 }
 
 interface ThemePreset {
@@ -67,7 +68,7 @@ const themePresets: ThemePreset[] = [
   },
 ];
 
-export function ThemeList({ themes, tenantId }: ThemeListProps) {
+export function ThemeList({ themes, tenantId, activeThemeId }: ThemeListProps) {
   const router = useRouter();
   const [query, setQuery] = useState('');
   const [message, setMessage] = useState('');
@@ -78,6 +79,7 @@ export function ThemeList({ themes, tenantId }: ThemeListProps) {
   const [isPending, startTransition] = useTransition();
   const packageInputRef = useRef<HTMLInputElement>(null);
   const installedThemeIds = new Set(themes.map((theme) => theme.themeId));
+  const resolvedActiveThemeId = activeThemeId || themes.find((theme) => theme.isActive)?.themeId || '';
 
   const filtered = themes
     .filter((theme) => {
@@ -93,7 +95,10 @@ export function ThemeList({ themes, tenantId }: ThemeListProps) {
         ...(theme.tags ?? []),
       ].filter(Boolean).join(' ').toLowerCase().includes(normalized);
     })
-    .sort((a, b) => Number(b.isActive) - Number(a.isActive) || a.name.localeCompare(b.name));
+    .sort((a, b) =>
+      Number(b.themeId === resolvedActiveThemeId) - Number(a.themeId === resolvedActiveThemeId) ||
+      a.name.localeCompare(b.name),
+    );
 
   const activate = async (theme: Theme) => {
     setMessage('');
@@ -286,56 +291,14 @@ export function ThemeList({ themes, tenantId }: ThemeListProps) {
 
       <div className="grid gap-4 lg:grid-cols-2">
         {filtered.map((theme) => (
-          <article key={theme.themeId} className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <h2 className="text-base font-bold text-neutral-950">{theme.name}</h2>
-                  {theme.isActive && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-1 text-xs font-semibold text-green-800">
-                      <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
-                      Active
-                    </span>
-                  )}
-                </div>
-                <p className="mt-1 text-sm text-neutral-600">{theme.description || theme.label}</p>
-              </div>
-              <div className="flex shrink-0 gap-1">
-                {(theme.preview?.palette ?? []).slice(0, 5).map((color) => (
-                  <span
-                    key={color}
-                    className="h-5 w-5 rounded-full border border-neutral-200"
-                    style={{ backgroundColor: color }}
-                    title={color}
-                  />
-                ))}
-              </div>
-            </div>
-
-            <div className="mt-4 flex flex-wrap gap-2 text-xs text-neutral-600">
-              <span className="rounded-full bg-neutral-100 px-2 py-1">{theme.category || 'uncategorized'}</span>
-              <span className="rounded-full bg-neutral-100 px-2 py-1">v{theme.version}</span>
-              {theme.isSystem && <span className="rounded-full bg-neutral-100 px-2 py-1">system</span>}
-              {theme.isCustom && <span className="rounded-full bg-neutral-100 px-2 py-1">custom</span>}
-            </div>
-
-            <div className="mt-5 flex flex-wrap justify-end gap-2">
-              <Link
-                href={`/admin/themes/${encodeURIComponent(theme.themeId)}`}
-                className="inline-flex h-9 items-center rounded-md border border-neutral-300 px-3 text-sm font-semibold text-neutral-800 hover:bg-neutral-50"
-              >
-                Edit
-              </Link>
-              <button
-                type="button"
-                onClick={() => activate(theme)}
-                disabled={theme.isActive || activatingId === theme.themeId || isPending}
-                className="inline-flex h-9 items-center rounded-md bg-pumpkin-600 px-3 text-sm font-bold text-white hover:bg-pumpkin-700 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {activatingId === theme.themeId ? 'Activating...' : 'Activate'}
-              </button>
-            </div>
-          </article>
+          <ThemeCard
+            key={theme.themeId}
+            theme={theme}
+            isActive={theme.themeId === resolvedActiveThemeId}
+            activatingId={activatingId}
+            isPending={isPending}
+            onActivate={activate}
+          />
         ))}
       </div>
 
@@ -346,6 +309,73 @@ export function ThemeList({ themes, tenantId }: ThemeListProps) {
         </div>
       )}
     </div>
+  );
+}
+
+function ThemeCard({
+  theme,
+  isActive,
+  activatingId,
+  isPending,
+  onActivate,
+}: {
+  theme: Theme;
+  isActive: boolean;
+  activatingId: string;
+  isPending: boolean;
+  onActivate: (theme: Theme) => void;
+}) {
+  return (
+    <article className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="text-base font-bold text-neutral-950">{theme.name}</h2>
+            {isActive && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-1 text-xs font-semibold text-green-800">
+                <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
+                Active
+              </span>
+            )}
+          </div>
+          <p className="mt-1 text-sm text-neutral-600">{theme.description || theme.label}</p>
+        </div>
+        <div className="flex shrink-0 gap-1">
+          {(theme.preview?.palette ?? []).slice(0, 5).map((color) => (
+            <span
+              key={color}
+              className="h-5 w-5 rounded-full border border-neutral-200"
+              style={{ backgroundColor: color }}
+              title={color}
+            />
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-4 flex flex-wrap gap-2 text-xs text-neutral-600">
+        <span className="rounded-full bg-neutral-100 px-2 py-1">{theme.category || 'uncategorized'}</span>
+        <span className="rounded-full bg-neutral-100 px-2 py-1">v{theme.version}</span>
+        {theme.isSystem && <span className="rounded-full bg-neutral-100 px-2 py-1">system</span>}
+        {theme.isCustom && <span className="rounded-full bg-neutral-100 px-2 py-1">custom</span>}
+      </div>
+
+      <div className="mt-5 flex flex-wrap justify-end gap-2">
+        <Link
+          href={`/admin/themes/${encodeURIComponent(theme.themeId)}`}
+          className="inline-flex h-9 items-center rounded-md border border-neutral-300 px-3 text-sm font-semibold text-neutral-800 hover:bg-neutral-50"
+        >
+          Edit
+        </Link>
+        <button
+          type="button"
+          onClick={() => onActivate(theme)}
+          disabled={isActive || activatingId === theme.themeId || isPending}
+          className="inline-flex h-9 items-center rounded-md bg-pumpkin-600 px-3 text-sm font-bold text-white hover:bg-pumpkin-700 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {activatingId === theme.themeId ? 'Activating...' : 'Activate'}
+        </button>
+      </div>
+    </article>
   );
 }
 

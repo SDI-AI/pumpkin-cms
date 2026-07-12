@@ -9,8 +9,8 @@ export async function GET() {
   }
 
   try {
-    const themes = await getStarterAdminThemes();
-    return NextResponse.json({ themes, count: themes.length });
+    const { themes, activeThemeId } = await getStarterAdminThemes();
+    return NextResponse.json({ themes, count: themes.length, activeThemeId });
   } catch (error) {
     return NextResponse.json(
       { message: error instanceof Error ? error.message : 'Unable to load themes.' },
