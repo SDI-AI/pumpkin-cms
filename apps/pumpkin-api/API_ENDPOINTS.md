@@ -46,7 +46,7 @@ This inventory reflects the current `pumpkin-api` minimal API surface.
 | GET | `/api/themes/{tenantId}` | tenant API key | Returns the active tenant theme. |
 | GET | `/api/themes/{tenantId}/{themeId}` | tenant API key | Returns a theme by ID. |
 
-Theme consumers that use ISR should cache the active-theme response with a tag like `tenant:{tenantId}:theme`. Theme activation changes the tenant active-theme pointer, so future sample-app revalidation should invalidate that tag and any tenant page tags that embed theme variables directly.
+Theme consumers that use ISR should cache the active-theme response with a tag like `tenant:{tenantId}:theme`. Theme activation changes the tenant active-theme pointer, so future starter-app revalidation should invalidate that tag and any tenant page tags that embed theme variables directly.
 
 ## Admin Tenants
 
