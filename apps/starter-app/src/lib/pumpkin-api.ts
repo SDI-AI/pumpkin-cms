@@ -6,6 +6,11 @@ import { resolveThemePlugin } from '@/themes/registry';
 const REVALIDATE_SECONDS = 60;
 const FETCH_TIMEOUT_MS = 5000;
 
+interface PumpkinFetchOptions {
+  cache?: RequestCache;
+  revalidate?: number;
+}
+
 export async function fetchPumpkinPage(slug: string): Promise<Page | null> {
   const config = loadTenantConfig();
   if (!config) return null;
@@ -29,6 +34,7 @@ export async function getSiteTheme(): Promise<Theme> {
   const theme = await fetchFromPumpkin<Theme>(
     `${config.apiUrl}/api/themes/${encodeURIComponent(config.tenantId)}`,
     config.apiKey,
+    { cache: 'no-store' },
   );
 
   return resolveThemePlugin(theme ?? fallbackTheme);
@@ -75,16 +81,27 @@ function getFormTypesFromPage(page: Page) {
   );
 }
 
-async function fetchFromPumpkin<T>(url: string, apiKey: string): Promise<T | null> {
+async function fetchFromPumpkin<T>(
+  url: string,
+  apiKey: string,
+  options: PumpkinFetchOptions = {},
+): Promise<T | null> {
   try {
-    const response = await fetch(url, {
+    const fetchOptions: RequestInit & { next?: { revalidate: number } } = {
       headers: {
         Accept: 'application/json',
         Authorization: `Bearer ${apiKey}`,
       },
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-      next: { revalidate: REVALIDATE_SECONDS },
-    });
+    };
+
+    if (options.cache === 'no-store') {
+      fetchOptions.cache = 'no-store';
+    } else {
+      fetchOptions.next = { revalidate: options.revalidate ?? REVALIDATE_SECONDS };
+    }
+
+    const response = await fetch(url, fetchOptions);
 
     if (!response.ok) {
       console.warn(`[pumpkin-api] ${response.status} ${response.statusText} for ${url}`);

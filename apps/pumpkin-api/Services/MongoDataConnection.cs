@@ -825,6 +825,16 @@ public class MongoDataConnection : IDataConnection, IDisposable
     public async Task<Theme?> GetActiveThemeAdminAsync(string tenantId)
     {
         var themeCollection = _database.GetCollection<Theme>("Theme");
+        var filter = Builders<Theme>.Filter.And(
+            Builders<Theme>.Filter.Eq(t => t.TenantId, tenantId),
+            Builders<Theme>.Filter.Eq(t => t.IsActive, true)
+        );
+        var activeTheme = await themeCollection.Find(filter).FirstOrDefaultAsync();
+        if (activeTheme != null)
+        {
+            return activeTheme;
+        }
+
         var tenant = await GetTenantAsync(tenantId);
         if (!string.IsNullOrWhiteSpace(tenant?.Settings?.Theme))
         {
@@ -835,11 +845,7 @@ public class MongoDataConnection : IDataConnection, IDisposable
             }
         }
 
-        var filter = Builders<Theme>.Filter.And(
-            Builders<Theme>.Filter.Eq(t => t.TenantId, tenantId),
-            Builders<Theme>.Filter.Eq(t => t.IsActive, true)
-        );
-        return await themeCollection.Find(filter).FirstOrDefaultAsync();
+        return null;
     }
 
     // Admin: Get all themes for a tenant

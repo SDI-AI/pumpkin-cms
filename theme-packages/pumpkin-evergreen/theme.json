@@ -1,0 +1,248 @@
+{
+  "id": "pumpkin-evergreen",
+  "themeId": "pumpkin-evergreen",
+  "tenantId": "",
+  "name": "Pumpkin Evergreen",
+  "label": "Pumpkin Evergreen",
+  "description": "An alternate compiled Pumpkin theme with evergreen surfaces, teal primary actions, and pumpkin accent details.",
+  "category": "starter",
+  "tags": ["pumpkin", "compiled", "starter", "evergreen"],
+  "isActive": false,
+  "isSystem": false,
+  "isCustom": true,
+  "createdByUserId": "system",
+  "version": 1,
+  "preview": {
+    "palette": ["#0f766e", "#134e4a", "#f97316", "#f7fbf6", "#16231d"],
+    "background": "#f7fbf6",
+    "foreground": "#16231d",
+    "primary": "#0f766e",
+    "accent": "#f97316"
+  },
+  "cssVariables": {
+    "--pk-color-background": "#f7fbf6",
+    "--pk-color-surface": "#ffffff",
+    "--pk-color-surface-muted": "#eef6ee",
+    "--pk-color-text": "#16231d",
+    "--pk-color-text-muted": "#53645a",
+    "--pk-color-border": "#d8e3d9",
+    "--pk-color-primary": "#0f766e",
+    "--pk-color-primary-dark": "#134e4a",
+    "--pk-color-primary-soft": "#e6f4ef",
+    "--pk-color-accent": "#f97316"
+  },
+  "typography": {
+    "fontSans": "Inter",
+    "fontSerif": "Georgia",
+    "fontMono": "ui-monospace",
+    "headingFont": "Inter",
+    "bodyFont": "Inter",
+    "baseFontSize": "16px",
+    "lineHeight": "1.6",
+    "fontWeights": {
+      "normal": "400",
+      "medium": "500",
+      "bold": "700",
+      "black": "900"
+    }
+  },
+  "spacing": {
+    "baseUnit": "4px",
+    "scale": {}
+  },
+  "borders": {
+    "radius": {
+      "sm": "4px",
+      "md": "6px",
+      "lg": "8px"
+    },
+    "width": {
+      "sm": "1px"
+    },
+    "style": "solid"
+  },
+  "shadows": {
+    "scale": {}
+  },
+  "header": {
+    "logoUrl": "",
+    "logoAlt": "Pumpkin CMS",
+    "sticky": true,
+    "ctaText": "Get Started",
+    "ctaUrl": "#contact",
+    "ctaTarget": "_self",
+    "classNames": {
+      "root": "pk-header",
+      "container": "pk-header__container",
+      "logoWrapper": "pk-header__logo",
+      "logoIcon": "pk-header__logo-icon",
+      "logoImage": "pk-header__logo-image",
+      "logoText": "pk-header__logo-text",
+      "nav": "pk-header__nav",
+      "navLink": "pk-header__nav-link",
+      "navLinkActive": "pk-header__nav-link pk-header__nav-link--active",
+      "navDropdown": "pk-header__dropdown",
+      "navDropdownTrigger": "pk-header__dropdown-trigger",
+      "navDropdownArrow": "pk-header__dropdown-arrow",
+      "navDropdownArrowOpen": "pk-header__dropdown-arrow pk-header__dropdown-arrow--open",
+      "navDropdownMenu": "pk-header__dropdown-menu",
+      "navDropdownItem": "pk-header__dropdown-item",
+      "ctaButton": "pk-header__cta",
+      "mobileToggle": "pk-header__mobile-toggle",
+      "mobileMenu": "pk-header__mobile-menu",
+      "mobileLink": "pk-header__mobile-link",
+      "mobileDropdownTrigger": "pk-header__mobile-dropdown-trigger",
+      "mobileDropdownArrow": "pk-header__mobile-dropdown-arrow",
+      "mobileDropdownArrowOpen": "pk-header__mobile-dropdown-arrow pk-header__mobile-dropdown-arrow--open",
+      "mobileSubMenu": "pk-header__mobile-submenu",
+      "mobileSubLink": "pk-header__mobile-sub-link",
+      "mobileCta": "pk-header__mobile-cta"
+    }
+  },
+  "footer": {
+    "copyright": "(c) {year} Pumpkin CMS. All rights reserved.",
+    "description": "A block-based, API-first CMS for fast tenant websites.",
+    "classNames": {
+      "root": "pk-footer",
+      "container": "pk-footer__container",
+      "topSection": "pk-footer__top",
+      "brandSection": "pk-footer__brand",
+      "brandLogoWrapper": "pk-footer__brand-logo",
+      "brandLogoIcon": "pk-footer__brand-logo-icon",
+      "brandLogoImage": "pk-footer__brand-logo-image",
+      "brandLogoText": "pk-footer__brand-logo-text",
+      "brandDescription": "pk-footer__brand-description",
+      "columnsSection": "pk-footer__columns",
+      "columnTitle": "pk-footer__column-title",
+      "columnList": "pk-footer__column-list",
+      "columnLink": "pk-footer__column-link",
+      "bottomBar": "pk-footer__bottom",
+      "bottomBarInner": "pk-footer__bottom-inner",
+      "copyright": "pk-footer__copyright",
+      "builtWith": "pk-footer__built-with"
+    }
+  },
+  "blockStyles": {
+    "Hero": {
+      "root": "pk-hero",
+      "overlay": "pk-hero__overlay",
+      "container": "pk-hero__container",
+      "headline": "pk-hero__headline",
+      "subheadline": "pk-hero__subheadline",
+      "button": "pk-hero__button",
+      "mainImage": "pk-hero__image"
+    },
+    "TrustBar": {
+      "root": "pk-trust",
+      "container": "pk-trust__container",
+      "grid": "pk-trust__grid",
+      "item": "pk-trust__item",
+      "icon": "pk-trust__icon",
+      "itemTitle": "pk-trust__title",
+      "itemText": "pk-trust__text"
+    },
+    "CardGrid": {
+      "root": "pk-card-grid",
+      "container": "pk-card-grid__container",
+      "header": "pk-card-grid__header",
+      "title": "pk-card-grid__title",
+      "subtitle": "pk-card-grid__subtitle",
+      "grid": "pk-card-grid__grid",
+      "card": "pk-card-grid__card",
+      "cardImage": "pk-card-grid__card-image",
+      "cardBody": "pk-card-grid__card-body",
+      "cardIcon": "pk-card-grid__card-icon",
+      "cardTitle": "pk-card-grid__card-title",
+      "cardDescription": "pk-card-grid__card-description",
+      "cardLink": "pk-card-grid__card-link"
+    },
+    "HowItWorks": {
+      "root": "pk-steps",
+      "container": "pk-steps__container",
+      "title": "pk-steps__title",
+      "steps": "pk-steps__grid",
+      "step": "pk-steps__item",
+      "stepImage": "pk-steps__image",
+      "stepNumber": "pk-steps__number",
+      "stepTitle": "pk-steps__item-title",
+      "stepText": "pk-steps__item-text"
+    },
+    "FAQ": {
+      "root": "pk-faq",
+      "container": "pk-faq__container",
+      "header": "pk-faq__header",
+      "title": "pk-faq__title",
+      "subtitle": "pk-faq__subtitle",
+      "list": "pk-faq__list",
+      "item": "pk-faq__item",
+      "question": "pk-faq__question",
+      "questionIcon": "pk-faq__question-icon",
+      "answer": "pk-faq__answer"
+    },
+    "Contact": {
+      "root": "pk-contact",
+      "container": "pk-contact__container",
+      "infoSection": "pk-contact__info",
+      "title": "pk-contact__title",
+      "subtitle": "pk-contact__subtitle",
+      "infoItem": "pk-contact__info-item",
+      "infoLabel": "pk-contact__info-label",
+      "infoValue": "pk-contact__info-value",
+      "socialLinks": "pk-contact__social-links",
+      "socialLink": "pk-contact__social-link",
+      "form": "pk-contact__form",
+      "fieldWrapper": "pk-contact__field",
+      "fieldLabel": "pk-contact__field-label",
+      "fieldInput": "pk-contact__field-input",
+      "fieldTextarea": "pk-contact__field-textarea",
+      "submitButton": "pk-contact__submit"
+    },
+    "Form": {
+      "root": "pk-form",
+      "container": "pk-form__container",
+      "header": "pk-form__header",
+      "title": "pk-form__title",
+      "subtitle": "pk-form__subtitle",
+      "description": "pk-form__description",
+      "form": "pk-form__form",
+      "fieldWrapper": "pk-form__field",
+      "fieldWrapperHalf": "pk-form__field--half",
+      "fieldWrapperThird": "pk-form__field--third",
+      "fieldWrapperTwoThirds": "pk-form__field--two-thirds",
+      "fieldLabel": "pk-form__field-label",
+      "requiredMarker": "pk-form__required",
+      "fieldHelp": "pk-form__field-help",
+      "fieldInput": "pk-form__field-input",
+      "fieldTextarea": "pk-form__field-textarea",
+      "fieldSelect": "pk-form__field-select",
+      "choiceGroup": "pk-form__choice-group",
+      "choiceLabel": "pk-form__choice-label",
+      "checkboxLabel": "pk-form__checkbox-label",
+      "submitButton": "pk-form__submit",
+      "statusMessage": "pk-form__status",
+      "successMessage": "pk-form__status--success",
+      "errorMessage": "pk-form__status--error",
+      "emptyState": "pk-form__empty"
+    }
+  },
+  "menu": [
+    { "label": "Features", "url": "#features", "target": "_self", "icon": "", "order": 1, "isVisible": true, "children": [] },
+    { "label": "How It Works", "url": "#how-it-works", "target": "_self", "icon": "", "order": 2, "isVisible": true, "children": [] },
+    { "label": "FAQ", "url": "#faq", "target": "_self", "icon": "", "order": 3, "isVisible": true, "children": [] },
+    { "label": "Contact", "url": "#contact", "target": "_self", "icon": "", "order": 4, "isVisible": true, "children": [] },
+    {
+      "label": "Resources",
+      "url": "#",
+      "target": "_self",
+      "icon": "",
+      "order": 5,
+      "isVisible": true,
+      "children": [
+        { "label": "Documentation", "url": "/docs", "target": "_self", "icon": "", "order": 1, "isVisible": true, "children": [] },
+        { "label": "GitHub", "url": "https://github.com/pumpkin-cms", "target": "_blank", "icon": "", "order": 2, "isVisible": true, "children": [] }
+      ]
+    }
+  ],
+  "createdAt": "2026-07-10T00:00:00Z",
+  "updatedAt": "2026-07-10T00:00:00Z"
+}

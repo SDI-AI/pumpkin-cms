@@ -521,8 +521,18 @@ public static class PumpkinManager
                 return Results.BadRequest("Tenant ID is required");
 
             var themes = await databaseService.GetThemesByTenantAsync(tenantId);
+            var activeTheme = await databaseService.GetActiveThemeAdminAsync(tenantId);
+            var activeThemeId = activeTheme?.ThemeId;
 
-            return Results.Ok(new { themes, count = themes.Count, tenantId });
+            if (!string.IsNullOrWhiteSpace(activeThemeId))
+            {
+                foreach (var theme in themes)
+                {
+                    theme.IsActive = theme.ThemeId == activeThemeId;
+                }
+            }
+
+            return Results.Ok(new { themes, count = themes.Count, tenantId, activeThemeId });
         }
         catch (Exception ex)
         {

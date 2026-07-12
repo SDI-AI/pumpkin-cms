@@ -6,6 +6,8 @@ const THEME_CSS_PATHS: Record<string, string> = {
   'pumpkin-default': '/themes/pumpkin-default.css',
 };
 
+const DEFAULT_THEME_CSS_PATH = '/themes/pumpkin-default.css';
+
 export interface ThemeStylesheet {
   href: string;
   integrity?: string;
@@ -21,18 +23,20 @@ export function getThemeStylesheet(theme: Theme): ThemeStylesheet {
   const compiledAssets = theme.compiledAssets;
 
   const href = (
-    compiledAssets?.cssUrl ||
-    extendedTheme.themeCss ||
-    extendedTheme.themeCssPath ||
-    extendedTheme.cssPath ||
+    normalizeCssPath(compiledAssets?.cssUrl) ||
+    normalizeCssPath(extendedTheme.themeCss) ||
+    normalizeCssPath(extendedTheme.themeCssPath) ||
+    normalizeCssPath(extendedTheme.cssPath) ||
     THEME_CSS_PATHS[theme.themeId] ||
-    `/themes/${theme.themeId}.css`
+    DEFAULT_THEME_CSS_PATH
   );
+  const integrity = shouldUseStylesheetIntegrity(href)
+    ? normalizeCssPath(compiledAssets?.cssIntegrity)
+    : undefined;
 
   return {
     href,
-    integrity: compiledAssets?.cssIntegrity || undefined,
-    crossOrigin: compiledAssets?.cssIntegrity ? 'anonymous' : undefined,
+    integrity,
   };
 }
 
@@ -57,4 +61,13 @@ export function resolveThemePlugin(theme: Theme): Theme {
     },
     blockStyles: fallbackTheme.blockStyles,
   };
+}
+
+function normalizeCssPath(value?: string) {
+  const normalized = value?.trim();
+  return normalized || undefined;
+}
+
+function shouldUseStylesheetIntegrity(href: string) {
+  return href.startsWith('/');
 }

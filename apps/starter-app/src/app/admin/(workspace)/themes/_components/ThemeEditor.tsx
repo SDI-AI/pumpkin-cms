@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Theme } from 'pumpkin-ts-models';
+import { fallbackTheme } from '@/data';
 
 interface ThemeEditorProps {
   initialTheme: Theme;
@@ -388,21 +389,21 @@ export function createTheme(tenantId: string): Theme {
       },
     },
     header: {
+      ...fallbackTheme.header,
       logoUrl: '',
       logoAlt: '',
       sticky: false,
       ctaText: '',
       ctaUrl: '',
       ctaTarget: '_self',
-      classNames: {},
     },
     footer: {
+      ...fallbackTheme.footer,
       copyright: '',
       description: '',
-      classNames: {},
     },
-    blockStyles: {},
-    menu: [],
+    blockStyles: fallbackTheme.blockStyles,
+    menu: fallbackTheme.menu,
     createdAt: now,
     updatedAt: now,
   };

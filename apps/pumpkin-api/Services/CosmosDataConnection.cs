@@ -1277,16 +1277,6 @@ public class CosmosDataConnection : IDataConnection, IDisposable
     {
         try
         {
-            var tenant = await GetTenantAsync(tenantId);
-            if (!string.IsNullOrWhiteSpace(tenant?.Settings?.Theme))
-            {
-                var configuredTheme = await GetThemeAdminAsync(tenantId, tenant.Settings.Theme);
-                if (configuredTheme != null)
-                {
-                    return configuredTheme;
-                }
-            }
-
             var themeContainer = _database.GetContainer("Theme");
             var query = "SELECT * FROM c WHERE c.tenantId = @tenantId AND c.isActive = true";
             var queryDefinition = new QueryDefinition(query)
@@ -1307,6 +1297,16 @@ public class CosmosDataConnection : IDataConnection, IDisposable
                         theme.ThemeId, tenantId, response.RequestCharge);
                 }
                 return theme;
+            }
+
+            var tenant = await GetTenantAsync(tenantId);
+            if (!string.IsNullOrWhiteSpace(tenant?.Settings?.Theme))
+            {
+                var configuredTheme = await GetThemeAdminAsync(tenantId, tenant.Settings.Theme);
+                if (configuredTheme != null)
+                {
+                    return configuredTheme;
+                }
             }
 
             return null;
