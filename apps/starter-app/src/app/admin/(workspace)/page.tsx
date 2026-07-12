@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { AlertTriangle, CheckCircle2, FileText, FormInput, Image as ImageIcon, Map, Palette } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, FileText, FormInput, Image as ImageIcon, Map, Menu, Palette } from 'lucide-react';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { getStarterAdminContext } from '@/lib/admin-auth';
 
@@ -9,6 +9,12 @@ const workflowCards = [
     href: '/admin/page-map',
     icon: Map,
     description: 'Move the existing page-map workflow into the starter admin.',
+  },
+  {
+    title: 'Navigation',
+    href: '/admin/navigation',
+    icon: Menu,
+    description: 'Edit the public header menu for the active tenant theme.',
   },
   {
     title: 'Pages',

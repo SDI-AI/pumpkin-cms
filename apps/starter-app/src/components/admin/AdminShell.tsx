@@ -3,7 +3,7 @@
 import { useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { FileText, FormInput, Gauge, Image as ImageIcon, LogOut, Map, Palette, RefreshCw } from 'lucide-react';
+import { FileText, FormInput, Gauge, Image as ImageIcon, LogOut, Map, Menu, Palette, RefreshCw } from 'lucide-react';
 import type { StarterAdminContext } from '@/lib/admin-auth';
 
 interface AdminShellProps {
@@ -15,6 +15,7 @@ const navigation = [
   { name: 'Dashboard', href: '/admin', icon: Gauge },
   { name: 'Pages', href: '/admin/pages', icon: FileText },
   { name: 'Page Map', href: '/admin/page-map', icon: Map },
+  { name: 'Navigation', href: '/admin/navigation', icon: Menu },
   { name: 'Forms', href: '/admin/forms', icon: FormInput },
   { name: 'Media', href: '/admin/media', icon: ImageIcon },
   { name: 'Themes', href: '/admin/themes', icon: Palette },
