@@ -1,5 +1,6 @@
 using pumpkin_api.Services;
 using pumpkin_net_models.Models;
+using System.Collections.Concurrent;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
@@ -7,6 +8,8 @@ namespace pumpkin_api.Managers;
 
 public static class PumpkinManager
 {
+    private static readonly ConcurrentDictionary<string, List<DateTimeOffset>> FormSubmissionWindows = new();
+
     public static IResult GetWelcomeMessage()
     {
         return Results.Ok("🎃 Welcome to Pumpkin CMS v0.904 🎃");
@@ -707,6 +710,11 @@ public static class PumpkinManager
             if (spamResult != null)
                 return spamResult;
 
+            var ipAddress = GetClientIpAddress(httpContext);
+            var rateLimitResult = ValidateRateLimit(definition, tenantId, normalizedType, ipAddress);
+            if (rateLimitResult != null)
+                return rateLimitResult;
+
             var allowedFieldNames = definition.Fields
                 .Select(f => f.Name)
                 .Where(name => !string.IsNullOrWhiteSpace(name))
@@ -739,10 +747,6 @@ public static class PumpkinManager
             var sanitizedFormData = BuildSanitizedFormData(definition, formData);
 
             // Build the FormEntry
-            var ipAddress = httpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty;
-            var port = httpContext.Connection.RemotePort;
-            var fullIp = port > 0 ? $"{ipAddress}:{port}" : ipAddress;
-
             var entry = new FormEntry
             {
                 Id = $"{normalizedType}-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}-{Guid.NewGuid():N}",
@@ -754,7 +758,7 @@ public static class PumpkinManager
                 SubmittedAt = DateTime.UtcNow,
                 Status = FormEntryStatuses.New,
                 Source = "website_form",
-                IpAddress = fullIp,
+                IpAddress = ipAddress,
                 UserAgent = httpContext.Request.Headers.UserAgent.FirstOrDefault() ?? string.Empty,
                 Metadata = new FormEntryMetadata
                 {
@@ -992,6 +996,71 @@ public static class PumpkinManager
         }
 
         return null;
+    }
+
+    private static IResult? ValidateRateLimit(FormDefinition definition, string tenantId, string formType, string ipAddress)
+    {
+        var rateLimit = definition.RateLimit;
+        if (!rateLimit.Enabled)
+        {
+            return null;
+        }
+
+        var maxSubmissions = Math.Max(rateLimit.MaxSubmissions, 1);
+        var windowSeconds = Math.Max(rateLimit.WindowSeconds, 1);
+        var now = DateTimeOffset.UtcNow;
+        var windowStart = now.AddSeconds(-windowSeconds);
+        var key = $"{tenantId}:{formType}:{ipAddress}";
+        var submissions = FormSubmissionWindows.GetOrAdd(key, _ => new List<DateTimeOffset>());
+
+        lock (submissions)
+        {
+            submissions.RemoveAll(timestamp => timestamp < windowStart);
+            if (submissions.Count >= maxSubmissions)
+            {
+                return Results.Json(
+                    new { message = "Too many submissions. Please wait and try again." },
+                    statusCode: StatusCodes.Status429TooManyRequests);
+            }
+
+            submissions.Add(now);
+        }
+
+        CleanupRateLimitWindows(windowStart);
+        return null;
+    }
+
+    private static void CleanupRateLimitWindows(DateTimeOffset oldestAllowed)
+    {
+        foreach (var item in FormSubmissionWindows)
+        {
+            lock (item.Value)
+            {
+                item.Value.RemoveAll(timestamp => timestamp < oldestAllowed);
+                if (item.Value.Count == 0)
+                {
+                    FormSubmissionWindows.TryRemove(item.Key, out _);
+                }
+            }
+        }
+    }
+
+    private static string GetClientIpAddress(HttpContext httpContext)
+    {
+        var forwardedFor = httpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault();
+        if (!string.IsNullOrWhiteSpace(forwardedFor))
+        {
+            return forwardedFor.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .FirstOrDefault() ?? string.Empty;
+        }
+
+        var realIp = httpContext.Request.Headers["X-Real-IP"].FirstOrDefault();
+        if (!string.IsNullOrWhiteSpace(realIp))
+        {
+            return realIp;
+        }
+
+        return httpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty;
     }
 
     private static List<string> ValidateFieldValues(FormDefinition definition, Dictionary<string, object?> formData)

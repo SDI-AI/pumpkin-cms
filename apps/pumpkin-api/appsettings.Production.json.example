@@ -7,6 +7,13 @@
     }
   },
   "AllowedHosts": "*",
+  "Cors": {
+    "CacheMinutes": 30,
+    "AllowedOrigins": [
+      "https://starter-app.example.com",
+      "https://admin.example.com"
+    ]
+  },
   "Jwt": {
     "Issuer": "pumpkin-cms-api",
     "Audience": "pumpkin-cms-admin",
@@ -29,6 +36,23 @@
     "MediaPathTemplate": "tenants/{tenantId}/media/{assetId}/{fileName}",
     "MaxThemePackageBytes": 52428800,
     "MaxMediaAssetBytes": 26214400,
+    "AllowedMediaContentTypes": [
+      "image/png",
+      "image/jpeg",
+      "image/gif",
+      "image/webp",
+      "image/avif",
+      "application/pdf"
+    ],
+    "AllowedMediaExtensions": [
+      ".png",
+      ".jpg",
+      ".jpeg",
+      ".gif",
+      ".webp",
+      ".avif",
+      ".pdf"
+    ],
     "AzureBlob": {
       "ConnectionString": "",
       "AccountName": "USE-AZURE-STORAGE-ACCOUNT-NAME",

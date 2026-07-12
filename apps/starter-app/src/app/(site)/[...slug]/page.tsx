@@ -4,7 +4,7 @@ import { PageRenderer } from '@/components/PageRenderer';
 import { buildMetadata } from '@/lib/metadata';
 import { fetchPumpkinPage, getFormDefinitionsForPage, getSiteTheme } from '@/lib/pumpkin-api';
 
-export const revalidate = 60;
+export const revalidate = 604800;
 
 interface SlugPageProps {
   params: {

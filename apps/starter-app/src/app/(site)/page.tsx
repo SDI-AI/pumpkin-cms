@@ -4,7 +4,7 @@ import { fallbackHomePage } from '@/data';
 import { buildMetadata } from '@/lib/metadata';
 import { fetchPumpkinPage, getFormDefinitionsForPage, getSiteTheme } from '@/lib/pumpkin-api';
 
-export const revalidate = 60;
+export const revalidate = 604800;
 
 export async function generateMetadata(): Promise<Metadata> {
   const page = (await fetchPumpkinPage('home')) ?? fallbackHomePage;

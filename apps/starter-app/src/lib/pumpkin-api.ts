@@ -3,7 +3,7 @@ import { fallbackTheme } from '@/data';
 import { loadTenantConfig } from '@/lib/tenant-config';
 import { resolveThemePlugin } from '@/themes/registry';
 
-const REVALIDATE_SECONDS = 60;
+export const PUBLIC_REVALIDATE_SECONDS = 60 * 60 * 24 * 7;
 const FETCH_TIMEOUT_MS = 5000;
 
 interface PumpkinFetchOptions {
@@ -34,7 +34,6 @@ export async function getSiteTheme(): Promise<Theme> {
   const theme = await fetchFromPumpkin<Theme>(
     `${config.apiUrl}/api/themes/${encodeURIComponent(config.tenantId)}`,
     config.apiKey,
-    { cache: 'no-store' },
   );
 
   return resolveThemePlugin(theme ?? fallbackTheme);
@@ -98,7 +97,7 @@ async function fetchFromPumpkin<T>(
     if (options.cache === 'no-store') {
       fetchOptions.cache = 'no-store';
     } else {
-      fetchOptions.next = { revalidate: options.revalidate ?? REVALIDATE_SECONDS };
+      fetchOptions.next = { revalidate: options.revalidate ?? PUBLIC_REVALIDATE_SECONDS };
     }
 
     const response = await fetch(url, fetchOptions);

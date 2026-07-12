@@ -12,6 +12,8 @@ using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
+ValidateStartupConfiguration(builder.Configuration, builder.Environment);
+
 // Configure JSON serialization options for handling polymorphic HTML blocks
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
@@ -107,13 +109,14 @@ builder.Services.AddAuthorization(options =>
 });
 
 // Configure CORS
-// Admin/auth routes use the "AllowAll" policy (access is controlled by JWT).
+// Admin/auth routes use the "AdminCors" policy.
 // Content routes use the "TenantCors" policy, which resolves per-tenant allowed origins from the database.
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy =>
+    options.AddPolicy("AdminCors", policy =>
     {
-        policy.AllowAnyOrigin()
+        var configuredOrigins = GetConfiguredOrigins(builder.Configuration);
+        policy.WithOrigins(configuredOrigins)
             .AllowAnyMethod()
             .AllowAnyHeader();
     });
@@ -132,8 +135,8 @@ builder.Services.AddScoped<MediaAssetUploader>();
 var app = builder.Build();
 
 // Configure CORS (must be before authentication/authorization).
-// "AllowAll" is the default for admin/auth routes; content routes override with "TenantCors".
-app.UseCors("AllowAll");
+// "AdminCors" is the default for admin/auth routes; content routes override with "TenantCors".
+app.UseCors("AdminCors");
 
 // Configure authentication and authorization
 app.UseAuthentication();
@@ -382,8 +385,6 @@ app.MapPost("/api/auth/login",
             return Results.Unauthorized();
         }
         
-        Console.WriteLine($"[Login] User: {user.Username}, Role enum value: {user.Role}, Role as string: {user.Role.ToString()}");
-        
         // Generate JWT token
         var jwtSettings = configuration.GetSection("Jwt");
         var secretKey = new SymmetricSecurityKey(
@@ -534,19 +535,9 @@ app.MapPost("/api/admin/tenants",
             return Results.Unauthorized();
         }
         
-        // Debug: Log all claims
-        Console.WriteLine("[CreateTenant] All claims:");
-        foreach (var claim in context.User.Claims)
-        {
-            Console.WriteLine($"  {claim.Type}: {claim.Value}");
-        }
-        
         // Extract user info from JWT claims
         var userTenantId = context.User.FindFirst("tenantId")?.Value;
         var userRole = context.User.FindFirst(ClaimTypes.Role)?.Value;
-        
-        Console.WriteLine($"[CreateTenant] User TenantId: {userTenantId}, Role: {userRole}");
-        Console.WriteLine($"[CreateTenant] ClaimTypes.Role constant: {ClaimTypes.Role}");
         
         if (string.IsNullOrEmpty(userTenantId))
         {
@@ -556,7 +547,6 @@ app.MapPost("/api/admin/tenants",
         // Only SuperAdmins can create tenants
         if (userRole != "SuperAdmin")
         {
-            Console.WriteLine($"[CreateTenant] Access denied. Required: SuperAdmin, Got: {userRole}");
             return Results.Json(
                 new { error = "Forbidden", message = $"This action requires SuperAdmin role. Your role: {userRole ?? "none"}" },
                 statusCode: 403
@@ -2221,6 +2211,99 @@ static AdminUserInfo ToAdminUserInfo(User user)
         user.CreatedDate,
         user.LastLogin,
         user.Permissions);
+}
+
+static string[] GetConfiguredOrigins(IConfiguration configuration)
+{
+    var configured = configuration.GetSection("Cors:AllowedOrigins")
+        .GetChildren()
+        .Select(origin => origin.Value?.Trim())
+        .Where(origin => !string.IsNullOrWhiteSpace(origin))
+        .Cast<string>()
+        .Distinct(StringComparer.OrdinalIgnoreCase)
+        .ToArray();
+
+    if (configured.Length > 0)
+    {
+        return configured;
+    }
+
+    return new[]
+    {
+        "http://localhost:3000",
+        "http://localhost:3003",
+        "https://localhost:3000",
+        "https://localhost:3003"
+    };
+}
+
+static void ValidateStartupConfiguration(IConfiguration configuration, IWebHostEnvironment environment)
+{
+    if (!environment.IsProduction())
+    {
+        return;
+    }
+
+    var errors = new List<string>();
+    var jwtSecret = configuration["Jwt:SecretKey"] ?? string.Empty;
+    if (jwtSecret.Length < 32 || IsPlaceholder(jwtSecret))
+    {
+        errors.Add("Jwt:SecretKey must be a real production secret with at least 32 characters.");
+    }
+
+    var allowedOrigins = configuration.GetSection("Cors:AllowedOrigins").GetChildren()
+        .Select(origin => origin.Value)
+        .Where(origin => !string.IsNullOrWhiteSpace(origin))
+        .ToArray();
+    if (allowedOrigins.Length == 0)
+    {
+        errors.Add("Cors:AllowedOrigins must include at least one production admin/starter origin.");
+    }
+
+    var databaseProvider = configuration["Database:Provider"] ?? "CosmosDb";
+    if (databaseProvider.Equals("CosmosDb", StringComparison.OrdinalIgnoreCase))
+    {
+        var cosmosConnectionString = configuration["Database:CosmosDb:ConnectionString"] ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(cosmosConnectionString) || IsPlaceholder(cosmosConnectionString))
+        {
+            errors.Add("Database:CosmosDb:ConnectionString must be configured for production.");
+        }
+    }
+
+    var storageProvider = configuration["AssetStorage:Provider"] ?? "AzureBlob";
+    if (storageProvider.Equals("AzureBlob", StringComparison.OrdinalIgnoreCase))
+    {
+        var publicBaseUrl = configuration["AssetStorage:AzureBlob:PublicBaseUrl"] ?? string.Empty;
+        var mediaPublicBaseUrl = configuration["AssetStorage:AzureBlob:MediaPublicBaseUrl"] ?? string.Empty;
+        var themesPublicBaseUrl = configuration["AssetStorage:AzureBlob:ThemesPublicBaseUrl"] ?? string.Empty;
+        if ((string.IsNullOrWhiteSpace(publicBaseUrl) || IsPlaceholder(publicBaseUrl)) &&
+            (string.IsNullOrWhiteSpace(mediaPublicBaseUrl) || IsPlaceholder(mediaPublicBaseUrl)) &&
+            (string.IsNullOrWhiteSpace(themesPublicBaseUrl) || IsPlaceholder(themesPublicBaseUrl)))
+        {
+            errors.Add("AssetStorage:AzureBlob:PublicBaseUrl, MediaPublicBaseUrl, or ThemesPublicBaseUrl must be configured for public assets.");
+        }
+
+        var connectionString = configuration["AssetStorage:AzureBlob:ConnectionString"] ?? string.Empty;
+        var accountName = configuration["AssetStorage:AzureBlob:AccountName"] ?? string.Empty;
+        if ((string.IsNullOrWhiteSpace(connectionString) || IsPlaceholder(connectionString)) &&
+            (string.IsNullOrWhiteSpace(accountName) || IsPlaceholder(accountName)))
+        {
+            errors.Add("AssetStorage:AzureBlob:ConnectionString or AccountName must be configured for production.");
+        }
+    }
+
+    if (errors.Count > 0)
+    {
+        throw new InvalidOperationException($"Pumpkin API production configuration is invalid: {string.Join(" ", errors)}");
+    }
+}
+
+static bool IsPlaceholder(string value)
+{
+    return value.Contains("REPLACE-WITH", StringComparison.OrdinalIgnoreCase) ||
+        value.Contains("USE-ENVIRONMENT", StringComparison.OrdinalIgnoreCase) ||
+        value.Contains("YOUR-", StringComparison.OrdinalIgnoreCase) ||
+        value.Contains("USE-", StringComparison.OrdinalIgnoreCase);
 }
 
 app.Run();
