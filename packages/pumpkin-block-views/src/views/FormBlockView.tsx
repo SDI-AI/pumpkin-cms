@@ -41,6 +41,12 @@ export function FormBlockView({
 
     try {
       await onSubmit(content.formType, data, pageSlug);
+
+      if (formDefinition?.submitBehavior === 'redirect' && formDefinition.redirectUrl) {
+        window.location.assign(formDefinition.redirectUrl);
+        return;
+      }
+
       setStatus('success');
       setMessage(formDefinition?.successMessage || content.successMessage || 'Thanks, your message was sent.');
       formRef.current?.reset();

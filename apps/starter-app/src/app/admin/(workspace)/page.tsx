@@ -20,7 +20,7 @@ const workflowCards = [
     title: 'Forms',
     href: '/admin/forms',
     icon: FormInput,
-    description: 'Add the form definition builder for fields, validation, and submit behavior.',
+    description: 'Create form definitions, manage fields, validation, and submit behavior.',
   },
   {
     title: 'Media',

@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChevronDown, ChevronUp, Copy, Plus, Save, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronUp, Copy, Eye, Plus, Save, Trash2, Wand2 } from 'lucide-react';
 import type { FormDefinition, FormFieldDefinition, FormFieldType, FormFieldWidth } from 'pumpkin-ts-models';
 
 interface FormDefinitionEditorProps {
@@ -13,6 +13,14 @@ interface FormDefinitionEditorProps {
 
 const fieldTypes: FormFieldType[] = ['text', 'email', 'phone', 'textarea', 'select', 'checkbox', 'radio', 'hidden'];
 const fieldWidths: FormFieldWidth[] = ['full', 'half', 'third', 'two-thirds'];
+const quickFields: Array<{ label: string; name: string; type: FormFieldType; placeholder?: string; helpText?: string; width?: FormFieldWidth }> = [
+  { label: 'Name', name: 'name', type: 'text', placeholder: 'Jane Smith', width: 'half' },
+  { label: 'Email', name: 'email', type: 'email', placeholder: 'jane@example.com', width: 'half' },
+  { label: 'Phone', name: 'phone', type: 'phone', placeholder: '(555) 123-4567', width: 'half' },
+  { label: 'Message', name: 'message', type: 'textarea', placeholder: 'How can we help?', width: 'full' },
+  { label: 'Consent', name: 'consent', type: 'checkbox', placeholder: 'I agree to be contacted about this request.', width: 'full' },
+  { label: 'Source', name: 'source', type: 'hidden', width: 'full' },
+];
 
 export function FormDefinitionEditor({ initialDefinition, mode }: FormDefinitionEditorProps) {
   const router = useRouter();
@@ -43,6 +51,21 @@ export function FormDefinitionEditor({ initialDefinition, mode }: FormDefinition
     const nextIndex = definition.fields.length + 1;
     const field = createField(`field_${nextIndex}`, nextIndex);
     setDefinition((current) => syncJson({ ...current, fields: [...current.fields, field] }));
+  };
+
+  const addQuickField = (preset: (typeof quickFields)[number]) => {
+    setDefinition((current) => {
+      const nextIndex = current.fields.length + 1;
+      const field = {
+        ...createField(createUniqueFieldName(preset.name, current.fields), nextIndex, preset.type),
+        label: preset.label,
+        placeholder: preset.placeholder || '',
+        helpText: preset.helpText || '',
+        width: preset.width || 'full',
+      };
+
+      return syncJson({ ...current, fields: [...current.fields, field] });
+    });
   };
 
   const removeField = (name: string) => {
@@ -107,6 +130,11 @@ export function FormDefinitionEditor({ initialDefinition, mode }: FormDefinition
         notificationEmails: definition.notificationEmails.map((email) => email.trim()).filter(Boolean),
         updatedAt: new Date().toISOString(),
       };
+      const validationErrors = validateFormDefinition(payload);
+      if (validationErrors.length > 0) {
+        throw new Error(validationErrors.join(' '));
+      }
+
       const url = mode === 'create'
         ? '/api/admin/forms/definitions'
         : `/api/admin/forms/definitions/${encodeURIComponent(initialDefinition.formDefinitionId)}`;
@@ -268,12 +296,27 @@ export function FormDefinitionEditor({ initialDefinition, mode }: FormDefinition
       </section>
 
       <section className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
-        <div className="flex items-center justify-between">
-          <h2 className="text-base font-bold text-neutral-950">Fields</h2>
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <h2 className="text-base font-bold text-neutral-950">Fields</h2>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {quickFields.map((preset) => (
+                <button
+                  key={preset.name}
+                  type="button"
+                  onClick={() => addQuickField(preset)}
+                  className="inline-flex h-8 items-center gap-1.5 rounded-md border border-neutral-300 bg-white px-2.5 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
+                >
+                  <Wand2 className="h-3.5 w-3.5" aria-hidden="true" />
+                  <span>{preset.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
           <button
             type="button"
             onClick={addField}
-            className="inline-flex h-9 items-center gap-2 rounded-md border border-neutral-300 px-3 text-sm font-semibold text-neutral-800 hover:bg-neutral-50"
+            className="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-neutral-300 px-3 text-sm font-semibold text-neutral-800 hover:bg-neutral-50"
           >
             <Plus className="h-4 w-4" aria-hidden="true" />
             <span>Add Field</span>
@@ -325,9 +368,9 @@ export function FormDefinitionEditor({ initialDefinition, mode }: FormDefinition
                 <TextField label="Help Text" value={field.helpText} onChange={(value) => updateField(field.name, { helpText: value })} />
                 <TextField label="Default Value" value={field.defaultValue || ''} onChange={(value) => updateField(field.name, { defaultValue: value })} />
                 <TextField label="Autocomplete" value={field.autocomplete} onChange={(value) => updateField(field.name, { autocomplete: value })} />
-                <TextField
+                <TextAreaField
                   label="Options"
-                  value={(field.options ?? []).map((option) => `${option.value}:${option.label}`).join(', ')}
+                  value={(field.options ?? []).map((option) => `${option.value}:${option.label}`).join('\n')}
                   onChange={(value) => updateField(field.name, { options: parseOptions(value) })}
                 />
                 <TextField
@@ -351,6 +394,14 @@ export function FormDefinitionEditor({ initialDefinition, mode }: FormDefinition
             </div>
           ))}
         </div>
+      </section>
+
+      <section className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
+        <div className="flex items-center gap-2">
+          <Eye className="h-4 w-4 text-neutral-500" aria-hidden="true" />
+          <h2 className="text-base font-bold text-neutral-950">Preview</h2>
+        </div>
+        <FormPreview definition={definition} fields={sortedFields} />
       </section>
 
       <section className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
@@ -521,6 +572,114 @@ function TextField({
   );
 }
 
+function TextAreaField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="block">
+      <span className="text-sm font-semibold text-neutral-800">{label}</span>
+      <textarea
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="mt-2 min-h-20 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
+      />
+    </label>
+  );
+}
+
+function FormPreview({
+  definition,
+  fields,
+}: {
+  definition: FormDefinition;
+  fields: FormFieldDefinition[];
+}) {
+  const visibleFields = fields.filter((field) => !field.hidden);
+
+  return (
+    <div className="mt-4 rounded-md border border-neutral-200 bg-neutral-50 p-4">
+      <div className="mb-4">
+        <h3 className="text-lg font-bold text-neutral-950">{definition.name || 'Untitled Form'}</h3>
+        {definition.description && <p className="mt-1 text-sm text-neutral-600">{definition.description}</p>}
+      </div>
+
+      {visibleFields.length === 0 ? (
+        <p className="text-sm text-neutral-600">No visible fields.</p>
+      ) : (
+        <div className="grid grid-cols-12 gap-3">
+          {visibleFields.map((field) => (
+            <div key={field.name} className={previewWidthClass(field.width)}>
+              <label className="block text-sm font-semibold text-neutral-800">
+                {field.label || field.name}
+                {field.required && <span className="text-red-500"> *</span>}
+              </label>
+              <PreviewInput field={field} />
+              {field.helpText && <p className="mt-1 text-xs text-neutral-500">{field.helpText}</p>}
+            </div>
+          ))}
+          <div className="col-span-12">
+            <button
+              type="button"
+              className="inline-flex h-10 items-center rounded-md bg-pumpkin-600 px-4 text-sm font-bold text-white"
+            >
+              {definition.submitButtonText || 'Submit'}
+            </button>
+            {definition.successMessage && <p className="mt-2 text-xs text-neutral-500">{definition.successMessage}</p>}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PreviewInput({ field }: { field: FormFieldDefinition }) {
+  const inputClass = 'mt-2 h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm text-neutral-700';
+  const placeholder = field.placeholder || undefined;
+
+  if (field.type === 'textarea') {
+    return <textarea className="mt-2 min-h-24 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-700" placeholder={placeholder} disabled />;
+  }
+
+  if (field.type === 'select') {
+    return (
+      <select className={inputClass} disabled>
+        <option>{placeholder || 'Select an option'}</option>
+        {(field.options ?? []).map((option) => <option key={option.value}>{option.label}</option>)}
+      </select>
+    );
+  }
+
+  if (field.type === 'radio') {
+    return (
+      <div className="mt-2 grid gap-2">
+        {(field.options ?? []).map((option) => (
+          <label key={option.value} className="flex items-center gap-2 text-sm text-neutral-700">
+            <input type="radio" disabled />
+            <span>{option.label}</span>
+          </label>
+        ))}
+      </div>
+    );
+  }
+
+  if (field.type === 'checkbox') {
+    return (
+      <label className="mt-2 flex items-start gap-2 text-sm text-neutral-700">
+        <input type="checkbox" disabled />
+        <span>{field.placeholder || field.label}</span>
+      </label>
+    );
+  }
+
+  return <input className={inputClass} type={field.type === 'phone' ? 'tel' : field.type} placeholder={placeholder} disabled />;
+}
+
 function SelectControl({
   label,
   onChange,
@@ -595,7 +754,7 @@ function IconButton({
 
 function parseOptions(value: string) {
   return value
-    .split(',')
+    .split(/[\n,]/)
     .map((part) => part.trim())
     .filter(Boolean)
     .map((part) => {
@@ -606,6 +765,45 @@ function parseOptions(value: string) {
         label: (labelPart || valuePart).trim(),
       };
     });
+}
+
+function validateFormDefinition(definition: FormDefinition) {
+  const errors: string[] = [];
+  const fieldNames = definition.fields.map((field) => field.name.trim()).filter(Boolean);
+  const duplicateNames = fieldNames.filter((name, index) => fieldNames.indexOf(name) !== index);
+
+  if (!definition.formDefinitionId.trim()) errors.push('Form ID is required.');
+  if (!definition.type.trim()) errors.push('Type is required.');
+  if (definition.fields.some((field) => !field.name.trim())) errors.push('Every field needs a name.');
+  if (duplicateNames.length > 0) errors.push(`Duplicate field names: ${Array.from(new Set(duplicateNames)).join(', ')}.`);
+
+  const fieldsWithoutLabels = definition.fields.filter((field) => !field.hidden && !field.label.trim());
+  if (fieldsWithoutLabels.length > 0) {
+    errors.push(`Visible fields need labels: ${fieldsWithoutLabels.map((field) => field.name || '(unnamed)').join(', ')}.`);
+  }
+
+  const optionFieldsWithoutOptions = definition.fields.filter((field) =>
+    (field.type === 'select' || field.type === 'radio') &&
+    (field.options ?? []).length === 0,
+  );
+  if (optionFieldsWithoutOptions.length > 0) {
+    errors.push(`Select and radio fields need options: ${optionFieldsWithoutOptions.map((field) => field.name).join(', ')}.`);
+  }
+
+  return errors;
+}
+
+function previewWidthClass(width: string) {
+  switch (width) {
+    case 'half':
+      return 'col-span-12 md:col-span-6';
+    case 'third':
+      return 'col-span-12 md:col-span-4';
+    case 'two-thirds':
+      return 'col-span-12 md:col-span-8';
+    default:
+      return 'col-span-12';
+  }
 }
 
 function parseAttributes(value: string) {
