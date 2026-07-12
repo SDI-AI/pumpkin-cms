@@ -17,7 +17,6 @@ Pumpkin CMS is a lightweight, API-first content management system that provides:
 ```
 pumpkin-cms/
 ├── apps/
-│   ├── admin/                # Multi-tenant admin workspace
 │   ├── pumpkin-api/          # .NET 9.0 Web API
 │   ├── pumpkin-api.Tests/    # API contract/test utilities
 │   ├── pumpkin-net-models/   # Shared .NET models library
@@ -138,6 +137,8 @@ npm install ./packages/pumpkin-ts-models
 ## Starter App
 
 The canonical frontend reference is `apps/starter-app`. It renders tenant pages, loads compiled theme packages, supports media-backed page editing, and includes a single-tenant admin workspace for pages, page map, media, themes, and forms.
+
+The SaaS/operator admin used for cross-tenant management is intentionally kept outside the public repo. Public starter-app admin workflows stay scoped to the configured tenant.
 
 ## License
 
