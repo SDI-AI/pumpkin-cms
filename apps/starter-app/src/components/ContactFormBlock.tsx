@@ -67,6 +67,11 @@ export function ContactFormBlock({
         return;
       }
 
+      if (formDefinition?.submitBehavior === 'redirect' && formDefinition.redirectUrl) {
+        window.location.assign(formDefinition.redirectUrl);
+        return;
+      }
+
       formRef.current?.reset();
       setSubmitState('success');
       setMessage(
