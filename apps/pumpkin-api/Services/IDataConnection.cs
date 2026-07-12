@@ -14,6 +14,7 @@ public interface IDataConnection
     Task<bool> DeletePageAsync(string apiKey, string tenantId, string pageSlug);
     Task<FormEntry> SaveFormEntryAsync(string apiKey, string tenantId, FormEntry formEntry);
     Task<List<SitemapEntry>> GetSitemapPagesAsync(string apiKey, string tenantId);
+    Task<List<Page>> GetPublishedSpokePagesAsync(string apiKey, string tenantId, string hubPageSlug, int limit);
     
     
     // Admin methods (JWT authentication required at endpoint level)

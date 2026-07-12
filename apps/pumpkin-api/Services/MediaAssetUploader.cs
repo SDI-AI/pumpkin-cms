@@ -47,14 +47,30 @@ public class MediaAssetUploader
         var createdAt = DateTimeOffset.UtcNow;
         var assetId = Guid.NewGuid().ToString("N");
         var cleanFileName = Path.GetFileName(request.FileName);
+        var extension = Path.GetExtension(cleanFileName).ToLowerInvariant();
+        if (!_settings.AllowedMediaExtensions.Contains(extension, StringComparer.OrdinalIgnoreCase))
+            throw new InvalidOperationException($"Media file extension '{extension}' is not allowed.");
+
+        var resolvedContentType = ResolveContentType(cleanFileName);
+        if (!_settings.AllowedMediaContentTypes.Contains(resolvedContentType, StringComparer.OrdinalIgnoreCase))
+            throw new InvalidOperationException($"Media content type '{resolvedContentType}' is not allowed.");
+
+        if (!string.IsNullOrWhiteSpace(request.ContentType) &&
+            !request.ContentType.Equals(resolvedContentType, StringComparison.OrdinalIgnoreCase))
+        {
+            _logger.LogWarning(
+                "Media upload content type mismatch - FileName: {FileName}, ClientContentType: {ClientContentType}, ResolvedContentType: {ResolvedContentType}",
+                cleanFileName,
+                request.ContentType,
+                resolvedContentType);
+        }
+
         var blobPath = _settings.BuildTenantMediaPath(request.TenantId, assetId, cleanFileName, createdAt);
         var publicUrl = _settings.BuildMediaPublicUrl(blobPath);
         if (string.IsNullOrWhiteSpace(publicUrl))
             throw new InvalidOperationException("AssetStorage:AzureBlob:PublicBaseUrl or MediaPublicBaseUrl is required to create media asset public URLs.");
 
-        var contentType = string.IsNullOrWhiteSpace(request.ContentType)
-            ? ResolveContentType(cleanFileName)
-            : request.ContentType;
+        var contentType = resolvedContentType;
 
         var container = BuildMediaContainerClient();
         await container.CreateIfNotExistsAsync(cancellationToken: cancellationToken);

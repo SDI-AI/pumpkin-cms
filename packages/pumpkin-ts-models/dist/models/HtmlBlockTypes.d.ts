@@ -1,14 +1,14 @@
 import { IHtmlBlock } from './IHtmlBlock';
 import { HeroBlock } from './HeroBlocks';
 import { PrimaryCtaBlock, SecondaryCtaBlock } from './CtaBlocks';
-import { CardGridBlock, FaqBlock } from './ContentBlocks';
+import { CardGridBlock, FaqBlock, HubSpokesBlock } from './ContentBlocks';
 import { BreadcrumbsBlock, TrustBarBlock, HowItWorksBlock, ServiceAreaMapBlock, LocalProTipsBlock } from './NavigationBlocks';
 import { GalleryBlock, TestimonialsBlock, ContactBlock, FormBlock } from './InteractionBlocks';
 import { BlogBlock } from './BlogBlocks';
 /**
  * Union type of all supported HTML blocks
  */
-export type HtmlBlock = HeroBlock | PrimaryCtaBlock | SecondaryCtaBlock | CardGridBlock | FaqBlock | BreadcrumbsBlock | TrustBarBlock | HowItWorksBlock | ServiceAreaMapBlock | LocalProTipsBlock | GalleryBlock | TestimonialsBlock | ContactBlock | FormBlock | BlogBlock;
+export type HtmlBlock = HeroBlock | PrimaryCtaBlock | SecondaryCtaBlock | CardGridBlock | FaqBlock | HubSpokesBlock | BreadcrumbsBlock | TrustBarBlock | HowItWorksBlock | ServiceAreaMapBlock | LocalProTipsBlock | GalleryBlock | TestimonialsBlock | ContactBlock | FormBlock | BlogBlock;
 /**
  * Map of block types to their corresponding interfaces
  */
@@ -18,6 +18,7 @@ export declare const BLOCK_TYPE_MAP: {
     readonly SecondaryCTA: "SecondaryCtaBlock";
     readonly CardGrid: "CardGridBlock";
     readonly FAQ: "FaqBlock";
+    readonly HubSpokes: "HubSpokesBlock";
     readonly Breadcrumbs: "BreadcrumbsBlock";
     readonly TrustBar: "TrustBarBlock";
     readonly HowItWorks: "HowItWorksBlock";

@@ -2,9 +2,9 @@ import type { Metadata } from 'next';
 import { PageRenderer } from '@/components/PageRenderer';
 import { fallbackHomePage } from '@/data';
 import { buildMetadata } from '@/lib/metadata';
-import { fetchPumpkinPage, getFormDefinitionsForPage, getSiteTheme } from '@/lib/pumpkin-api';
+import { fetchPumpkinPage, getFormDefinitionsForPage, getSiteTheme, hydrateHubSpokesForPage } from '@/lib/pumpkin-api';
 
-export const revalidate = 60;
+export const revalidate = 604800;
 
 export async function generateMetadata(): Promise<Metadata> {
   const page = (await fetchPumpkinPage('home')) ?? fallbackHomePage;
@@ -16,7 +16,7 @@ export default async function HomePage() {
     fetchPumpkinPage('home'),
     getSiteTheme(),
   ]);
-  const pageToRender = page ?? fallbackHomePage;
+  const pageToRender = await hydrateHubSpokesForPage(page ?? fallbackHomePage);
   const formDefinitions = await getFormDefinitionsForPage(pageToRender);
 
   return (

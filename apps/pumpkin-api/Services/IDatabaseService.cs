@@ -14,6 +14,7 @@ public interface IDatabaseService
     Task<bool> DeletePageAsync(string apiKey, string tenantId, string pageSlug);
     Task<FormEntry> SaveFormEntryAsync(string apiKey, string tenantId, FormEntry formEntry);
     Task<List<SitemapEntry>> GetSitemapPagesAsync(string apiKey, string tenantId);
+    Task<List<Page>> GetPublishedSpokePagesAsync(string apiKey, string tenantId, string hubPageSlug, int limit);
 
     // FormDefinition content serving (API key required)
     Task<FormDefinition?> GetFormDefinitionPublicAsync(string apiKey, string tenantId, string type);

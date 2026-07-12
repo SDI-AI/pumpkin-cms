@@ -1,9 +1,9 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { FileText, FormInput, Gauge, Image as ImageIcon, LogOut, Map, Palette } from 'lucide-react';
+import { FileText, FormInput, Gauge, Image as ImageIcon, LogOut, Map, Menu, Palette, RefreshCw } from 'lucide-react';
 import type { StarterAdminContext } from '@/lib/admin-auth';
 
 interface AdminShellProps {
@@ -15,6 +15,7 @@ const navigation = [
   { name: 'Dashboard', href: '/admin', icon: Gauge },
   { name: 'Pages', href: '/admin/pages', icon: FileText },
   { name: 'Page Map', href: '/admin/page-map', icon: Map },
+  { name: 'Navigation', href: '/admin/navigation', icon: Menu },
   { name: 'Forms', href: '/admin/forms', icon: FormInput },
   { name: 'Media', href: '/admin/media', icon: ImageIcon },
   { name: 'Themes', href: '/admin/themes', icon: Palette },
@@ -23,11 +24,36 @@ const navigation = [
 export function AdminShell({ context, children }: AdminShellProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshMessage, setRefreshMessage] = useState('');
 
   const logout = async () => {
     await fetch('/api/admin/auth/logout', { method: 'POST' });
     router.push('/admin/login');
     router.refresh();
+  };
+
+  const refreshSiteCache = async () => {
+    setRefreshing(true);
+    setRefreshMessage('');
+
+    try {
+      const response = await fetch('/api/admin/revalidate', { method: 'POST' });
+      const data = await response.json().catch(() => null) as { message?: string; paths?: string[]; scope?: string } | null;
+
+      if (!response.ok) {
+        throw new Error(data?.message || 'Unable to refresh site cache.');
+      }
+
+      setRefreshMessage(data?.scope === 'home'
+        ? 'Refreshed home + layout'
+        : `Refreshed ${data?.paths?.length ?? 1} paths`);
+      router.refresh();
+    } catch (error) {
+      setRefreshMessage(error instanceof Error ? error.message : 'Unable to refresh site cache.');
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   return (
@@ -72,6 +98,21 @@ export function AdminShell({ context, children }: AdminShellProps) {
           </div>
 
           <div className="flex items-center gap-3">
+            {refreshMessage && (
+              <p className="hidden max-w-48 truncate text-xs font-medium text-neutral-500 lg:block">
+                {refreshMessage}
+              </p>
+            )}
+            <button
+              type="button"
+              onClick={refreshSiteCache}
+              disabled={refreshing}
+              title="Refresh public site cache"
+              className="inline-flex h-9 items-center gap-2 rounded-md border border-neutral-300 bg-white px-3 text-sm font-semibold text-neutral-800 hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <RefreshCw className={refreshing ? 'h-4 w-4 animate-spin' : 'h-4 w-4'} aria-hidden="true" />
+              <span className="hidden lg:inline">{refreshing ? 'Refreshing' : 'Refresh Home'}</span>
+            </button>
             <div className="hidden text-right sm:block">
               <p className="text-xs font-medium uppercase tracking-wide text-neutral-500">{context.user?.role || 'Tenant'}</p>
               <p className="max-w-44 truncate text-sm font-semibold text-neutral-900">

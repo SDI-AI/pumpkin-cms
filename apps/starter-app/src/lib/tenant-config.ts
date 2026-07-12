@@ -42,6 +42,10 @@ export function loadTenantConfig(): TenantConfig | null {
     );
   }
 
+  if (isProductionDeployment()) {
+    throw new Error(`Pumpkin tenant configuration is missing: ${getMissingTenantConfigKeys().join(', ')}`);
+  }
+
   if (isProductionDeployment() || !existsSync(tenantConfigPath)) {
     return null;
   }
@@ -82,8 +86,16 @@ export function normalizeTenantConfig(input: TenantConfigInput, source: TenantCo
     throw new Error('Pumpkin API URL is required.');
   }
 
+  if (!/^https?:\/\//i.test(apiUrl)) {
+    throw new Error('Pumpkin API URL must start with http:// or https://.');
+  }
+
   if (!apiKey) {
     throw new Error('Tenant API key is required.');
+  }
+
+  if (isProductionDeployment() && isPlaceholder(apiKey)) {
+    throw new Error('Tenant API key must be a real production key.');
   }
 
   return {
@@ -94,6 +106,12 @@ export function normalizeTenantConfig(input: TenantConfigInput, source: TenantCo
     createdAt: new Date().toISOString(),
     source,
   };
+}
+
+function isPlaceholder(value: string) {
+  return /^(existing-|your-|replace-|use-)/i.test(value.trim()) ||
+    value.includes('<') ||
+    value.includes('>');
 }
 
 export function redactApiKey(apiKey: string): string {

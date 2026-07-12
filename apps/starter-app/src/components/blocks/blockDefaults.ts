@@ -14,6 +14,7 @@ export const BLOCK_TYPE_INFO: BlockTypeInfo[] = [
   { type: 'SecondaryCTA', label: 'Secondary CTA', icon: 'CTA', category: 'cta', description: 'Lighter call-to-action section.' },
   { type: 'CardGrid', label: 'Card Grid', icon: 'CG', category: 'content', description: 'Grid of cards with images, icons, and links.' },
   { type: 'FAQ', label: 'FAQ', icon: 'FAQ', category: 'content', description: 'Frequently asked questions accordion.' },
+  { type: 'HubSpokes', label: 'Hub Spokes', icon: 'HS', category: 'content', description: 'Displays published spoke pages linked to a hub.' },
   { type: 'Breadcrumbs', label: 'Breadcrumbs', icon: 'BC', category: 'navigation', description: 'Navigation breadcrumb trail.' },
   { type: 'TrustBar', label: 'Trust Bar', icon: 'TB', category: 'navigation', description: 'Trust indicators with icons.' },
   { type: 'HowItWorks', label: 'How It Works', icon: 'HW', category: 'navigation', description: 'Step-by-step process section.' },
@@ -47,6 +48,8 @@ export function createDefaultBlock(type: string): IHtmlBlock {
       return { type: 'CardGrid', content: { title: '', subtitle: '', layout: 'grid-3', imageAspect: '16:9', imageFit: 'cover', imagePosition: 'center', cards: [] } };
     case 'FAQ':
       return { type: 'FAQ', content: { title: '', subtitle: '', layout: 'accordion', items: [] } };
+    case 'HubSpokes':
+      return { type: 'HubSpokes', content: { title: 'Related pages', subtitle: '', hubPageSlug: '', layout: 'cards', limit: 12, showExcerpt: true, showLocation: true, ctaText: 'Learn more', spokes: [] } };
     case 'Breadcrumbs':
       return { type: 'Breadcrumbs', content: { items: [] } };
     case 'TrustBar':

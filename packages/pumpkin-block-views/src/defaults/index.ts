@@ -3,6 +3,7 @@ export { primaryCtaDefaults, type PrimaryCtaClassNames } from './primaryCta';
 export { secondaryCtaDefaults, type SecondaryCtaClassNames } from './secondaryCta';
 export { cardGridDefaults, type CardGridClassNames } from './cardGrid';
 export { faqDefaults, type FaqClassNames } from './faq';
+export { hubSpokesDefaults, type HubSpokesClassNames } from './hubSpokes';
 export { breadcrumbsDefaults, type BreadcrumbsClassNames } from './breadcrumbs';
 export { trustBarDefaults, type TrustBarClassNames } from './trustBar';
 export { howItWorksDefaults, type HowItWorksClassNames } from './howItWorks';

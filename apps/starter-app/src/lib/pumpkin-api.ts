@@ -1,9 +1,9 @@
-import type { FormDefinition, IHtmlBlock, Page, Theme } from 'pumpkin-ts-models';
+import type { FormDefinition, HubSpokeLink, IHtmlBlock, Page, Theme } from 'pumpkin-ts-models';
 import { fallbackTheme } from '@/data';
 import { loadTenantConfig } from '@/lib/tenant-config';
 import { resolveThemePlugin } from '@/themes/registry';
 
-const REVALIDATE_SECONDS = 60;
+export const PUBLIC_REVALIDATE_SECONDS = 60 * 60 * 24 * 7;
 const FETCH_TIMEOUT_MS = 5000;
 
 interface PumpkinFetchOptions {
@@ -34,7 +34,6 @@ export async function getSiteTheme(): Promise<Theme> {
   const theme = await fetchFromPumpkin<Theme>(
     `${config.apiUrl}/api/themes/${encodeURIComponent(config.tenantId)}`,
     config.apiKey,
-    { cache: 'no-store' },
   );
 
   return resolveThemePlugin(theme ?? fallbackTheme);
@@ -48,6 +47,88 @@ export async function fetchFormDefinition(type: string): Promise<FormDefinition 
     `${config.apiUrl}/api/forms/${encodeURIComponent(config.tenantId)}/definitions/${encodeURIComponent(type)}`,
     config.apiKey,
   );
+}
+
+interface SpokePagesResponse {
+  spokePages: Page[];
+  count: number;
+  hubPageSlug: string;
+  limit: number;
+  tenantId: string;
+}
+
+export async function hydrateHubSpokesForPage(page: Page): Promise<Page> {
+  const blocks = page.ContentData.ContentBlocks as Array<IHtmlBlock & {
+    id?: string;
+    content?: {
+      hubPageSlug?: string;
+      limit?: number;
+      spokes?: HubSpokeLink[];
+    };
+  }>;
+
+  const hubSpokeBlockEntries = blocks
+    .map((block, index) => ({ block, index }))
+    .filter((entry) => entry.block.type === 'HubSpokes');
+  if (hubSpokeBlockEntries.length === 0) {
+    return page;
+  }
+
+  const hydratedEntries = await Promise.all(
+    hubSpokeBlockEntries.map(async ({ block, index }) => {
+      const hubPageSlug = block.content?.hubPageSlug?.trim() || page.pageSlug;
+      const limit = normalizeSpokeLimit(block.content?.limit);
+      const spokes = await fetchHubSpokes(hubPageSlug, limit);
+      return {
+        index,
+        hubPageSlug,
+        limit,
+        spokes,
+      };
+    }),
+  );
+
+  const hydratedByIndex = new Map(hydratedEntries.map((entry) => [entry.index, entry]));
+
+  return {
+    ...page,
+    ContentData: {
+      ...page.ContentData,
+      ContentBlocks: blocks.map((block, index) => {
+        if (block.type !== 'HubSpokes') {
+          return block;
+        }
+
+        const hydrated = hydratedByIndex.get(index);
+        return {
+          ...block,
+          content: {
+            ...block.content,
+            hubPageSlug: hydrated?.hubPageSlug || block.content?.hubPageSlug || page.pageSlug,
+            limit: hydrated?.limit ?? block.content?.limit ?? 12,
+            spokes: hydrated?.spokes ?? [],
+          },
+        };
+      }),
+    },
+  };
+}
+
+export async function fetchHubSpokes(hubPageSlug: string, limit = 12): Promise<HubSpokeLink[]> {
+  const config = loadTenantConfig();
+  if (!config) return [];
+
+  const slugPath = normalizeSlug(hubPageSlug)
+    .split('/')
+    .map((segment) => encodeURIComponent(segment))
+    .join('/');
+
+  const response = await fetchFromPumpkin<SpokePagesResponse>(
+    `${config.apiUrl}/api/hubs/${encodeURIComponent(config.tenantId)}/spokes/${slugPath}?limit=${normalizeSpokeLimit(limit)}`,
+    config.apiKey,
+  );
+
+  return (response?.spokePages ?? []).map(pageToHubSpokeLink);
 }
 
 export async function getFormDefinitionsForPage(page: Page): Promise<Record<string, FormDefinition>> {
@@ -98,7 +179,7 @@ async function fetchFromPumpkin<T>(
     if (options.cache === 'no-store') {
       fetchOptions.cache = 'no-store';
     } else {
-      fetchOptions.next = { revalidate: options.revalidate ?? REVALIDATE_SECONDS };
+      fetchOptions.next = { revalidate: options.revalidate ?? PUBLIC_REVALIDATE_SECONDS };
     }
 
     const response = await fetch(url, fetchOptions);
@@ -117,6 +198,23 @@ async function fetchFromPumpkin<T>(
 
 function normalizeSlug(slug: string) {
   return slug.replace(/^\/+|\/+$/g, '').toLowerCase() || 'home';
+}
+
+function normalizeSpokeLimit(limit?: number) {
+  const numericLimit = typeof limit === 'number' && Number.isFinite(limit) ? limit : 12;
+  return Math.max(1, Math.min(numericLimit, 50));
+}
+
+function pageToHubSpokeLink(page: Page): HubSpokeLink {
+  return {
+    title: page.MetaData.title || page.pageSlug,
+    description: page.MetaData.description || page.searchData.contentSummary || '',
+    url: page.pageSlug === 'home' ? '/' : `/${page.pageSlug}`,
+    city: page.searchData.city || '',
+    state: page.searchData.state || '',
+    metro: page.searchData.metro || '',
+    spokePriority: page.contentRelationships?.spokePriority ?? 0,
+  };
 }
 
 function getFetchErrorMessage(error: unknown) {

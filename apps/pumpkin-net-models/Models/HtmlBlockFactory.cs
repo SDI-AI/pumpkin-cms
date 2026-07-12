@@ -20,6 +20,7 @@ public static class HtmlBlockFactory
         { "HowItWorks", typeof(HowItWorksBlock) },
         { "ServiceAreaMap", typeof(ServiceAreaMapBlock) },
         { "LocalProTips", typeof(LocalProTipsBlock) },
+        { "HubSpokes", typeof(HubSpokesBlock) },
         { "Gallery", typeof(GalleryBlock) },
         { "Testimonials", typeof(TestimonialsBlock) },
         { "Contact", typeof(ContactBlock) },

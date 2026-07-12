@@ -100,7 +100,11 @@ export type {
   CardGridBlock,
   FaqItem,
   FaqContent,
-  FaqBlock
+  FaqBlock,
+  HubSpokeLink,
+  HubSpokesContent,
+  HubSpokesLayout,
+  HubSpokesBlock
 } from './models/ContentBlocks';
 
 // Navigation blocks

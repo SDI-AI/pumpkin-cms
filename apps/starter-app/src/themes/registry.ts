@@ -30,13 +30,12 @@ export function getThemeStylesheet(theme: Theme): ThemeStylesheet {
     THEME_CSS_PATHS[theme.themeId] ||
     DEFAULT_THEME_CSS_PATH
   );
-  const integrity = shouldUseStylesheetIntegrity(href)
-    ? normalizeCssPath(compiledAssets?.cssIntegrity)
-    : undefined;
+  const integrity = normalizeCssPath(compiledAssets?.cssIntegrity);
 
   return {
     href,
     integrity,
+    crossOrigin: integrity ? 'anonymous' : undefined,
   };
 }
 
@@ -68,6 +67,3 @@ function normalizeCssPath(value?: string) {
   return normalized || undefined;
 }
 
-function shouldUseStylesheetIntegrity(href: string) {
-  return href.startsWith('/');
-}

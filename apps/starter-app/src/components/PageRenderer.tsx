@@ -40,7 +40,7 @@ export function PageRenderer({ page, blockStyles, formDefinitions = {} }: PageRe
               overrides={{
                 Blog: {
                   renderBody: (body) => (
-                    <div dangerouslySetInnerHTML={{ __html: body }} />
+                    <div dangerouslySetInnerHTML={{ __html: sanitizeCmsHtml(body) }} />
                   ),
                 },
                 Form: {
@@ -62,6 +62,19 @@ export function PageRenderer({ page, blockStyles, formDefinitions = {} }: PageRe
   );
 }
 
+function sanitizeCmsHtml(html: string) {
+  return html
+    .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, '')
+    .replace(/<iframe[\s\S]*?>[\s\S]*?<\/iframe>/gi, '')
+    .replace(/<object[\s\S]*?>[\s\S]*?<\/object>/gi, '')
+    .replace(/<embed[\s\S]*?>/gi, '')
+    .replace(/\son[a-z]+\s*=\s*(["']).*?\1/gi, '')
+    .replace(/\son[a-z]+\s*=\s*[^\s>]+/gi, '')
+    .replace(/\s(href|src)\s*=\s*(["'])\s*javascript:[\s\S]*?\2/gi, '')
+    .replace(/\s(href|src)\s*=\s*javascript:[^\s>]+/gi, '')
+    .replace(/\sstyle\s*=\s*(["']).*?\1/gi, '');
+}
+
 function getFormDefinition(block: CmsBlock, formDefinitions: Record<string, FormDefinition>) {
   const formType = (block.content as { formType?: string } | undefined)?.formType;
   if (!formType) return undefined;
@@ -75,6 +88,7 @@ function getSectionId(block: CmsBlock) {
     CardGrid: 'features',
     HowItWorks: 'how-it-works',
     FAQ: 'faq',
+    HubSpokes: 'related-pages',
     Blog: 'blog',
     Contact: 'contact',
     Form: 'contact',

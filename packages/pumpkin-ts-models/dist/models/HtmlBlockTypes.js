@@ -13,6 +13,7 @@ exports.BLOCK_TYPE_MAP = {
     'SecondaryCTA': 'SecondaryCtaBlock',
     'CardGrid': 'CardGridBlock',
     'FAQ': 'FaqBlock',
+    'HubSpokes': 'HubSpokesBlock',
     'Breadcrumbs': 'BreadcrumbsBlock',
     'TrustBar': 'TrustBarBlock',
     'HowItWorks': 'HowItWorksBlock',

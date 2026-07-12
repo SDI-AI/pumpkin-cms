@@ -81,6 +81,7 @@ public class ThemePackageInstaller
         var assetBlobPaths = new List<string>();
         foreach (var entry in archive.Entries.Where(IsAssetEntry))
         {
+            ValidateThemeAssetEntry(entry);
             var relativeAssetPath = NormalizeAssetPath(entry.FullName);
             var blobPath = $"{tenantThemePath}/{relativeAssetPath}";
             await using var assetStream = new MemoryStream();
@@ -203,6 +204,27 @@ public class ThemePackageInstaller
         return zipPath.Replace('\\', '/').TrimStart('/');
     }
 
+    private static void ValidateThemeAssetEntry(ZipArchiveEntry entry)
+    {
+        var extension = Path.GetExtension(entry.Name).ToLowerInvariant();
+        var allowedExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ".png",
+            ".jpg",
+            ".jpeg",
+            ".gif",
+            ".webp",
+            ".avif",
+            ".woff",
+            ".woff2",
+            ".ttf",
+            ".otf"
+        };
+
+        if (!allowedExtensions.Contains(extension))
+            throw new InvalidOperationException($"Theme asset '{entry.FullName}' has an unsupported extension.");
+    }
+
     private static async Task CopyEntryToAsync(ZipArchiveEntry entry, Stream destination, CancellationToken cancellationToken)
     {
         await using var entryStream = entry.Open();
@@ -237,8 +259,6 @@ public class ThemePackageInstaller
         {
             ".css" => "text/css; charset=utf-8",
             ".json" => "application/json; charset=utf-8",
-            ".js" => "text/javascript; charset=utf-8",
-            ".svg" => "image/svg+xml",
             ".png" => "image/png",
             ".jpg" or ".jpeg" => "image/jpeg",
             ".gif" => "image/gif",

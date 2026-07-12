@@ -21,6 +21,8 @@ export type FormEntryStatus = 'new' | 'read' | 'actioned' | 'archived';
  */
 export interface FormEntry {
   id: string;
+  /** Alias emitted by the .NET model for Cosmos/API compatibility. */
+  formEntryId?: string;
   /**
    * Machine-readable form type matching FormDefinition.type,
    * e.g. "contact_submission".

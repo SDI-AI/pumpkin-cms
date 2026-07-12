@@ -461,6 +461,53 @@ public class CosmosDataConnection : IDataConnection, IDisposable
         }
     }
 
+    public async Task<List<Page>> GetPublishedSpokePagesAsync(string apiKey, string tenantId, string hubPageSlug, int limit)
+    {
+        try
+        {
+            var isValidTenant = await ValidateTenantApiKeyAsync(apiKey, tenantId);
+            if (!isValidTenant)
+            {
+                _logger.LogWarning("Invalid API key for published spokes - TenantId: {TenantId}", tenantId);
+                throw new UnauthorizedAccessException("Invalid API key or tenant ID");
+            }
+
+            if (string.IsNullOrWhiteSpace(hubPageSlug))
+            {
+                throw new ArgumentException("Hub page slug is required", nameof(hubPageSlug));
+            }
+
+            var safeLimit = Math.Clamp(limit <= 0 ? 12 : limit, 1, 50);
+            var normalizedHubSlug = hubPageSlug.Trim().ToLowerInvariant();
+            var pagesContainer = _database.GetContainer("Page");
+            var query = $"SELECT TOP {safeLimit} * FROM c WHERE c.tenantId = @tenantId AND c.contentRelationships.hubPageSlug = @hubPageSlug AND c.isPublished = true AND (NOT IS_DEFINED(c.contentRelationships.isHub) OR c.contentRelationships.isHub = false) ORDER BY c.contentRelationships.spokePriority DESC, c.MetaData.updatedAt DESC";
+            var queryDefinition = new QueryDefinition(query)
+                .WithParameter("@tenantId", tenantId)
+                .WithParameter("@hubPageSlug", normalizedHubSlug);
+
+            var spokes = new List<Page>();
+            using var iterator = pagesContainer.GetItemQueryIterator<Page>(queryDefinition, requestOptions: new QueryRequestOptions
+            {
+                PartitionKey = new PartitionKey(tenantId)
+            });
+
+            while (iterator.HasMoreResults)
+            {
+                var response = await iterator.ReadNextAsync();
+                spokes.AddRange(response);
+                _logger.LogInformation("GetPublishedSpokePagesAsync - Retrieved {Count} spokes, TenantId: {TenantId}, Hub: {HubSlug}, RU: {RU}",
+                    response.Count, tenantId, normalizedHubSlug, response.RequestCharge);
+            }
+
+            return spokes;
+        }
+        catch (CosmosException ex)
+        {
+            _logger.LogError(ex, "GetPublishedSpokePagesAsync error - TenantId: {TenantId}, Hub: {HubSlug}", tenantId, hubPageSlug);
+            throw;
+        }
+    }
+
     private async Task<bool> ValidateTenantApiKeyAsync(string apiKey, string tenantId)
     {
         try

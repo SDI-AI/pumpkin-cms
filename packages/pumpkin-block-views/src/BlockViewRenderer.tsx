@@ -2,7 +2,7 @@ import React from 'react';
 import type { IHtmlBlock } from 'pumpkin-ts-models';
 import type {
   HeroBlock, PrimaryCtaBlock, SecondaryCtaBlock,
-  CardGridBlock, FaqBlock, BreadcrumbsBlock,
+  CardGridBlock, FaqBlock, HubSpokesBlock, BreadcrumbsBlock,
   TrustBarBlock, HowItWorksBlock, ServiceAreaMapBlock,
   LocalProTipsBlock, GalleryBlock, TestimonialsBlock,
   ContactBlock, FormBlock, FormDefinition, BlogBlock,
@@ -13,6 +13,7 @@ import { PrimaryCtaBlockView } from './views/PrimaryCtaBlockView';
 import { SecondaryCtaBlockView } from './views/SecondaryCtaBlockView';
 import { CardGridBlockView } from './views/CardGridBlockView';
 import { FaqBlockView } from './views/FaqBlockView';
+import { HubSpokesBlockView } from './views/HubSpokesBlockView';
 import { BreadcrumbsBlockView } from './views/BreadcrumbsBlockView';
 import { TrustBarBlockView } from './views/TrustBarBlockView';
 import { HowItWorksBlockView } from './views/HowItWorksBlockView';
@@ -29,6 +30,7 @@ import type { PrimaryCtaClassNames } from './defaults/primaryCta';
 import type { SecondaryCtaClassNames } from './defaults/secondaryCta';
 import type { CardGridClassNames } from './defaults/cardGrid';
 import type { FaqClassNames } from './defaults/faq';
+import type { HubSpokesClassNames } from './defaults/hubSpokes';
 import type { BreadcrumbsClassNames } from './defaults/breadcrumbs';
 import type { TrustBarClassNames } from './defaults/trustBar';
 import type { HowItWorksClassNames } from './defaults/howItWorks';
@@ -49,6 +51,7 @@ export interface BlockClassNamesMap {
   SecondaryCTA?: SecondaryCtaClassNames;
   CardGrid?: CardGridClassNames;
   FAQ?: FaqClassNames;
+  HubSpokes?: HubSpokesClassNames;
   Breadcrumbs?: BreadcrumbsClassNames;
   TrustBar?: TrustBarClassNames;
   HowItWorks?: HowItWorksClassNames;
@@ -116,6 +119,9 @@ export function BlockViewRenderer({ block, classNames, overrides, fallback }: Bl
 
     case 'FAQ':
       return <FaqBlockView block={block as FaqBlock} classNames={classNames?.FAQ} />;
+
+    case 'HubSpokes':
+      return <HubSpokesBlockView block={block as HubSpokesBlock} classNames={classNames?.HubSpokes} />;
 
     case 'Breadcrumbs':
       return <BreadcrumbsBlockView block={block as BreadcrumbsBlock} classNames={classNames?.Breadcrumbs} />;

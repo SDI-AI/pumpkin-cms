@@ -21,6 +21,25 @@ public class AssetStorageSettings
 
     public long MaxThemePackageBytes { get; set; } = 50 * 1024 * 1024;
     public long MaxMediaAssetBytes { get; set; } = 25 * 1024 * 1024;
+    public string[] AllowedMediaContentTypes { get; set; } =
+    {
+        "image/png",
+        "image/jpeg",
+        "image/gif",
+        "image/webp",
+        "image/avif",
+        "application/pdf"
+    };
+    public string[] AllowedMediaExtensions { get; set; } =
+    {
+        ".png",
+        ".jpg",
+        ".jpeg",
+        ".gif",
+        ".webp",
+        ".avif",
+        ".pdf"
+    };
 
     public AzureBlobAssetStorageSettings AzureBlob { get; set; } = new();
 

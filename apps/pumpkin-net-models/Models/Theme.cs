@@ -52,7 +52,7 @@ public class Theme
     [JsonPropertyName("version")]
     public int Version { get; set; } = 1;
 
-    // CSS-variable theme tokens consumed by Tailwind and the sample app.
+    // CSS-variable theme tokens consumed by Tailwind and the starter app.
 
     [JsonPropertyName("preview")]
     public ThemePreview Preview { get; set; } = new();

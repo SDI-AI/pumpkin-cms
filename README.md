@@ -18,9 +18,13 @@ Pumpkin CMS is a lightweight, API-first content management system that provides:
 pumpkin-cms/
 ├── apps/
 │   ├── pumpkin-api/          # .NET 9.0 Web API
-│   └── pumpkin-net-models/   # Shared .NET models library
+│   ├── pumpkin-api.Tests/    # API contract/test utilities
+│   ├── pumpkin-net-models/   # Shared .NET models library
+│   └── starter-app/          # Canonical tenant starter app + single-tenant admin
 ├── packages/
-│   └── pumpkin-ts-models/    # TypeScript models (NPM package)
+│   ├── pumpkin-block-views/  # Shared React block renderers
+│   └── pumpkin-ts-models/    # TypeScript models
+├── theme-packages/           # Installable compiled theme packages
 └── docs/                     # Documentation
 ```
 
@@ -130,15 +134,11 @@ npm install ./packages/pumpkin-ts-models
 - **Embedding vs. referencing**: HTML blocks are embedded within pages for atomic reads
 - **Version tracking**: Each update increments `PageVersion` for audit trails
 
-## Roadmap
+## Starter App
 
-See the [Admin UI Roadmap](apps/admin/README.md) for upcoming features including:
+The canonical frontend reference is `apps/starter-app`. It renders tenant pages, loads compiled theme packages, supports media-backed page editing, and includes a single-tenant admin workspace for pages, page map, media, themes, and forms.
 
-- Next.js-based admin interface
-- Visual block editor
-- Media management
-- Role-based access control
-- Analytics and insights
+The SaaS/operator admin used for cross-tenant management is intentionally kept outside the public repo. Public starter-app admin workflows stay scoped to the configured tenant.
 
 ## License
 

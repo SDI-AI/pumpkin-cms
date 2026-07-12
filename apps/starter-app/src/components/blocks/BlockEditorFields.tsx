@@ -29,6 +29,8 @@ export default function BlockEditorFields({ block, onChange }: BlockEditorFields
       return <CardGridFields content={content} onChange={onChange} />
     case 'FAQ':
       return <FaqFields content={content} onChange={onChange} />
+    case 'HubSpokes':
+      return <HubSpokesFields content={content} update={update} />
     case 'Breadcrumbs':
       return <BreadcrumbsFields content={content} onChange={onChange} />
     case 'TrustBar':
@@ -362,6 +364,38 @@ function FaqFields({ content, onChange }: { content: any; onChange: (c: any) => 
           </div>
         )}
       />
+    </div>
+  )
+}
+
+function HubSpokesFields({ content, update }: { content: any; update: (k: string, v: any) => void }) {
+  return (
+    <div className="space-y-3">
+      <Field label="Title" value={content.title} onChange={v => update('title', v)} />
+      <Field label="Subtitle" value={content.subtitle} onChange={v => update('subtitle', v)} multiline />
+      <Field label="Hub Page Slug" value={content.hubPageSlug} onChange={v => update('hubPageSlug', v.trim().toLowerCase())} placeholder="Leave blank to use this page" />
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className={labelClass}>Layout</label>
+          <select value={content.layout || 'cards'} onChange={e => update('layout', e.target.value)} className={inputClass}>
+            <option value="cards">Cards</option>
+            <option value="list">List</option>
+            <option value="compact">Compact</option>
+          </select>
+        </div>
+        <NumberField label="Limit" value={content.limit ?? 12} onChange={v => update('limit', Math.max(1, Math.min(v, 50)))} />
+      </div>
+      <Field label="CTA Text" value={content.ctaText} onChange={v => update('ctaText', v)} />
+      <div className="flex flex-wrap gap-4">
+        <label className="flex items-center gap-2 text-xs text-neutral-600">
+          <input type="checkbox" checked={content.showExcerpt !== false} onChange={e => update('showExcerpt', e.target.checked)} className="rounded border-neutral-300 text-pumpkin-600" />
+          Show excerpts
+        </label>
+        <label className="flex items-center gap-2 text-xs text-neutral-600">
+          <input type="checkbox" checked={content.showLocation !== false} onChange={e => update('showLocation', e.target.checked)} className="rounded border-neutral-300 text-pumpkin-600" />
+          Show location
+        </label>
+      </div>
     </div>
   )
 }

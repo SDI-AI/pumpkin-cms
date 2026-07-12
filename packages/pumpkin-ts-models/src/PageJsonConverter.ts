@@ -229,6 +229,7 @@ export class PageJsonConverter {
       case 'SecondaryCTA':
       case 'CardGrid':
       case 'FAQ':
+      case 'HubSpokes':
       case 'Breadcrumbs':
       case 'TrustBar':
       case 'HowItWorks':

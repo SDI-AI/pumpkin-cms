@@ -1231,6 +1231,11 @@ public class MongoDataConnection : IDataConnection, IDisposable
         throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
     }
 
+    public Task<List<Page>> GetPublishedSpokePagesAsync(string apiKey, string tenantId, string hubPageSlug, int limit)
+    {
+        throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
+    }
+
     public Task<object> GetContentHierarchyAsync(string tenantId)
     {
         throw new NotSupportedException("MongoDB support is not enabled. Install MongoDB.Driver package and define USE_MONGODB to enable MongoDB support.");
