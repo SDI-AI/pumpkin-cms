@@ -3,7 +3,7 @@ import { isStarterAdminAuthenticated } from '@/lib/admin-auth';
 import { getStarterAdminMediaAssets } from '@/lib/starter-admin-media';
 
 export async function GET(request: NextRequest) {
-  if (!isStarterAdminAuthenticated()) {
+  if (!(await isStarterAdminAuthenticated())) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 

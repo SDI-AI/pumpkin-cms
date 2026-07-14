@@ -5,14 +5,15 @@ import { loadTenantConfig } from '@/lib/tenant-config';
 import { PageVisualEditor } from '../_components/PageVisualEditor';
 
 interface StarterAdminNewPagePageProps {
-  searchParams?: {
+  searchParams?: Promise<{
     hubPageSlug?: string;
     pageSlug?: string;
-  };
+  }>;
 }
 
-export default function StarterAdminNewPagePage({ searchParams }: StarterAdminNewPagePageProps) {
-  requireStarterAdmin();
+export default async function StarterAdminNewPagePage({ searchParams }: StarterAdminNewPagePageProps) {
+  await requireStarterAdmin();
+  const query = await searchParams;
 
   const config = loadTenantConfig();
   if (!config) {
@@ -21,8 +22,8 @@ export default function StarterAdminNewPagePage({ searchParams }: StarterAdminNe
 
   const draft = createStarterAdminPageDraft({
     tenantId: config.tenantId,
-    pageSlug: searchParams?.pageSlug,
-    hubPageSlug: searchParams?.hubPageSlug,
+    pageSlug: query?.pageSlug,
+    hubPageSlug: query?.hubPageSlug,
   });
 
   return (

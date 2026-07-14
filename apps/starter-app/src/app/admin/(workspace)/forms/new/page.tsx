@@ -3,10 +3,10 @@ import { requireStarterAdmin } from '@/lib/admin-auth';
 import { getStarterAdminApiContext } from '@/lib/starter-admin-api';
 import { FormDefinitionEditor, createFormDefinition } from '../_components/FormDefinitionEditor';
 
-export default function StarterAdminNewFormPage() {
-  requireStarterAdmin();
+export default async function StarterAdminNewFormPage() {
+  await requireStarterAdmin();
 
-  const { tenantId } = getStarterAdminApiContext();
+  const { tenantId } = await getStarterAdminApiContext();
 
   return (
     <section>

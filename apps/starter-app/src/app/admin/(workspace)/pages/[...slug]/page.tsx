@@ -5,15 +5,16 @@ import { getStarterAdminPage } from '@/lib/starter-admin-pages';
 import { PageVisualEditor } from '../_components/PageVisualEditor';
 
 interface StarterAdminPageEditorProps {
-  params: {
+  params: Promise<{
     slug: string[];
-  };
+  }>;
 }
 
 export default async function StarterAdminPageEditor({ params }: StarterAdminPageEditorProps) {
-  requireStarterAdmin();
+  await requireStarterAdmin();
 
-  const pageSlug = params.slug.map((segment) => decodeURIComponent(segment)).join('/');
+  const { slug } = await params;
+  const pageSlug = slug.map((segment) => decodeURIComponent(segment)).join('/');
   const page = await getStarterAdminPage(pageSlug);
 
   return (

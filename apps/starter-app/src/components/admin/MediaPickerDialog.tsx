@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import NextImage from 'next/image';
 import { File, Image as ImageIcon, Search, X } from 'lucide-react';
 import type { MediaAsset } from 'pumpkin-ts-models';
 
@@ -130,12 +131,15 @@ export function MediaPickerDialog({
                   onClick={() => onSelect(asset)}
                   className="overflow-hidden rounded-lg border border-neutral-200 bg-white text-left shadow-sm transition-colors hover:border-pumpkin-300 hover:bg-pumpkin-50"
                 >
-                  <div className="flex aspect-video items-center justify-center bg-neutral-100">
+                  <div className="relative flex aspect-video items-center justify-center bg-neutral-100">
                     {asset.contentType?.startsWith('image/') ? (
-                      <img
+                      <NextImage
                         src={asset.publicUrl}
                         alt={asset.altText || asset.fileName}
-                        className="h-full w-full object-cover"
+                        fill
+                        sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                        className="object-cover"
+                        unoptimized
                       />
                     ) : (
                       <File className="h-10 w-10 text-neutral-400" aria-hidden="true" />

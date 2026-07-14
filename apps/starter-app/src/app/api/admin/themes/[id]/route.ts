@@ -8,18 +8,19 @@ import {
 import type { Theme } from 'pumpkin-ts-models';
 
 interface ThemeRouteContext {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export async function GET(_request: NextRequest, { params }: ThemeRouteContext) {
-  if (!isStarterAdminAuthenticated()) {
+  if (!(await isStarterAdminAuthenticated())) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
   try {
-    const theme = await getStarterAdminTheme(params.id);
+    const { id } = await params;
+    const theme = await getStarterAdminTheme(id);
     return NextResponse.json(theme);
   } catch (error) {
     return NextResponse.json(
@@ -30,13 +31,14 @@ export async function GET(_request: NextRequest, { params }: ThemeRouteContext) 
 }
 
 export async function PUT(request: NextRequest, { params }: ThemeRouteContext) {
-  if (!isStarterAdminAuthenticated()) {
+  if (!(await isStarterAdminAuthenticated())) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
   try {
     const theme = (await request.json()) as Theme;
-    const updated = await updateStarterAdminTheme(params.id, theme);
+    const { id } = await params;
+    const updated = await updateStarterAdminTheme(id, theme);
     return NextResponse.json(updated);
   } catch (error) {
     return NextResponse.json(
@@ -47,12 +49,13 @@ export async function PUT(request: NextRequest, { params }: ThemeRouteContext) {
 }
 
 export async function DELETE(_request: NextRequest, { params }: ThemeRouteContext) {
-  if (!isStarterAdminAuthenticated()) {
+  if (!(await isStarterAdminAuthenticated())) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
   try {
-    const result = await deleteStarterAdminTheme(params.id);
+    const { id } = await params;
+    const result = await deleteStarterAdminTheme(id);
     return NextResponse.json(result);
   } catch (error) {
     return NextResponse.json(

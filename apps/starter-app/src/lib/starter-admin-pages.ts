@@ -18,7 +18,7 @@ export async function getStarterAdminPages(): Promise<StarterAdminPagesResult> {
   if (!config) {
     throw new Error('Pumpkin tenant configuration is missing.');
   }
-  const token = getRequiredAdminToken();
+  const token = await getRequiredAdminToken();
 
   const response = await fetch(`${config.apiUrl}/api/admin/pages?tenantId=${encodeURIComponent(config.tenantId)}`, {
     headers: {
@@ -45,7 +45,7 @@ export async function getStarterAdminPage(pageSlug: string): Promise<Page> {
   if (!config) {
     throw new Error('Pumpkin tenant configuration is missing.');
   }
-  const token = getRequiredAdminToken();
+  const token = await getRequiredAdminToken();
 
   const response = await fetch(
     `${config.apiUrl}/api/admin/pages/${encodeURIComponent(config.tenantId)}/${encodeSlugPath(pageSlug)}`,
@@ -70,7 +70,7 @@ export async function updateStarterAdminPage(pageSlug: string, page: Page): Prom
   if (!config) {
     throw new Error('Pumpkin tenant configuration is missing.');
   }
-  const token = getRequiredAdminToken();
+  const token = await getRequiredAdminToken();
 
   const response = await fetch(
     `${config.apiUrl}/api/admin/pages/${encodeURIComponent(config.tenantId)}/${encodeSlugPath(pageSlug)}`,
@@ -98,7 +98,7 @@ export async function createStarterAdminPage(page: Page): Promise<Page> {
   if (!config) {
     throw new Error('Pumpkin tenant configuration is missing.');
   }
-  const token = getRequiredAdminToken();
+  const token = await getRequiredAdminToken();
 
   const response = await fetch(
     `${config.apiUrl}/api/admin/pages/${encodeURIComponent(config.tenantId)}`,
@@ -222,8 +222,8 @@ function encodeSlugPath(slug: string) {
     .join('/');
 }
 
-function getRequiredAdminToken() {
-  const token = getStarterAdminToken();
+async function getRequiredAdminToken() {
+  const token = await getStarterAdminToken();
   if (!token) {
     throw new Error('Starter admin session is missing.');
   }

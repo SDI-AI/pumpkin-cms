@@ -21,7 +21,7 @@ export interface ThemeInstallResponse {
 }
 
 export async function getStarterAdminThemes() {
-  const { tenantId } = getStarterAdminApiContext();
+  const { tenantId } = await getStarterAdminApiContext();
   const response = await starterAdminFetch<ThemesResponse>(
     `/api/admin/themes/${encodeURIComponent(tenantId)}`,
   );
@@ -33,14 +33,14 @@ export async function getStarterAdminThemes() {
 }
 
 export async function getStarterAdminTheme(id: string) {
-  const { tenantId } = getStarterAdminApiContext();
+  const { tenantId } = await getStarterAdminApiContext();
   return starterAdminFetch<Theme>(
     `/api/admin/themes/${encodeURIComponent(tenantId)}/${encodeURIComponent(id)}`,
   );
 }
 
 export async function createStarterAdminTheme(theme: Theme) {
-  const { tenantId } = getStarterAdminApiContext();
+  const { tenantId } = await getStarterAdminApiContext();
   return starterAdminFetch<Theme>(
     `/api/admin/themes/${encodeURIComponent(tenantId)}`,
     {
@@ -52,7 +52,7 @@ export async function createStarterAdminTheme(theme: Theme) {
 }
 
 export async function updateStarterAdminTheme(id: string, theme: Theme) {
-  const { tenantId } = getStarterAdminApiContext();
+  const { tenantId } = await getStarterAdminApiContext();
   return starterAdminFetch<Theme>(
     `/api/admin/themes/${encodeURIComponent(tenantId)}/${encodeURIComponent(id)}`,
     {
@@ -64,7 +64,7 @@ export async function updateStarterAdminTheme(id: string, theme: Theme) {
 }
 
 export async function activateStarterAdminTheme(id: string) {
-  const { tenantId } = getStarterAdminApiContext();
+  const { tenantId } = await getStarterAdminApiContext();
   return starterAdminFetch<Theme>(
     `/api/admin/themes/${encodeURIComponent(tenantId)}/${encodeURIComponent(id)}/activate`,
     { method: 'POST' },
@@ -72,7 +72,7 @@ export async function activateStarterAdminTheme(id: string) {
 }
 
 export async function installStarterAdminThemePackage(formData: FormData) {
-  const { tenantId } = getStarterAdminApiContext();
+  const { tenantId } = await getStarterAdminApiContext();
   return starterAdminFetch<ThemeInstallResponse>(
     `/api/admin/themes/${encodeURIComponent(tenantId)}/install`,
     {
@@ -83,7 +83,7 @@ export async function installStarterAdminThemePackage(formData: FormData) {
 }
 
 export async function deleteStarterAdminTheme(id: string) {
-  const { tenantId } = getStarterAdminApiContext();
+  const { tenantId } = await getStarterAdminApiContext();
   return starterAdminFetch<{ message: string }>(
     `/api/admin/themes/${encodeURIComponent(tenantId)}/${encodeURIComponent(id)}`,
     { method: 'DELETE' },

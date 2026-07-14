@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { X } from 'lucide-react';
 
 interface StructuredDataModalProps {
@@ -116,15 +116,26 @@ export function StructuredDataModal({
   onSave,
   title,
 }: StructuredDataModalProps) {
+  if (!isOpen) return null;
+
+  return (
+    <StructuredDataModalContent
+      initialValue={initialValue}
+      onClose={onClose}
+      onSave={onSave}
+      title={title}
+    />
+  );
+}
+
+function StructuredDataModalContent({
+  initialValue,
+  onClose,
+  onSave,
+  title,
+}: Omit<StructuredDataModalProps, 'isOpen'>) {
   const [value, setValue] = useState(initialValue);
   const [error, setError] = useState('');
-
-  useEffect(() => {
-    setValue(initialValue);
-    setError('');
-  }, [initialValue, isOpen]);
-
-  if (!isOpen) return null;
 
   const applyTemplate = (template: SchemaTemplate) => {
     setValue(JSON.stringify(template.value, null, 2));

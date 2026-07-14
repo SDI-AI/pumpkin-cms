@@ -52,12 +52,12 @@ Theme consumers that use ISR should cache the active-theme response with a tag l
 
 | Method | Route | Auth | Notes |
 | --- | --- | --- | --- |
-| GET | `/api/admin/tenants` | JWT | SuperAdmins see all tenants; other roles see their own tenant. |
-| GET | `/api/admin/tenants/{tenantId}` | JWT, SuperAdmin | Gets a tenant by ID. |
-| POST | `/api/admin/tenants` | JWT, SuperAdmin | Creates a tenant. |
-| PUT | `/api/admin/tenants/{tenantId}` | JWT, SuperAdmin | Updates a tenant. |
+| GET | `/api/admin/tenants` | JWT | SuperAdmins see tenants in every lifecycle state; other roles see their own tenant. Responses exclude API key material. |
+| GET | `/api/admin/tenants/{tenantId}` | JWT, SuperAdmin | Gets safe tenant administration details by ID. |
+| POST | `/api/admin/tenants` | JWT, SuperAdmin | Creates a tenant and returns the plaintext API credential once. |
+| PUT | `/api/admin/tenants/{tenantId}` | JWT, SuperAdmin | Updates platform-owned tenant fields without accepting stored credential fields. |
 | DELETE | `/api/admin/tenants/{tenantId}` | JWT, SuperAdmin | Deletes a tenant; cannot delete caller's tenant. |
-| POST | `/api/admin/tenants/{tenantId}/regenerate-api-key` | JWT, SuperAdmin | Regenerates tenant API key. |
+| POST | `/api/admin/tenants/{tenantId}/regenerate-api-key` | JWT, SuperAdmin | Regenerates the tenant API key and returns the plaintext credential once. |
 
 ## Admin Pages
 

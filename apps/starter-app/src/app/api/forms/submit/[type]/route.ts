@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { loadTenantConfig } from '@/lib/tenant-config';
 
 interface SubmitRouteContext {
-  params: {
+  params: Promise<{
     type: string;
-  };
+  }>;
 }
 
 export async function POST(request: NextRequest, { params }: SubmitRouteContext) {
+  const { type } = await params;
   const config = loadTenantConfig();
 
   if (!config) {
@@ -19,7 +20,7 @@ export async function POST(request: NextRequest, { params }: SubmitRouteContext)
 
   const formData = await request.json();
   const response = await fetch(
-    `${config.apiUrl}/api/forms/${encodeURIComponent(config.tenantId)}/submit/${encodeURIComponent(params.type)}`,
+    `${config.apiUrl}/api/forms/${encodeURIComponent(config.tenantId)}/submit/${encodeURIComponent(type)}`,
     {
       method: 'POST',
       headers: {

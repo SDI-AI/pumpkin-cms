@@ -4,9 +4,9 @@ import { getStarterAdminThemes } from '@/lib/starter-admin-themes';
 import { ThemeList } from './_components/ThemeList';
 
 export default async function StarterAdminThemesPage() {
-  requireStarterAdmin();
+  await requireStarterAdmin();
 
-  const context = getStarterAdminContext();
+  const context = await getStarterAdminContext();
   const { themes, activeThemeId } = await getStarterAdminThemes();
 
   return (

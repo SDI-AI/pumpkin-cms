@@ -30,7 +30,11 @@ export function getThemeStylesheet(theme: Theme): ThemeStylesheet {
     THEME_CSS_PATHS[theme.themeId] ||
     DEFAULT_THEME_CSS_PATH
   );
-  const integrity = normalizeCssPath(compiledAssets?.cssIntegrity);
+  const configuredIntegrity = normalizeCssPath(compiledAssets?.cssIntegrity);
+  // Cross-origin SRI requires the stylesheet host to return an approved CORS
+  // response. Public tenant theme blobs currently do not provide that contract,
+  // so browsers reject otherwise valid CSS when integrity is attached.
+  const integrity = isSameOriginPath(href) ? configuredIntegrity : undefined;
 
   return {
     href,
@@ -65,5 +69,9 @@ export function resolveThemePlugin(theme: Theme): Theme {
 function normalizeCssPath(value?: string) {
   const normalized = value?.trim();
   return normalized || undefined;
+}
+
+function isSameOriginPath(href: string) {
+  return href.startsWith('/') && !href.startsWith('//');
 }
 

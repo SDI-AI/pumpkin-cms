@@ -3,7 +3,7 @@ import { getStarterAdminPages } from '@/lib/starter-admin-pages';
 import { PageFlowMapView } from './_components/PageFlowMapView';
 
 export default async function StarterAdminPageMapPage() {
-  requireStarterAdmin();
+  await requireStarterAdmin();
 
   const { pages, unavailablePages } = await getStarterAdminPages();
 

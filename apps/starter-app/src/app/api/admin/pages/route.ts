@@ -4,7 +4,7 @@ import { createStarterAdminPage, getStarterAdminPages } from '@/lib/starter-admi
 import type { Page } from 'pumpkin-ts-models';
 
 export async function GET() {
-  if (!isStarterAdminAuthenticated()) {
+  if (!(await isStarterAdminAuthenticated())) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
@@ -23,7 +23,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  if (!isStarterAdminAuthenticated()) {
+  if (!(await isStarterAdminAuthenticated())) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 

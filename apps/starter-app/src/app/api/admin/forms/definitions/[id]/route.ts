@@ -8,18 +8,19 @@ import {
 import type { FormDefinition } from 'pumpkin-ts-models';
 
 interface FormDefinitionRouteContext {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export async function GET(_request: NextRequest, { params }: FormDefinitionRouteContext) {
-  if (!isStarterAdminAuthenticated()) {
+  if (!(await isStarterAdminAuthenticated())) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
   try {
-    const definition = await getStarterAdminFormDefinition(params.id);
+    const { id } = await params;
+    const definition = await getStarterAdminFormDefinition(id);
     return NextResponse.json(definition);
   } catch (error) {
     return NextResponse.json(
@@ -30,13 +31,14 @@ export async function GET(_request: NextRequest, { params }: FormDefinitionRoute
 }
 
 export async function PUT(request: NextRequest, { params }: FormDefinitionRouteContext) {
-  if (!isStarterAdminAuthenticated()) {
+  if (!(await isStarterAdminAuthenticated())) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
   try {
     const definition = (await request.json()) as FormDefinition;
-    const updated = await updateStarterAdminFormDefinition(params.id, definition);
+    const { id } = await params;
+    const updated = await updateStarterAdminFormDefinition(id, definition);
     return NextResponse.json(updated);
   } catch (error) {
     return NextResponse.json(
@@ -47,12 +49,13 @@ export async function PUT(request: NextRequest, { params }: FormDefinitionRouteC
 }
 
 export async function DELETE(_request: NextRequest, { params }: FormDefinitionRouteContext) {
-  if (!isStarterAdminAuthenticated()) {
+  if (!(await isStarterAdminAuthenticated())) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
   try {
-    const result = await deleteStarterAdminFormDefinition(params.id);
+    const { id } = await params;
+    const result = await deleteStarterAdminFormDefinition(id);
     return NextResponse.json(result);
   } catch (error) {
     return NextResponse.json(

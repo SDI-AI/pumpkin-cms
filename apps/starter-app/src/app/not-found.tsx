@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 export default function NotFound() {
   return (
     <section className="bg-white px-6 py-24">
@@ -9,12 +11,12 @@ export default function NotFound() {
         <p className="mt-4 text-base leading-7 text-neutral-600">
           This route does not have a published Pumpkin CMS page yet.
         </p>
-        <a
+        <Link
           href="/"
           className="mt-8 inline-flex rounded-md bg-pumpkin-600 px-5 py-3 text-sm font-bold text-white hover:bg-pumpkin-700"
         >
           Back home
-        </a>
+        </Link>
       </div>
     </section>
   );

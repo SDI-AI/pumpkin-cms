@@ -7,9 +7,9 @@ import { fetchPumpkinPage, getFormDefinitionsForPage, getSiteTheme, hydrateHubSp
 export const revalidate = 604800;
 
 interface SlugPageProps {
-  params: {
+  params: Promise<{
     slug: string[];
-  };
+  }>;
 }
 
 function normalizeSlug(slugParts: string[]) {
@@ -17,14 +17,16 @@ function normalizeSlug(slugParts: string[]) {
 }
 
 export async function generateMetadata({ params }: SlugPageProps): Promise<Metadata> {
-  const page = await fetchPumpkinPage(normalizeSlug(params.slug));
+  const { slug } = await params;
+  const page = await fetchPumpkinPage(normalizeSlug(slug));
   if (!page) return { title: 'Page Not Found' };
   return buildMetadata(page);
 }
 
 export default async function SlugPage({ params }: SlugPageProps) {
+  const { slug } = await params;
   const [page, theme] = await Promise.all([
-    fetchPumpkinPage(normalizeSlug(params.slug)),
+    fetchPumpkinPage(normalizeSlug(slug)),
     getSiteTheme(),
   ]);
 

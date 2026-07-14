@@ -4,15 +4,16 @@ import { getStarterAdminTheme } from '@/lib/starter-admin-themes';
 import { ThemeEditor } from '../_components/ThemeEditor';
 
 interface StarterAdminThemeEditPageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export default async function StarterAdminThemeEditPage({ params }: StarterAdminThemeEditPageProps) {
-  requireStarterAdmin();
+  await requireStarterAdmin();
 
-  const theme = await getStarterAdminTheme(params.id);
+  const { id } = await params;
+  const theme = await getStarterAdminTheme(id);
 
   return (
     <section>

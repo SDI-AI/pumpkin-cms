@@ -4,15 +4,16 @@ import { getStarterAdminFormDefinition } from '@/lib/starter-admin-forms';
 import { FormDefinitionEditor } from '../_components/FormDefinitionEditor';
 
 interface StarterAdminFormEditPageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export default async function StarterAdminFormEditPage({ params }: StarterAdminFormEditPageProps) {
-  requireStarterAdmin();
+  await requireStarterAdmin();
 
-  const definition = await getStarterAdminFormDefinition(params.id);
+  const { id } = await params;
+  const definition = await getStarterAdminFormDefinition(id);
 
   return (
     <section>

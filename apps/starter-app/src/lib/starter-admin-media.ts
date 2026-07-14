@@ -10,7 +10,7 @@ interface MediaAssetsResponse {
 }
 
 export async function getStarterAdminMediaAssets(filters: { folder?: string; contentType?: string } = {}) {
-  const { tenantId } = getStarterAdminApiContext();
+  const { tenantId } = await getStarterAdminApiContext();
   const search = new URLSearchParams();
   if (filters.folder) search.set('folder', filters.folder);
   if (filters.contentType) search.set('contentType', filters.contentType);
@@ -24,7 +24,7 @@ export async function getStarterAdminMediaAssets(filters: { folder?: string; con
 }
 
 export async function uploadStarterAdminMediaAsset(formData: FormData) {
-  const { tenantId } = getStarterAdminApiContext();
+  const { tenantId } = await getStarterAdminApiContext();
   return starterAdminFetch<MediaAsset>(
     `/api/admin/media/${encodeURIComponent(tenantId)}/upload`,
     {
@@ -35,7 +35,7 @@ export async function uploadStarterAdminMediaAsset(formData: FormData) {
 }
 
 export async function updateStarterAdminMediaAsset(id: string, asset: MediaAsset) {
-  const { tenantId } = getStarterAdminApiContext();
+  const { tenantId } = await getStarterAdminApiContext();
   return starterAdminFetch<MediaAsset>(
     `/api/admin/media/${encodeURIComponent(tenantId)}/${encodeURIComponent(id)}`,
     {
@@ -47,7 +47,7 @@ export async function updateStarterAdminMediaAsset(id: string, asset: MediaAsset
 }
 
 export async function deleteStarterAdminMediaAsset(id: string) {
-  const { tenantId } = getStarterAdminApiContext();
+  const { tenantId } = await getStarterAdminApiContext();
   return starterAdminFetch<{ message: string }>(
     `/api/admin/media/${encodeURIComponent(tenantId)}/${encodeURIComponent(id)}`,
     { method: 'DELETE' },

@@ -538,7 +538,10 @@ app.MapGet("/api/admin/tenants/{tenantId}",
             return Results.Forbid();
         }
         
-        return await PumpkinManager.GetTenantAsync(databaseService, tenantId);
+        var tenant = await databaseService.GetTenantAsync(tenantId);
+        return tenant == null
+            ? Results.NotFound($"Tenant {tenantId} not found")
+            : Results.Ok(ToTenantAdminInfo(tenant));
     })
     .RequireAuthorization()
     .WithTags("Admin")
@@ -548,7 +551,7 @@ app.MapGet("/api/admin/tenants/{tenantId}",
 
 // Admin: Create new tenant
 app.MapPost("/api/admin/tenants",
-    async (IDatabaseService databaseService, HttpContext context, Tenant tenant) =>
+    async (IDatabaseService databaseService, HttpContext context, CreateTenantRequest request) =>
     {
         // Validate JWT authentication
         if (context.User?.Identity?.IsAuthenticated != true)
@@ -576,8 +579,28 @@ app.MapPost("/api/admin/tenants",
         
         try
         {
-            var createdTenant = await PumpkinManager.CreateTenantAsync(databaseService, tenant);
-            return Results.Ok(createdTenant);
+            if (string.IsNullOrWhiteSpace(request.TenantId) || string.IsNullOrWhiteSpace(request.Name))
+            {
+                return Results.BadRequest("Tenant ID and name are required");
+            }
+            if (!System.Text.RegularExpressions.Regex.IsMatch(request.TenantId, "^[a-z0-9][a-z0-9-]{0,62}$"))
+            {
+                return Results.BadRequest("Tenant ID must contain lowercase letters, numbers, and hyphens only");
+            }
+            if (!IsTenantStatus(request.Status))
+            {
+                return Results.BadRequest("Tenant status must be active, suspended, or inactive");
+            }
+
+            var plainTextApiKey = Convert.ToBase64String(
+                System.Security.Cryptography.RandomNumberGenerator.GetBytes(32));
+            var tenant = ToTenant(request);
+            tenant.ApiKeyHash = BCrypt.Net.BCrypt.HashPassword(plainTextApiKey, 12);
+            tenant.ApiKeyMeta = new ApiKeyMeta { CreatedAt = DateTime.UtcNow, IsActive = true };
+            var createdTenant = await databaseService.CreateTenantAsync(tenant);
+            return Results.Created(
+                $"/api/admin/tenants/{createdTenant.TenantId}",
+                new TenantCreatedResponse(ToTenantAdminInfo(createdTenant), plainTextApiKey));
         }
         catch (InvalidOperationException ex)
         {
@@ -620,9 +643,11 @@ app.MapGet("/api/admin/tenants",
         
         try
         {
-            // If SuperAdmin, return all tenants; otherwise just return the user's tenant
-            var tenants = await databaseService.GetTenantsForUserAsync(userTenantId, userRole == "SuperAdmin");
-            return Results.Ok(new { tenants, count = tenants.Count });
+            var tenants = userRole == "SuperAdmin"
+                ? await databaseService.GetAllTenantsAsync()
+                : await databaseService.GetTenantsForUserAsync(userTenantId, false);
+            var response = tenants.Select(ToTenantAdminInfo).ToList();
+            return Results.Ok(new { tenants = response, count = response.Count });
         }
         catch (Exception ex)
         {
@@ -637,7 +662,7 @@ app.MapGet("/api/admin/tenants",
 
 // Admin: Update tenant (JWT-authenticated)
 app.MapPut("/api/admin/tenants/{tenantId}",
-    async (IDatabaseService databaseService, HttpContext context, string tenantId, Tenant tenant) =>
+    async (IDatabaseService databaseService, HttpContext context, string tenantId, UpdateTenantRequest request) =>
     {
         // Validate JWT authentication
         if (context.User?.Identity?.IsAuthenticated != true)
@@ -662,8 +687,24 @@ app.MapPut("/api/admin/tenants/{tenantId}",
         
         try
         {
-            var updatedTenant = await databaseService.UpdateTenantAsync(tenantId, tenant);
-            return Results.Ok(updatedTenant);
+            if (string.IsNullOrWhiteSpace(request.Name))
+            {
+                return Results.BadRequest("Tenant name is required");
+            }
+            if (!IsTenantStatus(request.Status))
+            {
+                return Results.BadRequest("Tenant status must be active, suspended, or inactive");
+            }
+
+            var existingTenant = await databaseService.GetTenantAsync(tenantId);
+            if (existingTenant == null)
+            {
+                return Results.NotFound($"Tenant {tenantId} not found");
+            }
+
+            ApplyTenantUpdate(existingTenant, request);
+            var updatedTenant = await databaseService.UpdateTenantAsync(tenantId, existingTenant);
+            return Results.Ok(ToTenantAdminInfo(updatedTenant));
         }
         catch (InvalidOperationException ex)
         {
@@ -736,11 +777,7 @@ app.MapPost("/api/admin/tenants/{tenantId}/regenerate-api-key",
             var updatedTenant = await databaseService.UpdateTenantAsync(tenantId, tenant);
             
             // Return the plain-text API key (one-time view)
-            return Results.Ok(new 
-            { 
-                tenant = updatedTenant,
-                apiKey = newApiKey  // Plain-text key for one-time display
-            });
+            return Results.Ok(new TenantCredentialResponse(ToTenantAdminInfo(updatedTenant), newApiKey));
         }
         catch (InvalidOperationException ex)
         {
@@ -890,6 +927,18 @@ app.MapPost("/api/admin/users/{tenantId}",
 
         try
         {
+            var tenant = await databaseService.GetTenantAsync(tenantId);
+            if (tenant == null)
+            {
+                return Results.NotFound($"Tenant {tenantId} not found");
+            }
+
+            var existingUsers = await databaseService.GetUsersByTenantAsync(tenantId);
+            if (tenant.Settings.MaxUsers > 0 && existingUsers.Count >= tenant.Settings.MaxUsers)
+            {
+                return Results.BadRequest($"Tenant user limit of {tenant.Settings.MaxUsers} has been reached");
+            }
+
             var user = new User
             {
                 TenantId = tenantId,
@@ -2234,6 +2283,101 @@ static AdminUserInfo ToAdminUserInfo(User user)
         user.Permissions);
 }
 
+static TenantAdminInfo ToTenantAdminInfo(Tenant tenant)
+{
+    return new TenantAdminInfo(
+        tenant.Id,
+        tenant.TenantId,
+        tenant.Name,
+        tenant.Plan,
+        tenant.Status,
+        tenant.ApiKeyMeta,
+        tenant.CreatedAt,
+        tenant.UpdatedAt,
+        new TenantAdminSettings(
+            tenant.Settings.Language,
+            tenant.Settings.MaxUsers,
+            tenant.Settings.AllowedOrigins,
+            new TenantEntitlements(
+                tenant.Settings.Features.Forms,
+                tenant.Settings.Features.Pages,
+                tenant.Settings.Features.Analytics)),
+        tenant.Contact,
+        tenant.Billing);
+}
+
+static Tenant ToTenant(CreateTenantRequest request)
+{
+    var tenantId = request.TenantId.Trim();
+    return new Tenant
+    {
+        Id = tenantId,
+        TenantId = tenantId,
+        Name = request.Name.Trim(),
+        Plan = string.IsNullOrWhiteSpace(request.Plan) ? "standard" : request.Plan.Trim(),
+        Status = string.IsNullOrWhiteSpace(request.Status) ? "active" : request.Status.Trim().ToLowerInvariant(),
+        Settings = ToTenantSettings(request.Settings),
+        Contact = request.Contact ?? new Contact(),
+        Billing = request.Billing ?? new Billing()
+    };
+}
+
+static void ApplyTenantUpdate(Tenant tenant, UpdateTenantRequest request)
+{
+    tenant.Name = request.Name.Trim();
+    tenant.Plan = string.IsNullOrWhiteSpace(request.Plan) ? tenant.Plan : request.Plan.Trim();
+    tenant.Status = string.IsNullOrWhiteSpace(request.Status)
+        ? tenant.Status
+        : request.Status.Trim().ToLowerInvariant();
+    tenant.Contact = request.Contact ?? tenant.Contact;
+    tenant.Billing = request.Billing ?? tenant.Billing;
+
+    if (request.Settings != null)
+    {
+        tenant.Settings.Language = string.IsNullOrWhiteSpace(request.Settings.Language)
+            ? tenant.Settings.Language
+            : request.Settings.Language.Trim();
+        tenant.Settings.MaxUsers = Math.Max(1, request.Settings.MaxUsers);
+        tenant.Settings.AllowedOrigins = NormalizeOrigins(request.Settings.AllowedOrigins);
+        tenant.Settings.Features.Forms = request.Settings.Entitlements?.Forms ?? tenant.Settings.Features.Forms;
+        tenant.Settings.Features.Pages = request.Settings.Entitlements?.Pages ?? tenant.Settings.Features.Pages;
+        tenant.Settings.Features.Analytics = request.Settings.Entitlements?.Analytics ?? tenant.Settings.Features.Analytics;
+    }
+}
+
+static TenantSettings ToTenantSettings(TenantAdminSettingsRequest? settings)
+{
+    return new TenantSettings
+    {
+        Language = string.IsNullOrWhiteSpace(settings?.Language) ? "en" : settings.Language.Trim(),
+        MaxUsers = Math.Max(1, settings?.MaxUsers ?? 10),
+        AllowedOrigins = NormalizeOrigins(settings?.AllowedOrigins),
+        Features = new Features
+        {
+            Forms = settings?.Entitlements?.Forms ?? true,
+            Pages = settings?.Entitlements?.Pages ?? true,
+            Analytics = settings?.Entitlements?.Analytics ?? false
+        }
+    };
+}
+
+static bool IsTenantStatus(string? status)
+{
+    return string.Equals(status, "active", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(status, "suspended", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(status, "inactive", StringComparison.OrdinalIgnoreCase);
+}
+
+static string[] NormalizeOrigins(string[]? origins)
+{
+    return (origins ?? Array.Empty<string>())
+        .Select(origin => origin.Trim().TrimEnd('/'))
+        .Where(origin => Uri.TryCreate(origin, UriKind.Absolute, out var uri)
+            && (uri.Scheme == Uri.UriSchemeHttps || uri.Scheme == Uri.UriSchemeHttp))
+        .Distinct(StringComparer.OrdinalIgnoreCase)
+        .ToArray();
+}
+
 static string[] GetConfiguredOrigins(IConfiguration configuration)
 {
     var configured = configuration.GetSection("Cors:AllowedOrigins")
@@ -2369,3 +2513,52 @@ record UpdateAdminUserRequest(
 
 /// <summary>Request body for resetting an admin-managed user's password.</summary>
 record ResetAdminUserPasswordRequest(string Password);
+
+/// <summary>Tenant data safe to return to platform administrators.</summary>
+record TenantAdminInfo(
+    string Id,
+    string TenantId,
+    string Name,
+    string Plan,
+    string Status,
+    ApiKeyMeta ApiKeyMeta,
+    DateTime CreatedAt,
+    DateTime UpdatedAt,
+    TenantAdminSettings Settings,
+    Contact Contact,
+    Billing Billing);
+
+record TenantAdminSettings(
+    string Language,
+    int MaxUsers,
+    string[] AllowedOrigins,
+    TenantEntitlements Entitlements);
+
+record TenantAdminSettingsRequest(
+    string Language,
+    int MaxUsers,
+    string[]? AllowedOrigins,
+    TenantEntitlements? Entitlements);
+
+record TenantEntitlements(bool Forms, bool Pages, bool Analytics);
+
+record CreateTenantRequest(
+    string TenantId,
+    string Name,
+    string Plan,
+    string Status,
+    TenantAdminSettingsRequest? Settings,
+    Contact? Contact,
+    Billing? Billing);
+
+record UpdateTenantRequest(
+    string Name,
+    string Plan,
+    string Status,
+    TenantAdminSettingsRequest? Settings,
+    Contact? Contact,
+    Billing? Billing);
+
+record TenantCreatedResponse(TenantAdminInfo Tenant, string ApiKey);
+
+record TenantCredentialResponse(TenantAdminInfo Tenant, string ApiKey);

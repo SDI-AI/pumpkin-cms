@@ -7,13 +7,13 @@ export interface StarterAdminApiContext {
   token: string;
 }
 
-export function getStarterAdminApiContext(): StarterAdminApiContext {
+export async function getStarterAdminApiContext(): Promise<StarterAdminApiContext> {
   const config = loadTenantConfig();
   if (!config) {
     throw new Error('Pumpkin tenant configuration is missing.');
   }
 
-  const token = getStarterAdminToken();
+  const token = await getStarterAdminToken();
   if (!token) {
     throw new Error('Starter admin session is missing.');
   }
@@ -29,7 +29,7 @@ export async function starterAdminFetch<T>(
   endpoint: string,
   options: RequestInit = {},
 ): Promise<T> {
-  const context = getStarterAdminApiContext();
+  const context = await getStarterAdminApiContext();
   const response = await fetch(`${context.apiUrl}${endpoint}`, {
     ...options,
     headers: {

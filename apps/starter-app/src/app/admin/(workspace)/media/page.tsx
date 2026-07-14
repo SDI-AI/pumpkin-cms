@@ -4,7 +4,7 @@ import { getStarterAdminMediaAssets } from '@/lib/starter-admin-media';
 import { MediaLibraryView } from './_components/MediaLibraryView';
 
 export default async function StarterAdminMediaPage() {
-  requireStarterAdmin();
+  await requireStarterAdmin();
 
   const assets = await getStarterAdminMediaAssets();
 

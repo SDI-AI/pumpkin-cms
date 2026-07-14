@@ -4,7 +4,7 @@ import { getStarterAdminFormDefinitions } from '@/lib/starter-admin-forms';
 import { FormDefinitionsList } from './_components/FormDefinitionsList';
 
 export default async function StarterAdminFormsPage() {
-  requireStarterAdmin();
+  await requireStarterAdmin();
 
   const definitions = await getStarterAdminFormDefinitions();
 

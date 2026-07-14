@@ -5,9 +5,9 @@ import { getStarterAdminTheme, getStarterAdminThemes } from '@/lib/starter-admin
 import { NavigationEditor } from './_components/NavigationEditor';
 
 export default async function StarterAdminNavigationPage() {
-  requireStarterAdmin();
+  await requireStarterAdmin();
 
-  const context = getStarterAdminContext();
+  const context = await getStarterAdminContext();
   const { themes, activeThemeId } = await getStarterAdminThemes();
   const activeId = activeThemeId || themes.find((theme) => theme.isActive)?.themeId;
   const activeTheme = activeId ? await getStarterAdminTheme(activeId) : null;

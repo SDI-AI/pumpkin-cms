@@ -32,22 +32,22 @@ export function getStarterAdminCookieOptions() {
   };
 }
 
-export function isStarterAdminAuthenticated() {
-  return Boolean(getStarterAdminToken());
+export async function isStarterAdminAuthenticated() {
+  return Boolean(await getStarterAdminToken());
 }
 
-export function requireStarterAdmin() {
-  if (!isStarterAdminAuthenticated()) {
+export async function requireStarterAdmin() {
+  if (!(await isStarterAdminAuthenticated())) {
     redirect('/admin/login');
   }
 }
 
-export function getStarterAdminToken() {
-  return cookies().get(starterAdminTokenCookieName)?.value || '';
+export async function getStarterAdminToken() {
+  return (await cookies()).get(starterAdminTokenCookieName)?.value || '';
 }
 
-export function getStarterAdminUser(): UserInfo | null {
-  const raw = cookies().get(starterAdminUserCookieName)?.value;
+export async function getStarterAdminUser(): Promise<UserInfo | null> {
+  const raw = (await cookies()).get(starterAdminUserCookieName)?.value;
   if (!raw) return null;
 
   try {
@@ -57,7 +57,7 @@ export function getStarterAdminUser(): UserInfo | null {
   }
 }
 
-export function getStarterAdminContext(): StarterAdminContext {
+export async function getStarterAdminContext(): Promise<StarterAdminContext> {
   const tenantConfig = loadTenantConfig();
   const missingConfigKeys = getMissingTenantConfigKeys();
 
@@ -68,6 +68,6 @@ export function getStarterAdminContext(): StarterAdminContext {
     configSource: tenantConfig?.source || 'missing',
     adminConfigured: isStarterAdminConfigured(),
     missingConfigKeys,
-    user: getStarterAdminUser(),
+    user: await getStarterAdminUser(),
   };
 }

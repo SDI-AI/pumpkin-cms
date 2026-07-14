@@ -7,7 +7,7 @@ import {
 import type { FormDefinition } from 'pumpkin-ts-models';
 
 export async function GET() {
-  if (!isStarterAdminAuthenticated()) {
+  if (!(await isStarterAdminAuthenticated())) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
@@ -23,7 +23,7 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  if (!isStarterAdminAuthenticated()) {
+  if (!(await isStarterAdminAuthenticated())) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 

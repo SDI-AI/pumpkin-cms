@@ -3,7 +3,7 @@ import { isStarterAdminAuthenticated } from '@/lib/admin-auth';
 import { uploadStarterAdminMediaAsset } from '@/lib/starter-admin-media';
 
 export async function POST(request: NextRequest) {
-  if (!isStarterAdminAuthenticated()) {
+  if (!(await isStarterAdminAuthenticated())) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 

@@ -12,7 +12,7 @@ interface RevalidateRequestBody {
 }
 
 export async function POST(request: NextRequest) {
-  if (!isStarterAdminAuthenticated()) {
+  if (!(await isStarterAdminAuthenticated())) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 

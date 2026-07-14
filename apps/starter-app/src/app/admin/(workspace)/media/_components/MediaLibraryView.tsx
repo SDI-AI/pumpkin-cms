@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState, useTransition } from 'react';
+import NextImage from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Copy, File, Image as ImageIcon, Search, Trash2, Upload } from 'lucide-react';
 import type { ChangeEvent, FormEvent } from 'react';
@@ -177,12 +178,15 @@ export function MediaLibraryView({ assets }: MediaLibraryViewProps) {
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {filteredAssets.map((asset) => (
           <article key={asset.mediaAssetId} className="overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-sm">
-            <div className="flex aspect-video items-center justify-center bg-neutral-100">
+            <div className="relative flex aspect-video items-center justify-center bg-neutral-100">
               {asset.contentType?.startsWith('image/') ? (
-                <img
+                <NextImage
                   src={asset.publicUrl}
                   alt={asset.altText || asset.fileName}
-                  className="h-full w-full object-cover"
+                  fill
+                  sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                  className="object-cover"
+                  unoptimized
                 />
               ) : (
                 <File className="h-10 w-10 text-neutral-400" aria-hidden="true" />

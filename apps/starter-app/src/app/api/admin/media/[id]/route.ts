@@ -7,19 +7,20 @@ import {
 import type { MediaAsset } from 'pumpkin-ts-models';
 
 interface MediaRouteContext {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export async function PUT(request: NextRequest, { params }: MediaRouteContext) {
-  if (!isStarterAdminAuthenticated()) {
+  if (!(await isStarterAdminAuthenticated())) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
   try {
     const asset = (await request.json()) as MediaAsset;
-    const updated = await updateStarterAdminMediaAsset(params.id, asset);
+    const { id } = await params;
+    const updated = await updateStarterAdminMediaAsset(id, asset);
     return NextResponse.json(updated);
   } catch (error) {
     return NextResponse.json(
@@ -30,12 +31,13 @@ export async function PUT(request: NextRequest, { params }: MediaRouteContext) {
 }
 
 export async function DELETE(_request: NextRequest, { params }: MediaRouteContext) {
-  if (!isStarterAdminAuthenticated()) {
+  if (!(await isStarterAdminAuthenticated())) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
   try {
-    const result = await deleteStarterAdminMediaAsset(params.id);
+    const { id } = await params;
+    const result = await deleteStarterAdminMediaAsset(id);
     return NextResponse.json(result);
   } catch (error) {
     return NextResponse.json(

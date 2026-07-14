@@ -8,7 +8,7 @@ interface FormDefinitionsResponse {
 }
 
 export async function getStarterAdminFormDefinitions() {
-  const { tenantId } = getStarterAdminApiContext();
+  const { tenantId } = await getStarterAdminApiContext();
   const response = await starterAdminFetch<FormDefinitionsResponse>(
     `/api/admin/forms/${encodeURIComponent(tenantId)}/definitions`,
   );
@@ -17,14 +17,14 @@ export async function getStarterAdminFormDefinitions() {
 }
 
 export async function getStarterAdminFormDefinition(id: string) {
-  const { tenantId } = getStarterAdminApiContext();
+  const { tenantId } = await getStarterAdminApiContext();
   return starterAdminFetch<FormDefinition>(
     `/api/admin/forms/${encodeURIComponent(tenantId)}/definitions/${encodeURIComponent(id)}`,
   );
 }
 
 export async function createStarterAdminFormDefinition(definition: FormDefinition) {
-  const { tenantId } = getStarterAdminApiContext();
+  const { tenantId } = await getStarterAdminApiContext();
   return starterAdminFetch<FormDefinition>(
     `/api/admin/forms/${encodeURIComponent(tenantId)}/definitions`,
     {
@@ -36,7 +36,7 @@ export async function createStarterAdminFormDefinition(definition: FormDefinitio
 }
 
 export async function updateStarterAdminFormDefinition(id: string, definition: FormDefinition) {
-  const { tenantId } = getStarterAdminApiContext();
+  const { tenantId } = await getStarterAdminApiContext();
   return starterAdminFetch<FormDefinition>(
     `/api/admin/forms/${encodeURIComponent(tenantId)}/definitions/${encodeURIComponent(id)}`,
     {
@@ -48,7 +48,7 @@ export async function updateStarterAdminFormDefinition(id: string, definition: F
 }
 
 export async function deleteStarterAdminFormDefinition(id: string) {
-  const { tenantId } = getStarterAdminApiContext();
+  const { tenantId } = await getStarterAdminApiContext();
   return starterAdminFetch<{ message: string }>(
     `/api/admin/forms/${encodeURIComponent(tenantId)}/definitions/${encodeURIComponent(id)}`,
     { method: 'DELETE' },

@@ -462,19 +462,19 @@ public class MongoDataConnection : IDataConnection, IDisposable
             throw new InvalidOperationException($"Tenant with ID '{tenant.TenantId}' already exists");
         }
 
-        // Generate API key and hash if not provided
-        if (string.IsNullOrEmpty(tenant.ApiKey) || string.IsNullOrEmpty(tenant.ApiKeyHash))
+        // Generate a credential for legacy callers when no hash was supplied.
+        // Only the hash is persisted; plaintext is returned once to the caller.
+        string? generatedApiKey = null;
+        if (string.IsNullOrEmpty(tenant.ApiKeyHash))
         {
-            // Generate a new random API key (32 bytes = 44 base64 characters)
             var keyBytes = RandomNumberGenerator.GetBytes(32);
-            tenant.ApiKey = Convert.ToBase64String(keyBytes);
-            
-            // Hash the API key using BCrypt
-            tenant.ApiKeyHash = BCrypt.Net.BCrypt.HashPassword(tenant.ApiKey, 12);
+            generatedApiKey = Convert.ToBase64String(keyBytes);
+            tenant.ApiKeyHash = BCrypt.Net.BCrypt.HashPassword(generatedApiKey, 12);
             
             _logger.LogInformation("Generated new API key for tenant - TenantId: {TenantId}", tenant.TenantId);
         }
 
+        tenant.ApiKey = string.Empty;
         tenant.CreatedAt = DateTime.UtcNow;
         tenant.UpdatedAt = DateTime.UtcNow;
         tenant.ApiKeyMeta.CreatedAt = DateTime.UtcNow;
@@ -483,6 +483,7 @@ public class MongoDataConnection : IDataConnection, IDisposable
         await tenantCollection.InsertOneAsync(tenant);
         _logger.LogInformation("Tenant created - TenantId: {TenantId}", tenant.TenantId);
         
+        tenant.ApiKey = generatedApiKey ?? string.Empty;
         return tenant;
     }
 
@@ -504,12 +505,12 @@ public class MongoDataConnection : IDataConnection, IDisposable
         tenant.Id = tenantId;
         tenant.TenantId = tenantId;
         
-        if (string.IsNullOrEmpty(tenant.ApiKey))
+        if (string.IsNullOrEmpty(tenant.ApiKeyHash))
         {
-            tenant.ApiKey = existing.ApiKey;
             tenant.ApiKeyHash = existing.ApiKeyHash;
             tenant.ApiKeyMeta = existing.ApiKeyMeta;
         }
+        tenant.ApiKey = string.Empty;
 
         await tenantCollection.ReplaceOneAsync(filter, tenant);
         _logger.LogInformation("Tenant updated - TenantId: {TenantId}", tenantId);
@@ -580,7 +581,7 @@ public class MongoDataConnection : IDataConnection, IDisposable
         FilterDefinition<Tenant> filter;
         if (isSuperAdmin)
         {
-            filter = Builders<Tenant>.Filter.Eq(t => t.Status, "active");
+            filter = Builders<Tenant>.Filter.Empty;
         }
         else
         {

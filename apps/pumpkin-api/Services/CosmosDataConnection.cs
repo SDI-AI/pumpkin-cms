@@ -606,18 +606,19 @@ public class CosmosDataConnection : IDataConnection, IDisposable
                 throw new InvalidOperationException($"Tenant with ID '{tenant.TenantId}' already exists");
             }
 
-            // Generate API key and hash if not provided
-            if (string.IsNullOrEmpty(tenant.ApiKey) || string.IsNullOrEmpty(tenant.ApiKeyHash))
+            // Generate a credential for legacy callers when no hash was supplied.
+            // Only the hash is persisted; plaintext is returned once to the caller.
+            string? generatedApiKey = null;
+            if (string.IsNullOrEmpty(tenant.ApiKeyHash))
             {
-                // Generate a new random API key (32 bytes = 44 base64 characters)
                 var keyBytes = RandomNumberGenerator.GetBytes(32);
-                tenant.ApiKey = Convert.ToBase64String(keyBytes);
-                
-                // Hash the API key using BCrypt
-                tenant.ApiKeyHash = BCrypt.Net.BCrypt.HashPassword(tenant.ApiKey, 12);
+                generatedApiKey = Convert.ToBase64String(keyBytes);
+                tenant.ApiKeyHash = BCrypt.Net.BCrypt.HashPassword(generatedApiKey, 12);
                 
                 _logger.LogInformation("Generated new API key for tenant - TenantId: {TenantId}", tenant.TenantId);
             }
+
+            tenant.ApiKey = string.Empty;
 
             // Set timestamps
             tenant.CreatedAt = DateTime.UtcNow;
@@ -632,6 +633,7 @@ public class CosmosDataConnection : IDataConnection, IDisposable
             _logger.LogInformation("Tenant created - TenantId: {TenantId}, Name: {Name}, Plan: {Plan}, RU Cost: {RequestCharge}",
                 tenant.TenantId, tenant.Name, tenant.Plan, response.RequestCharge);
             
+            response.Resource.ApiKey = generatedApiKey ?? string.Empty;
             return response.Resource;
         }
         catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.Conflict)
@@ -669,15 +671,15 @@ public class CosmosDataConnection : IDataConnection, IDisposable
                 throw new InvalidOperationException($"Tenant with ID '{tenantId}' not found");
             }
 
-            // Preserve creation timestamp and API key if not provided in update
+            // Preserve server-owned credential metadata. Plaintext is never persisted.
             tenant.CreatedAt = existing.CreatedAt;
             tenant.UpdatedAt = DateTime.UtcNow;
-            if (string.IsNullOrEmpty(tenant.ApiKey))
+            if (string.IsNullOrEmpty(tenant.ApiKeyHash))
             {
-                tenant.ApiKey = existing.ApiKey;
                 tenant.ApiKeyHash = existing.ApiKeyHash;
                 tenant.ApiKeyMeta = existing.ApiKeyMeta;
             }
+            tenant.ApiKey = string.Empty;
             
             // Ensure id matches tenantId for Cosmos DB
             tenant.Id = tenantId;
@@ -788,8 +790,8 @@ public class CosmosDataConnection : IDataConnection, IDisposable
             
             if (isSuperAdmin)
             {
-                // SuperAdmin sees all active tenants
-                query = "SELECT * FROM c WHERE c.status = 'active' ORDER BY c.name ASC";
+                // Platform administrators must be able to manage every lifecycle state.
+                query = "SELECT * FROM c ORDER BY c.name ASC";
                 queryDefinition = new QueryDefinition(query);
             }
             else

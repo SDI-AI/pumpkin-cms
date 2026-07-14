@@ -3,10 +3,10 @@ import { requireStarterAdmin } from '@/lib/admin-auth';
 import { getStarterAdminApiContext } from '@/lib/starter-admin-api';
 import { ThemeEditor, createTheme } from '../_components/ThemeEditor';
 
-export default function StarterAdminNewThemePage() {
-  requireStarterAdmin();
+export default async function StarterAdminNewThemePage() {
+  await requireStarterAdmin();
 
-  const { tenantId } = getStarterAdminApiContext();
+  const { tenantId } = await getStarterAdminApiContext();
 
   return (
     <section>

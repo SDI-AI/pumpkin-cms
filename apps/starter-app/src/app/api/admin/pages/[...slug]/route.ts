@@ -4,18 +4,19 @@ import { getStarterAdminPage, updateStarterAdminPage } from '@/lib/starter-admin
 import type { Page } from 'pumpkin-ts-models';
 
 interface PageRouteContext {
-  params: {
+  params: Promise<{
     slug: string[];
-  };
+  }>;
 }
 
 export async function GET(_request: NextRequest, { params }: PageRouteContext) {
-  if (!isStarterAdminAuthenticated()) {
+  if (!(await isStarterAdminAuthenticated())) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
   try {
-    const page = await getStarterAdminPage(decodeSlug(params.slug));
+    const { slug } = await params;
+    const page = await getStarterAdminPage(decodeSlug(slug));
     return NextResponse.json(page);
   } catch (error) {
     return NextResponse.json(
@@ -26,13 +27,14 @@ export async function GET(_request: NextRequest, { params }: PageRouteContext) {
 }
 
 export async function PUT(request: NextRequest, { params }: PageRouteContext) {
-  if (!isStarterAdminAuthenticated()) {
+  if (!(await isStarterAdminAuthenticated())) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
   try {
     const page = (await request.json()) as Page;
-    const updated = await updateStarterAdminPage(decodeSlug(params.slug), page);
+    const { slug } = await params;
+    const updated = await updateStarterAdminPage(decodeSlug(slug), page);
     return NextResponse.json(updated);
   } catch (error) {
     return NextResponse.json(

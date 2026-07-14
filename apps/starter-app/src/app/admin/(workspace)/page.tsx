@@ -42,8 +42,8 @@ const workflowCards = [
   },
 ];
 
-export default function StarterAdminDashboardPage() {
-  const context = getStarterAdminContext();
+export default async function StarterAdminDashboardPage() {
+  const context = await getStarterAdminContext();
   const configured = context.missingConfigKeys.length === 0;
 
   return (
