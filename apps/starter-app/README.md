@@ -56,6 +56,10 @@ Open http://localhost:3003.
 
 The single-tenant admin shell is available at http://localhost:3003/admin. It uses Pumpkin admin accounts and stores the JWT in an HTTP-only cookie.
 
+## Pumpkin Cloud parity
+
+Pumpkin Cloud derives its tenant renderer and content admin from this starter app. When generic rendering, routing, block editing, forms, media, themes, navigation, authentication, or cache behavior changes in either app, review the counterpart and port the change or document why it is app-specific. Billing, signup, provisioning, and Pumpkin Cloud marketing behavior remain Cloud-only.
+
 ## Phase 1 Boundary
 
 - Do not create containers.

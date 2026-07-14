@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { isStarterAdminAuthenticated } from '@/lib/admin-auth';
+import { revalidatePublicPages } from '@/lib/public-page-cache';
 import { createStarterAdminPage, getStarterAdminPages } from '@/lib/starter-admin-pages';
 import type { Page } from 'pumpkin-ts-models';
 
@@ -30,6 +31,7 @@ export async function POST(request: Request) {
   try {
     const page = (await request.json()) as Page;
     const created = await createStarterAdminPage(page);
+    revalidatePublicPages(created.pageSlug);
     return NextResponse.json(created, { status: 201 });
   } catch (error) {
     return NextResponse.json(

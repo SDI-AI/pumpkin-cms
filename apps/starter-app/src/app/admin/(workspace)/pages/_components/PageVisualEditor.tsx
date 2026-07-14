@@ -171,7 +171,7 @@ export function PageVisualEditor({ initialPage, mode, originalSlug }: PageVisual
               </span>
             )}
             <a
-              href={page.pageSlug ? `/${page.pageSlug}` : '/'}
+              href={page.pageSlug && page.pageSlug !== 'home' ? `/${page.pageSlug}` : '/'}
               target="_blank"
               className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-neutral-300 bg-white px-3 text-sm font-semibold text-neutral-800 hover:bg-neutral-50"
             >

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { isStarterAdminAuthenticated } from '@/lib/admin-auth';
+import { revalidatePublicPages } from '@/lib/public-page-cache';
 import { getStarterAdminPage, updateStarterAdminPage } from '@/lib/starter-admin-pages';
 import type { Page } from 'pumpkin-ts-models';
 
@@ -34,7 +35,9 @@ export async function PUT(request: NextRequest, { params }: PageRouteContext) {
   try {
     const page = (await request.json()) as Page;
     const { slug } = await params;
-    const updated = await updateStarterAdminPage(decodeSlug(slug), page);
+    const originalSlug = decodeSlug(slug);
+    const updated = await updateStarterAdminPage(originalSlug, page);
+    revalidatePublicPages(originalSlug, updated.pageSlug);
     return NextResponse.json(updated);
   } catch (error) {
     return NextResponse.json(
