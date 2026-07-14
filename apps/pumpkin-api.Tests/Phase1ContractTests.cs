@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Http;
 using pumpkin_api.Managers;
 using pumpkin_api.Services;
 using pumpkin_net_models.Models;
+using System.Text.Json;
 
 namespace pumpkin_api.Tests;
 
@@ -17,6 +18,7 @@ public static class Phase1ContractTests
             ("form submit rejects missing required field", FormSubmitRejectsMissingRequiredFieldAsync),
             ("form submit rejects honeypot spam", FormSubmitRejectsHoneypotSpamAsync),
             ("form entry status stamps lifecycle dates", FormEntryStatusStampsLifecycleDatesAsync),
+            ("HTML block editor fields survive JSON round trip", HtmlBlockEditorFieldsSurviveJsonRoundTripAsync),
         };
 
         Console.WriteLine("Running Phase 1 contract tests...");
@@ -27,6 +29,43 @@ public static class Phase1ContractTests
         }
 
         Console.WriteLine("Phase 1 contract tests passed.");
+    }
+
+    private static Task HtmlBlockEditorFieldsSurviveJsonRoundTripAsync()
+    {
+        const string json = """
+        {
+          "id": "homepage-hero",
+          "name": "Homepage Hero",
+          "enabled": false,
+          "type": "Hero",
+          "content": {
+            "type": "Main",
+            "headline": "Headline",
+            "subheadline": "Subheadline",
+            "backgroundImage": "",
+            "backgroundImageAltText": "",
+            "mainImage": "",
+            "mainImageAltText": "",
+            "buttonText": "Start",
+            "buttonLink": "/start"
+          }
+        }
+        """;
+
+        var block = HtmlBlockFactory.CreateBlock(json);
+        Assert(block != null, "known block should deserialize");
+        Assert(block!.Id == "homepage-hero", "block id should deserialize");
+        Assert(block.Name == "Homepage Hero", "block name should deserialize");
+        Assert(block.Enabled == false, "block enabled state should deserialize");
+
+        var serialized = JsonSerializer.Serialize(block, block.GetType());
+        using var document = JsonDocument.Parse(serialized);
+        var root = document.RootElement;
+        Assert(root.GetProperty("id").GetString() == "homepage-hero", "block id should serialize");
+        Assert(root.GetProperty("name").GetString() == "Homepage Hero", "block name should serialize");
+        Assert(root.GetProperty("enabled").GetBoolean() == false, "block enabled state should serialize");
+        return Task.CompletedTask;
     }
 
     private static async Task ThemeActivationUpdatesActivePointerAsync()
@@ -406,6 +445,7 @@ internal sealed class InMemoryPhase1DatabaseService : IDatabaseService
     public Task<Page> UpdatePageAsync(string apiKey, string tenantId, string pageSlug, Page page) => throw new NotSupportedException();
     public Task<bool> DeletePageAsync(string apiKey, string tenantId, string pageSlug) => throw new NotSupportedException();
     public Task<List<SitemapEntry>> GetSitemapPagesAsync(string apiKey, string tenantId) => throw new NotSupportedException();
+    public Task<List<Page>> GetPublishedSpokePagesAsync(string apiKey, string tenantId, string hubPageSlug, int limit) => throw new NotSupportedException();
     public Task<List<Tenant>> GetAllTenantsAsync() => throw new NotSupportedException();
     public Task<List<Page>> GetAllPagesAsync(string? tenantId = null) => throw new NotSupportedException();
     public Task<Page?> GetPageBySlugAsync(string tenantId, string pageSlug) => throw new NotSupportedException();
@@ -437,4 +477,9 @@ internal sealed class InMemoryPhase1DatabaseService : IDatabaseService
     public Task<FormDefinition> UpdateFormDefinitionAsync(string tenantId, string formDefinitionId, FormDefinition formDefinition) => throw new NotSupportedException();
     public Task<bool> DeleteFormDefinitionAsync(string tenantId, string formDefinitionId) => throw new NotSupportedException();
     public Task<List<FormEntry>> GetFormEntriesByTenantAsync(string tenantId, string? type = null) => throw new NotSupportedException();
+    public Task<List<MediaAsset>> GetMediaAssetsByTenantAsync(string tenantId, string? folder = null, string? contentType = null) => throw new NotSupportedException();
+    public Task<MediaAsset?> GetMediaAssetAsync(string tenantId, string mediaAssetId) => throw new NotSupportedException();
+    public Task<MediaAsset> CreateMediaAssetAsync(string tenantId, MediaAsset mediaAsset) => throw new NotSupportedException();
+    public Task<MediaAsset> UpdateMediaAssetAsync(string tenantId, string mediaAssetId, MediaAsset mediaAsset) => throw new NotSupportedException();
+    public Task<bool> DeleteMediaAssetAsync(string tenantId, string mediaAssetId) => throw new NotSupportedException();
 }

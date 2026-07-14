@@ -492,6 +492,9 @@ internal class TestDatabaseService : IDatabaseService, IDisposable
     public Task<List<SitemapEntry>> GetSitemapPagesAsync(string apiKey, string tenantId)
         => _connection.GetSitemapPagesAsync(apiKey, tenantId);
 
+    public Task<List<Page>> GetPublishedSpokePagesAsync(string apiKey, string tenantId, string hubPageSlug, int limit)
+        => _connection.GetPublishedSpokePagesAsync(apiKey, tenantId, hubPageSlug, limit);
+
     // Admin methods
     public Task<Tenant?> GetTenantAsync(string tenantId)
         => _connection.GetTenantAsync(tenantId);
@@ -629,6 +632,21 @@ internal class TestDatabaseService : IDatabaseService, IDisposable
 
     public Task<FormEntry> UpdateFormEntryStatusAsync(string tenantId, string entryId, string status)
         => _connection.UpdateFormEntryStatusAsync(tenantId, entryId, status);
+
+    public Task<List<MediaAsset>> GetMediaAssetsByTenantAsync(string tenantId, string? folder = null, string? contentType = null)
+        => _connection.GetMediaAssetsByTenantAsync(tenantId, folder, contentType);
+
+    public Task<MediaAsset?> GetMediaAssetAsync(string tenantId, string mediaAssetId)
+        => _connection.GetMediaAssetAsync(tenantId, mediaAssetId);
+
+    public Task<MediaAsset> CreateMediaAssetAsync(string tenantId, MediaAsset mediaAsset)
+        => _connection.CreateMediaAssetAsync(tenantId, mediaAsset);
+
+    public Task<MediaAsset> UpdateMediaAssetAsync(string tenantId, string mediaAssetId, MediaAsset mediaAsset)
+        => _connection.UpdateMediaAssetAsync(tenantId, mediaAssetId, mediaAsset);
+
+    public Task<bool> DeleteMediaAssetAsync(string tenantId, string mediaAssetId)
+        => _connection.DeleteMediaAssetAsync(tenantId, mediaAssetId);
 
     public void Dispose()
     {
