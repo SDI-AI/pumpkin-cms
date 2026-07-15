@@ -1,7 +1,10 @@
 import Link from 'next/link';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { requireStarterAdmin } from '@/lib/admin-auth';
-import { getStarterAdminPage } from '@/lib/starter-admin-pages';
+import { getStarterAdminPage, getStarterAdminPages } from '@/lib/starter-admin-pages';
+import { getStarterAdminTheme, getStarterAdminThemes } from '@/lib/starter-admin-themes';
+import { fallbackTheme } from '@/data';
+import { getThemeStylesheet, resolveThemePlugin } from '@/themes/registry';
 import { PageVisualEditor } from '../_components/PageVisualEditor';
 
 interface StarterAdminPageEditorProps {
@@ -15,7 +18,14 @@ export default async function StarterAdminPageEditor({ params }: StarterAdminPag
 
   const { slug } = await params;
   const pageSlug = slug.map((segment) => decodeURIComponent(segment)).join('/');
-  const page = await getStarterAdminPage(pageSlug);
+  const [page, pagesResult, themeResult] = await Promise.all([
+    getStarterAdminPage(pageSlug),
+    getStarterAdminPages(),
+    getStarterAdminThemes(),
+  ]);
+  const activeThemeId = themeResult.activeThemeId || themeResult.themes.find((theme) => theme.isActive)?.themeId;
+  const activeTheme = resolveThemePlugin(activeThemeId ? await getStarterAdminTheme(activeThemeId) : fallbackTheme);
+  const stylesheet = getThemeStylesheet(activeTheme);
 
   return (
     <section>
@@ -33,7 +43,14 @@ export default async function StarterAdminPageEditor({ params }: StarterAdminPag
           </Link>
         }
       />
-      <PageVisualEditor initialPage={page} mode="edit" originalSlug={page.pageSlug} />
+      <PageVisualEditor
+        initialPage={page}
+        initialTheme={activeTheme}
+        mode="edit"
+        originalSlug={page.pageSlug}
+        stylesheet={stylesheet}
+        menuPages={pagesResult.pages.map((item) => ({ pageSlug: item.pageSlug, title: item.MetaData.title, isPublished: item.isPublished }))}
+      />
     </section>
   );
 }

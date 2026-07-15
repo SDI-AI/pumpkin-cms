@@ -1,6 +1,9 @@
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { requireStarterAdmin } from '@/lib/admin-auth';
-import { createStarterAdminPageDraft } from '@/lib/starter-admin-pages';
+import { createStarterAdminPageDraft, getStarterAdminPages } from '@/lib/starter-admin-pages';
+import { getStarterAdminTheme, getStarterAdminThemes } from '@/lib/starter-admin-themes';
+import { fallbackTheme } from '@/data';
+import { getThemeStylesheet, resolveThemePlugin } from '@/themes/registry';
 import { loadTenantConfig } from '@/lib/tenant-config';
 import { PageVisualEditor } from '../_components/PageVisualEditor';
 
@@ -26,6 +29,10 @@ export default async function StarterAdminNewPagePage({ searchParams }: StarterA
     hubPageSlug: query?.hubPageSlug,
   });
 
+  const [pagesResult, themeResult] = await Promise.all([getStarterAdminPages(), getStarterAdminThemes()]);
+  const activeThemeId = themeResult.activeThemeId || themeResult.themes.find((theme) => theme.isActive)?.themeId;
+  const activeTheme = resolveThemePlugin(activeThemeId ? await getStarterAdminTheme(activeThemeId) : fallbackTheme);
+
   return (
     <section>
       <AdminPageHeader
@@ -33,7 +40,13 @@ export default async function StarterAdminNewPagePage({ searchParams }: StarterA
         title="New Page"
         description="Create a page for this starter tenant."
       />
-      <PageVisualEditor initialPage={draft} mode="create" />
+      <PageVisualEditor
+        initialPage={draft}
+        initialTheme={activeTheme}
+        mode="create"
+        stylesheet={getThemeStylesheet(activeTheme)}
+        menuPages={pagesResult.pages.map((item) => ({ pageSlug: item.pageSlug, title: item.MetaData.title, isPublished: item.isPublished }))}
+      />
     </section>
   );
 }

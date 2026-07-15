@@ -1,5 +1,6 @@
 'use client';
 
+import { Copy, Pencil, Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import type { BlockClassNamesMap } from 'pumpkin-block-views';
 import { BlockViewRenderer } from 'pumpkin-block-views';
 import type { BlockStyleMap, ContactBlock, FormDefinition, IHtmlBlock, Page } from 'pumpkin-ts-models';
@@ -14,9 +15,17 @@ interface PageRendererProps {
   page: Page;
   blockStyles?: BlockStyleMap;
   formDefinitions?: Record<string, FormDefinition>;
+  editor?: PageRendererEditorOptions;
 }
 
-export function PageRenderer({ page, blockStyles, formDefinitions = {} }: PageRendererProps) {
+export interface PageRendererEditorOptions {
+  selectedBlockId?: string | null;
+  onSelectBlock: (blockId: string) => void;
+  onBlockAction: (action: 'move-up' | 'move-down' | 'duplicate' | 'delete', blockId: string) => void;
+  onInsertBlock: (index: number) => void;
+}
+
+export function PageRenderer({ page, blockStyles, formDefinitions = {}, editor }: PageRendererProps) {
   const blocks = (page.ContentData.ContentBlocks as CmsBlock[]).filter(
     (block) => block.enabled !== false,
   );
@@ -24,8 +33,27 @@ export function PageRenderer({ page, blockStyles, formDefinitions = {} }: PageRe
 
   return (
     <>
-      {blocks.map((block, index) => (
-        <section key={block.id ?? `${block.type}-${index}`} id={getSectionId(block)}>
+      {editor && blocks.length === 0 && (
+        <div className="flex min-h-56 items-center justify-center border-2 border-dashed border-orange-300 bg-orange-50/60 p-8">
+          <button type="button" onClick={() => editor.onInsertBlock(0)} className="inline-flex items-center gap-2 rounded-full bg-orange-600 px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-orange-700">
+            <Plus className="h-4 w-4" aria-hidden="true" /> Add the first block
+          </button>
+        </div>
+      )}
+      {blocks.map((block, index) => {
+        const blockId = block.id ?? `${block.type}-${index}`;
+        const selected = editor?.selectedBlockId === blockId;
+
+        return (
+        <div key={blockId} className={editor ? 'visual-editor-block-group' : undefined}>
+          {editor && <InsertBlockControl onClick={() => editor.onInsertBlock(index)} />}
+          <section
+            id={getSectionId(block)}
+            className={editor ? 'visual-editor-block' : undefined}
+            data-block-id={blockId}
+            data-selected={selected ? 'true' : 'false'}
+            onClick={editor ? () => editor.onSelectBlock(blockId) : undefined}
+          >
           {block.type === 'Contact' ? (
             <ContactFormBlock
               block={block as ContactBlock}
@@ -40,7 +68,7 @@ export function PageRenderer({ page, blockStyles, formDefinitions = {} }: PageRe
               overrides={{
                 Blog: {
                   renderBody: (body) => (
-                    <div dangerouslySetInnerHTML={{ __html: sanitizeCmsHtml(body) }} />
+                    <div className="cms-rich-text" dangerouslySetInnerHTML={{ __html: sanitizeCmsHtml(body) }} />
                   ),
                 },
                 Form: {
@@ -56,9 +84,40 @@ export function PageRenderer({ page, blockStyles, formDefinitions = {} }: PageRe
               }
             />
           )}
-        </section>
-      ))}
+            {editor && (
+              <>
+                <div className="visual-editor-block__outline" aria-hidden="true" />
+                <div className="visual-editor-block__toolbar" onClick={(event) => event.stopPropagation()}>
+                  <span>{block.type}</span>
+                  <EditorIcon label="Edit" onClick={() => editor.onSelectBlock(blockId)}><Pencil /></EditorIcon>
+                  <EditorIcon label="Move up" disabled={index === 0} onClick={() => editor.onBlockAction('move-up', blockId)}><ChevronUp /></EditorIcon>
+                  <EditorIcon label="Move down" disabled={index === blocks.length - 1} onClick={() => editor.onBlockAction('move-down', blockId)}><ChevronDown /></EditorIcon>
+                  <EditorIcon label="Duplicate" onClick={() => editor.onBlockAction('duplicate', blockId)}><Copy /></EditorIcon>
+                  <EditorIcon label="Delete" danger onClick={() => editor.onBlockAction('delete', blockId)}><Trash2 /></EditorIcon>
+                </div>
+              </>
+            )}
+          </section>
+          {editor && index === blocks.length - 1 && <InsertBlockControl onClick={() => editor.onInsertBlock(blocks.length)} />}
+        </div>
+      )})}
     </>
+  );
+}
+
+function InsertBlockControl({ onClick }: { onClick: () => void }) {
+  return (
+    <div className="visual-editor-insert">
+      <button type="button" onClick={onClick}><Plus aria-hidden="true" /> Add block</button>
+    </div>
+  );
+}
+
+function EditorIcon({ children, danger, disabled, label, onClick }: { children: React.ReactNode; danger?: boolean; disabled?: boolean; label: string; onClick: () => void }) {
+  return (
+    <button type="button" aria-label={label} title={label} disabled={disabled} data-danger={danger ? 'true' : 'false'} onClick={onClick}>
+      {children}
+    </button>
   );
 }
 

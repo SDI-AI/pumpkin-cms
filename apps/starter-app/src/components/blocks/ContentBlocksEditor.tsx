@@ -13,13 +13,15 @@ interface ContentBlocksEditorProps {
   onChange: (blocks: IHtmlBlock[]) => void;
 }
 
+type EditorBlock = IHtmlBlock & { id?: string; name?: string; enabled?: boolean };
+
 export default function ContentBlocksEditor({ blocks, onChange }: ContentBlocksEditorProps) {
   const [showPicker, setShowPicker] = useState(false);
   const [insertIndex, setInsertIndex] = useState<number | null>(null);
   const [expandedBlock, setExpandedBlock] = useState<number | null>(blocks.length > 0 ? 0 : null);
 
   const addBlock = (type: string) => {
-    const newBlock = createDefaultBlock(type);
+    const newBlock = withEditorIdentity(createDefaultBlock(type), blocks);
     const targetIndex = insertIndex ?? blocks.length;
     const updated = [...blocks];
     updated.splice(targetIndex, 0, newBlock);
@@ -53,7 +55,9 @@ export default function ContentBlocksEditor({ blocks, onChange }: ContentBlocksE
   };
 
   const duplicateBlock = (index: number) => {
-    const clone = JSON.parse(JSON.stringify(blocks[index])) as IHtmlBlock;
+    const clone = JSON.parse(JSON.stringify(blocks[index])) as EditorBlock;
+    clone.id = uniqueBlockId(blocks, clone.type);
+    clone.name = clone.name ? `${clone.name} Copy` : `${clone.type} Copy`;
     const updated = [...blocks];
     updated.splice(index + 1, 0, clone);
     onChange(updated);
@@ -87,7 +91,7 @@ export default function ContentBlocksEditor({ blocks, onChange }: ContentBlocksE
             const isExpanded = expandedBlock === index;
 
             return (
-              <div key={`${block.type}-${index}`}>
+              <div key={(block as EditorBlock).id ?? `${block.type}-${index}`}>
                 <div className={[
                   'overflow-hidden rounded-lg border bg-white transition-colors',
                   isExpanded ? 'border-pumpkin-300 shadow-sm' : 'border-neutral-200',
@@ -154,6 +158,19 @@ export default function ContentBlocksEditor({ blocks, onChange }: ContentBlocksE
       )}
     </div>
   );
+}
+
+function withEditorIdentity(block: IHtmlBlock, blocks: IHtmlBlock[]): IHtmlBlock {
+  return { ...block, id: uniqueBlockId(blocks, block.type), name: block.type, enabled: true } as IHtmlBlock;
+}
+
+function uniqueBlockId(blocks: IHtmlBlock[], type: string) {
+  const prefix = type.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  const used = new Set(blocks.map((block) => (block as EditorBlock).id));
+  let index = blocks.length + 1;
+  let id = `${prefix}-${index}`;
+  while (used.has(id)) id = `${prefix}-${++index}`;
+  return id;
 }
 
 function IconButton({
