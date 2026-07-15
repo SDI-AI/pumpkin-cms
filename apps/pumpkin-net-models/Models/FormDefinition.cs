@@ -200,6 +200,41 @@ public class FormSpamProtection
 
     [JsonPropertyName("consentFieldName")]
     public string ConsentFieldName { get; set; } = "consent";
+
+    [JsonPropertyName("captcha")]
+    public FormCaptchaSettings Captcha { get; set; } = new();
+}
+
+public static class FormCaptchaModes
+{
+    public const string Inherit = "inherit";
+    public const string Required = "required";
+    public const string Disabled = "disabled";
+}
+
+public static class CaptchaProviders
+{
+    public const string None = "none";
+    public const string Turnstile = "turnstile";
+}
+
+/// <summary>
+/// Per-form CAPTCHA behavior. Provider and siteKey are populated on the public
+/// form definition after resolving the tenant default; secrets are never exposed.
+/// </summary>
+public class FormCaptchaSettings
+{
+    [JsonPropertyName("mode")]
+    public string Mode { get; set; } = FormCaptchaModes.Inherit;
+
+    [JsonPropertyName("provider")]
+    public string Provider { get; set; } = CaptchaProviders.None;
+
+    [JsonPropertyName("siteKey")]
+    public string SiteKey { get; set; } = string.Empty;
+
+    [JsonPropertyName("action")]
+    public string Action { get; set; } = "form_submit";
 }
 
 public class FormRateLimit

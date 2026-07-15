@@ -4,6 +4,15 @@ namespace pumpkin_net_models.Models;
 
 public interface IHtmlBlock
 {
+    [JsonPropertyName("id")]
+    string? Id { get; set; }
+
+    [JsonPropertyName("name")]
+    string? Name { get; set; }
+
+    [JsonPropertyName("enabled")]
+    bool Enabled { get; set; }
+
     [JsonPropertyName("type")]
     string Type { get; set; }
 

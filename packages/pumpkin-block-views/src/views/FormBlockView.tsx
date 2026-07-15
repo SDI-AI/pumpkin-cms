@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import type { FormBlock, FormDefinition, FormFieldDefinition } from 'pumpkin-ts-models';
 import { formDefaults, type FormClassNames } from '../defaults/form';
 import { mergeClasses } from '../utils/mergeClasses';
+import { TurnstileWidget } from '../components/TurnstileWidget';
 
 export interface FormBlockViewProps {
   block: FormBlock;
@@ -24,6 +25,10 @@ export function FormBlockView({
   const formRef = useRef<HTMLFormElement | null>(null);
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState('');
+  const [captchaToken, setCaptchaToken] = useState('');
+  const [captchaResetSignal, setCaptchaResetSignal] = useState(0);
+  const captcha = formDefinition?.spamProtection?.captcha;
+  const captchaRequired = captcha?.mode === 'required' && captcha.provider === 'turnstile' && Boolean(captcha.siteKey);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -36,20 +41,29 @@ export function FormBlockView({
       data[key] = String(value);
     });
 
+    if (captchaRequired && !captchaToken) {
+      setStatus('error');
+      setMessage('Please complete the CAPTCHA challenge.');
+      return;
+    }
+    if (captchaRequired) data._captchaToken = captchaToken;
+
     setStatus('submitting');
     setMessage('');
 
     try {
       await onSubmit(content.formType, data, pageSlug);
 
-      if (formDefinition?.submitBehavior === 'redirect' && formDefinition.redirectUrl) {
-        window.location.assign(formDefinition.redirectUrl);
+      const redirectUrl = getSafeRedirectUrl(formDefinition?.redirectUrl);
+      if (formDefinition?.submitBehavior === 'redirect' && redirectUrl) {
+        window.location.assign(redirectUrl);
         return;
       }
 
       setStatus('success');
       setMessage(formDefinition?.successMessage || content.successMessage || 'Thanks, your message was sent.');
       formRef.current?.reset();
+      setCaptchaResetSignal((value) => value + 1);
     } catch (error) {
       setStatus('error');
       setMessage(error instanceof Error ? error.message : 'Something went wrong. Please try again.');
@@ -69,6 +83,18 @@ export function FormBlockView({
 
         {fields.length > 0 ? (
           <form ref={formRef} className={cx.form} onSubmit={handleSubmit}>
+            {formDefinition?.spamProtection?.rejectWhenHoneypotFilled && formDefinition.spamProtection.honeypotFieldName && (
+              <div aria-hidden="true" style={{ position: 'absolute', left: '-10000px', width: 1, height: 1, overflow: 'hidden' }}>
+                <label htmlFor={`${block.id}-honeypot`}>Leave this field empty</label>
+                <input
+                  id={`${block.id}-honeypot`}
+                  name={formDefinition.spamProtection.honeypotFieldName}
+                  type="text"
+                  tabIndex={-1}
+                  autoComplete="off"
+                />
+              </div>
+            )}
             {getHiddenFields(formDefinition).map((field) => (
               <input
                 key={field.name}
@@ -88,6 +114,15 @@ export function FormBlockView({
                 {field.helpText && <p className={cx.fieldHelp}>{field.helpText}</p>}
               </div>
             ))}
+
+            {captchaRequired && (
+              <TurnstileWidget
+                siteKey={captcha.siteKey}
+                action={captcha.action || 'form_submit'}
+                onTokenChange={setCaptchaToken}
+                resetSignal={captchaResetSignal}
+              />
+            )}
 
             {status !== 'idle' && message && (
               <p
@@ -115,6 +150,18 @@ export function FormBlockView({
       </div>
     </section>
   );
+}
+
+function getSafeRedirectUrl(value?: string) {
+  if (!value) return null;
+  if (value.startsWith('/') && !value.startsWith('//')) return value;
+
+  try {
+    const url = new URL(value);
+    return url.protocol === 'http:' || url.protocol === 'https:' ? url.toString() : null;
+  } catch {
+    return null;
+  }
 }
 
 function renderField(field: FormFieldDefinition, cx: Required<FormClassNames>) {

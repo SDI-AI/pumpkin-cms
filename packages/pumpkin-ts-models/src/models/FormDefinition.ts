@@ -43,6 +43,19 @@ export interface FormSpamProtection {
   rejectWhenHoneypotFilled: boolean;
   requireConsent: boolean;
   consentFieldName: string;
+  captcha: FormCaptchaSettings;
+}
+
+export type FormCaptchaMode = 'inherit' | 'required' | 'disabled';
+export type CaptchaProvider = 'none' | 'turnstile';
+
+export interface FormCaptchaSettings {
+  mode: FormCaptchaMode | string;
+  /** Resolved by the public API; never contains a secret. */
+  provider: CaptchaProvider | string;
+  /** Public widget key populated by the public API. */
+  siteKey: string;
+  action: string;
 }
 
 export interface FormRateLimit {

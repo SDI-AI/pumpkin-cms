@@ -196,7 +196,7 @@ export function FormDefinitionEditor({ initialDefinition, mode }: FormDefinition
               <option value="redirect">Redirect</option>
             </select>
           </label>
-          <TextField label="Redirect URL" value={definition.redirectUrl} onChange={(value) => update('redirectUrl', value)} />
+          <TextField label="Success Redirect URL" value={definition.redirectUrl} onChange={(value) => update('redirectUrl', value)} />
           <TextField
             label="Notification Emails"
             value={definition.notificationEmails.join(', ')}
@@ -267,6 +267,29 @@ export function FormDefinitionEditor({ initialDefinition, mode }: FormDefinition
                   onChange={(checked) => update('spamProtection', { ...definition.spamProtection, requireConsent: checked })}
                 />
               </div>
+              <label className="block">
+                <span className="text-sm font-semibold text-neutral-800">CAPTCHA</span>
+                <select
+                  value={definition.spamProtection.captcha.mode}
+                  onChange={(event) => update('spamProtection', {
+                    ...definition.spamProtection,
+                    captcha: { ...definition.spamProtection.captcha, mode: event.target.value },
+                  })}
+                  className="mt-2 h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm"
+                >
+                  <option value="inherit">Use tenant default</option>
+                  <option value="required">Required</option>
+                  <option value="disabled">Disabled</option>
+                </select>
+              </label>
+              <TextField
+                label="CAPTCHA Action"
+                value={definition.spamProtection.captcha.action}
+                onChange={(value) => update('spamProtection', {
+                  ...definition.spamProtection,
+                  captcha: { ...definition.spamProtection.captcha, action: value },
+                })}
+              />
             </div>
           </div>
 
@@ -459,6 +482,7 @@ export function createFormDefinition(tenantId: string): FormDefinition {
       rejectWhenHoneypotFilled: true,
       requireConsent: false,
       consentFieldName: 'consent',
+      captcha: { mode: 'inherit', provider: 'none', siteKey: '', action: 'form_submit' },
     },
     rateLimit: { enabled: false, maxSubmissions: 5, windowSeconds: 3600 },
     isActive: true,
@@ -479,6 +503,7 @@ function normalizeFormDefinition(definition: FormDefinition): FormDefinition {
     rejectWhenHoneypotFilled: true,
     requireConsent: false,
     consentFieldName: 'consent',
+    captcha: { mode: 'inherit', provider: 'none', siteKey: '', action: 'form_submit' },
   };
   const defaultRateLimit: FormDefinition['rateLimit'] = {
     enabled: false,
@@ -500,7 +525,11 @@ function normalizeFormDefinition(definition: FormDefinition): FormDefinition {
     redirectUrl: definition.redirectUrl || '',
     notificationEmails: definition.notificationEmails || [],
     notifications: { ...defaultNotifications, ...definition.notifications },
-    spamProtection: { ...defaultSpamProtection, ...definition.spamProtection },
+    spamProtection: {
+      ...defaultSpamProtection,
+      ...definition.spamProtection,
+      captcha: { ...defaultSpamProtection.captcha, ...definition.spamProtection?.captcha },
+    },
     rateLimit: { ...defaultRateLimit, ...definition.rateLimit },
     isActive: definition.isActive ?? true,
     createdAt: definition.createdAt || now,
@@ -774,6 +803,12 @@ function validateFormDefinition(definition: FormDefinition) {
 
   if (!definition.formDefinitionId.trim()) errors.push('Form ID is required.');
   if (!definition.type.trim()) errors.push('Type is required.');
+  if (definition.submitBehavior === 'redirect' && !isSafeRedirectUrl(definition.redirectUrl)) {
+    errors.push('Success redirect must be a relative site path or an absolute HTTP(S) URL.');
+  }
+  if (!/^[a-zA-Z0-9_-]{1,32}$/.test(definition.spamProtection.captcha.action)) {
+    errors.push('CAPTCHA action must use 1-32 letters, numbers, underscores, or hyphens.');
+  }
   if (definition.fields.some((field) => !field.name.trim())) errors.push('Every field needs a name.');
   if (duplicateNames.length > 0) errors.push(`Duplicate field names: ${Array.from(new Set(duplicateNames)).join(', ')}.`);
 
@@ -791,6 +826,16 @@ function validateFormDefinition(definition: FormDefinition) {
   }
 
   return errors;
+}
+
+function isSafeRedirectUrl(value: string) {
+  if (value.startsWith('/') && !value.startsWith('//')) return true;
+  try {
+    const url = new URL(value);
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch {
+    return false;
+  }
 }
 
 function previewWidthClass(width: string) {

@@ -80,6 +80,11 @@ builder.Services.Configure<MongoDbSettings>(
 builder.Services.Configure<AssetStorageSettings>(
     builder.Configuration.GetSection(AssetStorageSettings.SectionName));
 
+builder.Services.AddHttpClient<ICaptchaVerifier, TurnstileCaptchaVerifier>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(10);
+});
+
 // Configure JWT authentication
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -289,7 +294,7 @@ app.MapGet("/api/forms/{tenantId}/definitions/{type}",
 
 // Submit a form using a flat field dictionary (ergonomic frontend endpoint)
 app.MapPost("/api/forms/{tenantId}/submit/{type}",
-    async (IDatabaseService databaseService, string tenantId, string type,
+    async (IDatabaseService databaseService, ICaptchaVerifier captchaVerifier, string tenantId, string type,
            Dictionary<string, object?> formData, HttpContext context) =>
     {
         var authHeader = context.Request.Headers.Authorization.FirstOrDefault();
@@ -297,7 +302,7 @@ app.MapPost("/api/forms/{tenantId}/submit/{type}",
         if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
             apiKey = authHeader.Substring("Bearer ".Length).Trim();
 
-        return await PumpkinManager.SubmitFormAsync(databaseService, apiKey, tenantId, type, formData, context);
+        return await PumpkinManager.SubmitFormAsync(databaseService, apiKey, tenantId, type, formData, context, captchaVerifier);
     })
     .WithTags("Forms")
     .WithName("SubmitForm")
@@ -2298,6 +2303,7 @@ static TenantAdminInfo ToTenantAdminInfo(Tenant tenant)
             tenant.Settings.Language,
             tenant.Settings.MaxUsers,
             tenant.Settings.AllowedOrigins,
+            tenant.Settings.FormSecurity,
             new TenantEntitlements(
                 tenant.Settings.Features.Forms,
                 tenant.Settings.Features.Pages,
@@ -2339,6 +2345,7 @@ static void ApplyTenantUpdate(Tenant tenant, UpdateTenantRequest request)
             : request.Settings.Language.Trim();
         tenant.Settings.MaxUsers = Math.Max(1, request.Settings.MaxUsers);
         tenant.Settings.AllowedOrigins = NormalizeOrigins(request.Settings.AllowedOrigins);
+        tenant.Settings.FormSecurity = request.Settings.FormSecurity ?? tenant.Settings.FormSecurity;
         tenant.Settings.Features.Forms = request.Settings.Entitlements?.Forms ?? tenant.Settings.Features.Forms;
         tenant.Settings.Features.Pages = request.Settings.Entitlements?.Pages ?? tenant.Settings.Features.Pages;
         tenant.Settings.Features.Analytics = request.Settings.Entitlements?.Analytics ?? tenant.Settings.Features.Analytics;
@@ -2352,6 +2359,7 @@ static TenantSettings ToTenantSettings(TenantAdminSettingsRequest? settings)
         Language = string.IsNullOrWhiteSpace(settings?.Language) ? "en" : settings.Language.Trim(),
         MaxUsers = Math.Max(1, settings?.MaxUsers ?? 10),
         AllowedOrigins = NormalizeOrigins(settings?.AllowedOrigins),
+        FormSecurity = settings?.FormSecurity ?? new TenantFormSecuritySettings(),
         Features = new Features
         {
             Forms = settings?.Entitlements?.Forms ?? true,
@@ -2532,12 +2540,14 @@ record TenantAdminSettings(
     string Language,
     int MaxUsers,
     string[] AllowedOrigins,
+    TenantFormSecuritySettings FormSecurity,
     TenantEntitlements Entitlements);
 
 record TenantAdminSettingsRequest(
     string Language,
     int MaxUsers,
     string[]? AllowedOrigins,
+    TenantFormSecuritySettings? FormSecurity,
     TenantEntitlements? Entitlements);
 
 record TenantEntitlements(bool Forms, bool Pages, bool Analytics);

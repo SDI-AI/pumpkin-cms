@@ -73,3 +73,4 @@ apps/**/package-lock.json
 appsettings.Development.json
 appsettings.*.json
 !appsettings.json
+apps/pumpkin-api/deploy.zip

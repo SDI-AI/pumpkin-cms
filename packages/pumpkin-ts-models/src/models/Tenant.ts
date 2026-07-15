@@ -35,6 +35,20 @@ export interface TenantSettings {
   maxUsers: number;
   features: Features;
   allowedOrigins: string[];
+  formSecurity: TenantFormSecuritySettings;
+}
+
+export interface TenantFormSecuritySettings {
+  captcha: TenantCaptchaSettings;
+}
+
+export interface TenantCaptchaSettings {
+  provider: 'none' | 'turnstile' | string;
+  siteKey: string;
+  /** Configuration path only; the referenced secret is never returned publicly. */
+  secretKeyReference: string;
+  enabledByDefault: boolean;
+  allowedHostnames: string[];
 }
 
 /**

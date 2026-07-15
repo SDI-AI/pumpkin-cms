@@ -22,3 +22,224 @@ select,
 textarea {
   font: inherit;
 }
+
+/* Semantic HTML inside Blog blocks. This replaces the optional Tailwind
+   typography plugin so CMS-authored documentation is formatted everywhere. */
+.cms-rich-text {
+  color: #404040;
+  font-size: 1rem;
+  line-height: 1.75;
+}
+
+.cms-rich-text > * + * { margin-top: 1.25rem; }
+
+.cms-rich-text h2,
+.cms-rich-text h3,
+.cms-rich-text h4 {
+  color: #171717;
+  font-weight: 700;
+  line-height: 1.25;
+  scroll-margin-top: 6rem;
+}
+
+.cms-rich-text h2 {
+  margin-top: 3rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid #e5e5e5;
+  font-size: clamp(1.5rem, 3vw, 1.875rem);
+}
+
+.cms-rich-text h3 { margin-top: 2.25rem; font-size: 1.25rem; }
+.cms-rich-text h4 { margin-top: 1.75rem; font-size: 1.125rem; }
+.cms-rich-text ul,
+.cms-rich-text ol { padding-left: 1.5rem; }
+.cms-rich-text ul { list-style: disc; }
+.cms-rich-text ol { list-style: decimal; }
+.cms-rich-text li + li { margin-top: 0.4rem; }
+
+.cms-rich-text a {
+  color: #c2410c;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.cms-rich-text a:hover { color: #9a3412; }
+
+.cms-rich-text code {
+  border: 1px solid #e5e5e5;
+  border-radius: 0.3rem;
+  background: #f5f5f4;
+  padding: 0.1rem 0.35rem;
+  color: #9a3412;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.875em;
+}
+
+.cms-rich-text pre {
+  overflow-x: auto;
+  border: 1px solid #292524;
+  border-radius: 0.75rem;
+  background: #1c1917;
+  padding: 1rem 1.25rem;
+  color: #fafaf9;
+  line-height: 1.6;
+  box-shadow: 0 10px 25px -20px rgb(0 0 0 / 0.7);
+}
+
+.cms-rich-text pre code {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: inherit;
+  font-size: 0.875rem;
+}
+
+.cms-rich-text blockquote {
+  border-left: 4px solid #f97316;
+  border-radius: 0 0.5rem 0.5rem 0;
+  background: #fff7ed;
+  padding: 0.9rem 1rem;
+  color: #7c2d12;
+}
+
+.cms-rich-text table {
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+}
+
+.cms-rich-text th,
+.cms-rich-text td {
+  border: 1px solid #d6d3d1;
+  padding: 0.65rem 0.8rem;
+  text-align: left;
+}
+
+.cms-rich-text th {
+  background: #f5f5f4;
+  color: #171717;
+  font-weight: 700;
+}
+
+.cms-rich-text hr {
+  margin-block: 2.5rem;
+  border: 0;
+  border-top: 1px solid #d6d3d1;
+}
+
+/* Admin preview overlays. These selectors are inert on the public site. */
+.visual-editor-block {
+  position: relative;
+  cursor: pointer;
+}
+
+.visual-editor-block__outline {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  border: 2px solid transparent;
+  pointer-events: none;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.visual-editor-block:hover > .visual-editor-block__outline,
+.visual-editor-block[data-selected='true'] > .visual-editor-block__outline {
+  border-color: #f97316;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.85);
+}
+
+.visual-editor-block__toolbar {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  border-radius: 0.5rem;
+  background: #171717;
+  padding: 0.25rem;
+  color: white;
+  font: 600 0.7rem/1 Inter, ui-sans-serif, system-ui, sans-serif;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.3);
+  opacity: 0;
+  transform: translateY(-0.25rem);
+  transition: opacity 120ms ease, transform 120ms ease;
+}
+
+.visual-editor-block:hover > .visual-editor-block__toolbar,
+.visual-editor-block[data-selected='true'] > .visual-editor-block__toolbar {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.visual-editor-block__toolbar > span { padding-inline: 0.45rem; }
+.visual-editor-block__toolbar button {
+  display: inline-flex;
+  width: 1.75rem;
+  height: 1.75rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.35rem;
+  color: #e5e5e5;
+}
+.visual-editor-block__toolbar button:hover { background: #404040; color: white; }
+.visual-editor-block__toolbar button[data-danger='true']:hover { background: #b91c1c; }
+.visual-editor-block__toolbar button:disabled { cursor: not-allowed; opacity: 0.35; }
+.visual-editor-block__toolbar svg { width: 0.9rem; height: 0.9rem; }
+
+.visual-editor-insert {
+  position: relative;
+  z-index: 60;
+  height: 0;
+  display: flex;
+  justify-content: center;
+}
+
+.visual-editor-insert button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  border-radius: 999px;
+  background: #ea580c;
+  padding: 0.3rem 0.65rem;
+  color: white;
+  font: 700 0.7rem/1 Inter, ui-sans-serif, system-ui, sans-serif;
+  box-shadow: 0 4px 14px rgb(0 0 0 / 0.25);
+  opacity: 0;
+  transform: translateY(-50%);
+  transition: opacity 120ms ease;
+}
+
+.visual-editor-block-group:hover > .visual-editor-insert button,
+.visual-editor-insert:focus-within button { opacity: 1; }
+.visual-editor-insert svg { width: 0.8rem; height: 0.8rem; }
+
+.visual-editor-chrome {
+  position: relative;
+  cursor: pointer;
+}
+
+.visual-editor-chrome__control {
+  position: absolute;
+  top: 0.5rem;
+  left: 50%;
+  z-index: 100;
+  display: inline-flex;
+  transform: translateX(-50%);
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: 999px;
+  background: #171717;
+  padding: 0.45rem 0.75rem;
+  color: white;
+  font: 700 0.75rem/1 Inter, ui-sans-serif, system-ui, sans-serif;
+  box-shadow: 0 6px 18px rgb(0 0 0 / 0.3);
+  opacity: 0;
+}
+
+.visual-editor-chrome:hover { outline: 2px solid #f97316; outline-offset: -2px; }
+.visual-editor-chrome:hover .visual-editor-chrome__control,
+.visual-editor-chrome[data-selected='true'] .visual-editor-chrome__control { opacity: 1; }

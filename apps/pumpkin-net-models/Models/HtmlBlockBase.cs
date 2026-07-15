@@ -5,6 +5,17 @@ namespace pumpkin_net_models.Models;
 // Base abstract class for common properties
 public abstract class HtmlBlockBase : IHtmlBlock
 {
+    [JsonPropertyName("id")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Id { get; set; }
+
+    [JsonPropertyName("name")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Name { get; set; }
+
+    [JsonPropertyName("enabled")]
+    public bool Enabled { get; set; } = true;
+
     [JsonPropertyName("type")]
     public virtual string Type { get; set; } = string.Empty;
 

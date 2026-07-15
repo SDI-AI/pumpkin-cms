@@ -2,6 +2,9 @@
  * Base interface for all HTML blocks in Pumpkin CMS
  */
 export interface IHtmlBlock {
+  id?: string;
+  name?: string;
+  enabled?: boolean;
   type: string;
   content: Record<string, any>;
 }

@@ -70,6 +70,37 @@ public class TenantSettings
 
     [JsonPropertyName("allowedOrigins")]
     public string[] AllowedOrigins { get; set; } = Array.Empty<string>();
+
+    [JsonPropertyName("formSecurity")]
+    public TenantFormSecuritySettings FormSecurity { get; set; } = new();
+}
+
+public class TenantFormSecuritySettings
+{
+    [JsonPropertyName("captcha")]
+    public TenantCaptchaSettings Captcha { get; set; } = new();
+}
+
+/// <summary>
+/// Tenant CAPTCHA defaults. SecretKeyReference is a configuration key such as
+/// Captcha:Tenants:tenant-a:SecretKey, not the secret value itself.
+/// </summary>
+public class TenantCaptchaSettings
+{
+    [JsonPropertyName("provider")]
+    public string Provider { get; set; } = CaptchaProviders.None;
+
+    [JsonPropertyName("siteKey")]
+    public string SiteKey { get; set; } = string.Empty;
+
+    [JsonPropertyName("secretKeyReference")]
+    public string SecretKeyReference { get; set; } = string.Empty;
+
+    [JsonPropertyName("enabledByDefault")]
+    public bool EnabledByDefault { get; set; } = false;
+
+    [JsonPropertyName("allowedHostnames")]
+    public string[] AllowedHostnames { get; set; } = Array.Empty<string>();
 }
 
 public class Features

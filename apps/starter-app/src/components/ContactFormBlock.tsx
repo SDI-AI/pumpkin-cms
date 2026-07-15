@@ -3,7 +3,7 @@
 import { useRef, useState } from 'react';
 import type { ContactClassNames } from 'pumpkin-block-views';
 import type { ContactBlock, FormDefinition, FormFieldDefinition } from 'pumpkin-ts-models';
-import { contactDefaults } from 'pumpkin-block-views';
+import { contactDefaults, TurnstileWidget } from 'pumpkin-block-views';
 
 type BaseContactContent = ContactBlock['content'];
 
@@ -34,9 +34,13 @@ export function ContactFormBlock({
   const formRef = useRef<HTMLFormElement | null>(null);
   const [submitState, setSubmitState] = useState<SubmitState>('idle');
   const [message, setMessage] = useState('');
+  const [captchaToken, setCaptchaToken] = useState('');
+  const [captchaResetSignal, setCaptchaResetSignal] = useState(0);
   const fields = getFields(content, formDefinition);
   const formType = content.formType?.trim().toLowerCase();
   const submitButtonText = formDefinition?.submitButtonText || content.submitButtonText || 'Submit';
+  const captcha = formDefinition?.spamProtection?.captcha;
+  const captchaRequired = captcha?.mode === 'required' && captcha.provider === 'turnstile' && Boolean(captcha.siteKey);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -48,7 +52,14 @@ export function ContactFormBlock({
       return;
     }
 
+    if (captchaRequired && !captchaToken) {
+      setSubmitState('error');
+      setMessage('Please complete the CAPTCHA challenge.');
+      return;
+    }
+
     const body = collectFormData(form, pageSlug);
+    if (captchaRequired) body._captchaToken = captchaToken;
     setSubmitState('submitting');
     setMessage('');
 
@@ -67,12 +78,14 @@ export function ContactFormBlock({
         return;
       }
 
-      if (formDefinition?.submitBehavior === 'redirect' && formDefinition.redirectUrl) {
-        window.location.assign(formDefinition.redirectUrl);
+      const redirectUrl = getSafeRedirectUrl(formDefinition?.redirectUrl);
+      if (formDefinition?.submitBehavior === 'redirect' && redirectUrl) {
+        window.location.assign(redirectUrl);
         return;
       }
 
       formRef.current?.reset();
+      setCaptchaResetSignal((value) => value + 1);
       setSubmitState('success');
       setMessage(
         formDefinition?.successMessage ||
@@ -119,6 +132,18 @@ export function ContactFormBlock({
 
         {fields.length > 0 && (
           <form ref={formRef} className={cx.form} onSubmit={handleSubmit}>
+            {formDefinition?.spamProtection?.rejectWhenHoneypotFilled && formDefinition.spamProtection.honeypotFieldName && (
+              <div aria-hidden="true" className="absolute -left-[10000px] h-px w-px overflow-hidden">
+                <label htmlFor={`${block.id}-honeypot`}>Leave this field empty</label>
+                <input
+                  id={`${block.id}-honeypot`}
+                  name={formDefinition.spamProtection.honeypotFieldName}
+                  type="text"
+                  tabIndex={-1}
+                  autoComplete="off"
+                />
+              </div>
+            )}
             {fields.map((field) => (
               <FormField
                 key={field.name}
@@ -127,6 +152,14 @@ export function ContactFormBlock({
               />
             ))}
             <input type="hidden" name="pageSlug" value={pageSlug} />
+            {captchaRequired && (
+              <TurnstileWidget
+                siteKey={captcha.siteKey}
+                action={captcha.action || 'form_submit'}
+                onTokenChange={setCaptchaToken}
+                resetSignal={captchaResetSignal}
+              />
+            )}
             <button
               type="submit"
               className={cx.submitButton}
@@ -278,5 +311,17 @@ async function getErrorMessage(response: Response) {
     return data.message || data.detail || data.title || text || 'The form could not be submitted.';
   } catch {
     return text || 'The form could not be submitted.';
+  }
+}
+
+function getSafeRedirectUrl(value?: string) {
+  if (!value) return null;
+  if (value.startsWith('/') && !value.startsWith('//')) return value;
+
+  try {
+    const url = new URL(value);
+    return url.protocol === 'http:' || url.protocol === 'https:' ? url.toString() : null;
+  } catch {
+    return null;
   }
 }

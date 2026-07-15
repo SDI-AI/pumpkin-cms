@@ -1,6 +1,8 @@
 // ── Components ─────────────────────────────────────────────
 export { Icon } from './components/Icon';
 export type { IconProps } from './components/Icon';
+export { TurnstileWidget } from './components/TurnstileWidget';
+export type { TurnstileWidgetProps } from './components/TurnstileWidget';
 
 // ── Views ──────────────────────────────────────────────────
 export {

@@ -1,18 +1,27 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Dispatch, ReactNode, SetStateAction } from 'react';
 import { useRouter } from 'next/navigation';
-import { Check, Code2, Eye, Image as ImageIcon, Pencil, Plus, Save, Trash2 } from 'lucide-react';
-import type { IHtmlBlock, MediaAsset, Page } from 'pumpkin-ts-models';
+import { Check, Code2, Eye, Image as ImageIcon, Monitor, Pencil, Plus, Save, Smartphone, Tablet, Trash2, X } from 'lucide-react';
+import type { IHtmlBlock, MediaAsset, Page, Theme } from 'pumpkin-ts-models';
+import type { ThemeStylesheet } from '@/themes/registry';
 import { ContentBlocksEditor } from '@/components/blocks';
+import AddBlockPicker from '@/components/blocks/AddBlockPicker';
+import BlockEditorFields from '@/components/blocks/BlockEditorFields';
+import { createDefaultBlock } from '@/components/blocks/blockDefaults';
 import { MediaPickerDialog } from '@/components/admin/MediaPickerDialog';
+import { MenuTreeEditor, normalizeMenuOrders, type MenuPageOption } from '@/components/admin/MenuTreeEditor';
+import { isPreviewMessage, type EditorToPreviewMessage, type PreviewBlockAction } from '@/lib/visual-editor-messages';
 import { StructuredDataModal } from './StructuredDataModal';
 
 interface PageVisualEditorProps {
   initialPage: Page;
+  initialTheme: Theme;
   mode: 'create' | 'edit';
+  menuPages: MenuPageOption[];
   originalSlug?: string;
+  stylesheet: ThemeStylesheet;
 }
 
 type SectionKey = 'basic' | 'metadata' | 'contentBlocks' | 'search' | 'seo' | 'relationships';
@@ -26,9 +35,23 @@ const sectionLabels: Record<SectionKey, string> = {
   relationships: 'Relationships',
 };
 
-export function PageVisualEditor({ initialPage, mode, originalSlug }: PageVisualEditorProps) {
+type EditorBlock = IHtmlBlock & { id?: string; name?: string; enabled?: boolean };
+type PreviewWidth = 'desktop' | 'tablet' | 'mobile';
+
+export function PageVisualEditor({ initialPage, initialTheme, mode, menuPages, originalSlug, stylesheet }: PageVisualEditorProps) {
   const router = useRouter();
   const [page, setPage] = useState(() => normalizePage(initialPage));
+  const [savedPage, setSavedPage] = useState(() => normalizePage(initialPage));
+  const [theme, setTheme] = useState(initialTheme);
+  const [savedTheme, setSavedTheme] = useState(initialTheme);
+  const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
+  const [navigationSelected, setNavigationSelected] = useState(false);
+  const [insertIndex, setInsertIndex] = useState<number | null>(null);
+  const [previewWidth, setPreviewWidth] = useState<PreviewWidth>('desktop');
+  const [showJson, setShowJson] = useState(false);
+  const [savingNavigation, setSavingNavigation] = useState(false);
+  const [navigationMessage, setNavigationMessage] = useState('');
+  const previewRef = useRef<HTMLIFrameElement>(null);
   const [expandedSections, setExpandedSections] = useState<Record<SectionKey, boolean>>({
     basic: true,
     metadata: true,
@@ -45,6 +68,38 @@ export function PageVisualEditor({ initialPage, mode, originalSlug }: PageVisual
     index: -1,
     value: '',
   });
+
+  const selectedBlock = (page.ContentData.ContentBlocks as EditorBlock[]).find((block) => block.id === selectedBlockId) ?? null;
+  const pageDirty = JSON.stringify(page) !== JSON.stringify(savedPage);
+  const navigationDirty = JSON.stringify({ menu: theme.menu, header: theme.header }) !==
+    JSON.stringify({ menu: savedTheme.menu, header: savedTheme.header });
+
+  const sendPreviewState = () => {
+    const message: EditorToPreviewMessage = {
+      type: 'pumpkin:preview-state',
+      payload: {
+        page,
+        theme,
+        selectedBlockId,
+        navigationSelected,
+        stylesheetHref: stylesheet.href,
+        stylesheetIntegrity: stylesheet.integrity,
+      },
+    };
+    previewRef.current?.contentWindow?.postMessage(message, window.location.origin);
+  };
+
+  useEffect(sendPreviewState, [page, theme, selectedBlockId, navigationSelected, stylesheet.href, stylesheet.integrity]);
+
+  useEffect(() => {
+    const warnBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (!pageDirty && !navigationDirty) return;
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', warnBeforeUnload);
+    return () => window.removeEventListener('beforeunload', warnBeforeUnload);
+  }, [pageDirty, navigationDirty]);
 
   const blockTypes = useMemo(
     () => Array.from(new Set(page.ContentData.ContentBlocks.map((block) => block.type))),
@@ -87,6 +142,96 @@ export function PageVisualEditor({ initialPage, mode, originalSlug }: PageVisual
       MetaData: { ...currentPage.MetaData, updatedAt: new Date().toISOString() },
     }));
   };
+
+  const updateBlockContent = (blockId: string, content: Record<string, unknown>) => {
+    handleBlocksChange((page.ContentData.ContentBlocks as EditorBlock[]).map((block) => block.id === blockId ? { ...block, content } : block));
+  };
+
+  const handleBlockAction = (action: PreviewBlockAction, blockId: string) => {
+    const blocks = [...page.ContentData.ContentBlocks] as EditorBlock[];
+    const index = blocks.findIndex((block) => block.id === blockId);
+    if (index < 0) return;
+
+    if (action === 'delete') {
+      if (!window.confirm(`Delete this ${blocks[index].type} block?`)) return;
+      blocks.splice(index, 1);
+      setSelectedBlockId(null);
+    } else if (action === 'duplicate') {
+      const clone = structuredClone(blocks[index]);
+      clone.id = createUniqueBlockId(blocks, clone.type);
+      clone.name = clone.name ? `${clone.name} Copy` : `${clone.type} Copy`;
+      blocks.splice(index + 1, 0, clone);
+      setSelectedBlockId(clone.id);
+    } else {
+      const target = action === 'move-up' ? index - 1 : index + 1;
+      if (target < 0 || target >= blocks.length) return;
+      [blocks[index], blocks[target]] = [blocks[target], blocks[index]];
+    }
+    handleBlocksChange(blocks);
+  };
+
+  const insertBlock = (type: string) => {
+    const blocks = [...page.ContentData.ContentBlocks] as EditorBlock[];
+    const block = createDefaultEditorBlock(type, blocks);
+    const target = insertIndex ?? blocks.length;
+    blocks.splice(target, 0, block);
+    handleBlocksChange(blocks);
+    setSelectedBlockId(block.id ?? null);
+    setNavigationSelected(false);
+    setInsertIndex(null);
+  };
+
+  const saveNavigation = async () => {
+    setSavingNavigation(true);
+    setNavigationMessage('');
+    try {
+      const payload = { ...theme, menu: normalizeMenuOrders(theme.menu ?? []), updatedAt: new Date().toISOString() };
+      const response = await fetch(`/api/admin/themes/${encodeURIComponent(theme.themeId)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) {
+        const data = await response.json().catch(() => null) as { message?: string } | null;
+        throw new Error(data?.message || 'Unable to save navigation.');
+      }
+      const saved = await response.json() as Theme;
+      setTheme(saved);
+      setSavedTheme(saved);
+      await fetch('/api/admin/revalidate', { method: 'POST' });
+      setNavigationMessage('Header settings saved across the site.');
+      router.refresh();
+    } catch (err) {
+      setNavigationMessage(err instanceof Error ? err.message : 'Unable to save navigation.');
+    } finally {
+      setSavingNavigation(false);
+    }
+  };
+
+  const closeDrawer = () => {
+    setSelectedBlockId(null);
+    setNavigationSelected(false);
+  };
+
+  useEffect(() => {
+    const receivePreviewMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin || event.source !== previewRef.current?.contentWindow || !isPreviewMessage(event.data)) return;
+      const message = event.data;
+      if (message.type === 'pumpkin:preview-ready') return sendPreviewState();
+      if (message.type === 'pumpkin:select-block') {
+        setSelectedBlockId(message.blockId);
+        setNavigationSelected(false);
+      }
+      if (message.type === 'pumpkin:block-action') handleBlockAction(message.action, message.blockId);
+      if (message.type === 'pumpkin:insert-block') setInsertIndex(message.index);
+      if (message.type === 'pumpkin:edit-navigation') {
+        setNavigationSelected(true);
+        setSelectedBlockId(null);
+      }
+    };
+    window.addEventListener('message', receivePreviewMessage);
+    return () => window.removeEventListener('message', receivePreviewMessage);
+  });
 
   const save = async () => {
     setMessage('');
@@ -134,6 +279,7 @@ export function PageVisualEditor({ initialPage, mode, originalSlug }: PageVisual
 
       const updated = normalizePage((await response.json()) as Page);
       setPage(updated);
+      setSavedPage(updated);
       setMessage('Page saved.');
       router.refresh();
 
@@ -156,6 +302,7 @@ export function PageVisualEditor({ initialPage, mode, originalSlug }: PageVisual
             <ToolbarStat label="Blocks" value={String(page.ContentData.ContentBlocks.length)} />
             <ToolbarStat label="Types" value={String(blockTypes.length)} />
             <ToolbarStat label="Version" value={String(page.PageVersion || 1)} />
+            {(pageDirty || navigationDirty) && <span className="inline-flex h-10 items-center rounded-md bg-amber-100 px-3 text-xs font-bold uppercase tracking-wide text-amber-800">Unsaved changes</span>}
           </div>
 
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
@@ -191,7 +338,7 @@ export function PageVisualEditor({ initialPage, mode, originalSlug }: PageVisual
         </div>
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_440px]">
+      <div className="grid gap-5 xl:grid-cols-[minmax(420px,0.8fr)_minmax(0,1.2fr)]">
         <div className="space-y-4">
           <EditorSection section="basic" expandedSections={expandedSections} setExpandedSections={setExpandedSections}>
             <div className="grid gap-4 md:grid-cols-2">
@@ -441,25 +588,106 @@ export function PageVisualEditor({ initialPage, mode, originalSlug }: PageVisual
           </EditorSection>
         </div>
 
-        <aside className="min-h-[640px] overflow-hidden rounded-lg border border-neutral-200 bg-neutral-950 shadow-sm xl:sticky xl:top-24 xl:h-[calc(100vh-7rem)]">
-          <div className="flex items-center justify-between border-b border-neutral-800 px-4 py-3">
-            <div className="flex items-center gap-2 text-sm font-bold text-neutral-100">
-              <Code2 className="h-4 w-4" aria-hidden="true" />
-              JSON Preview
+        <aside className="overflow-hidden rounded-lg border border-neutral-200 bg-neutral-200 shadow-sm xl:sticky xl:top-24 xl:h-[calc(100vh-7rem)]">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-300 bg-white px-3 py-2">
+            <div className="flex items-center gap-1">
+              <button type="button" onClick={() => setShowJson(false)} className={previewTabClass(!showJson)}><Eye className="h-4 w-4" aria-hidden="true" /> Preview</button>
+              <button type="button" onClick={() => setShowJson(true)} className={previewTabClass(showJson)}><Code2 className="h-4 w-4" aria-hidden="true" /> JSON</button>
             </div>
-            <button
-              type="button"
-              onClick={() => navigator.clipboard.writeText(JSON.stringify(page, null, 2))}
-              className="h-8 rounded-md bg-neutral-800 px-2.5 text-xs font-semibold text-neutral-200 hover:bg-neutral-700"
-            >
-              Copy
-            </button>
+            {!showJson && (
+              <div className="flex items-center gap-1" aria-label="Preview width">
+                <PreviewWidthButton label="Desktop" active={previewWidth === 'desktop'} onClick={() => setPreviewWidth('desktop')}><Monitor /></PreviewWidthButton>
+                <PreviewWidthButton label="Tablet" active={previewWidth === 'tablet'} onClick={() => setPreviewWidth('tablet')}><Tablet /></PreviewWidthButton>
+                <PreviewWidthButton label="Mobile" active={previewWidth === 'mobile'} onClick={() => setPreviewWidth('mobile')}><Smartphone /></PreviewWidthButton>
+              </div>
+            )}
           </div>
-          <pre className="h-full overflow-auto p-4 text-xs leading-5 text-neutral-200">
-            {JSON.stringify(page, null, 2)}
-          </pre>
+          {showJson ? (
+            <div className="relative h-[calc(100%-49px)] bg-neutral-950">
+              <button type="button" onClick={() => navigator.clipboard.writeText(JSON.stringify(page, null, 2))} className="absolute right-3 top-3 z-10 h-8 rounded-md bg-neutral-800 px-2.5 text-xs font-semibold text-neutral-200 hover:bg-neutral-700">Copy</button>
+              <pre className="h-full overflow-auto p-4 text-xs leading-5 text-neutral-200">{JSON.stringify(page, null, 2)}</pre>
+            </div>
+          ) : (
+            <div className="flex h-[calc(100%-49px)] items-start justify-center overflow-auto p-3">
+              <iframe
+                ref={previewRef}
+                src="/admin/preview"
+                title="Interactive page preview"
+                onLoad={sendPreviewState}
+                className="h-full min-h-[620px] bg-white shadow-lg transition-[width] duration-200"
+                style={{ width: previewFrameWidth(previewWidth) }}
+              />
+            </div>
+          )}
         </aside>
       </div>
+
+      {(selectedBlock || navigationSelected) && (
+        <div className="fixed inset-0 z-[100] bg-neutral-950/35" onMouseDown={(event) => event.target === event.currentTarget && closeDrawer()}>
+          <aside className="absolute inset-y-0 right-0 flex w-full max-w-xl flex-col border-l border-neutral-200 bg-neutral-50 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-neutral-200 bg-white px-5 py-4">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wide text-pumpkin-700">{navigationSelected ? 'Site settings' : 'Page block'}</p>
+                <h2 className="mt-1 text-lg font-bold text-neutral-950">{navigationSelected ? 'Header navigation' : `Edit ${selectedBlock?.type}`}</h2>
+              </div>
+              <button type="button" onClick={closeDrawer} className="inline-flex h-9 w-9 items-center justify-center rounded-md text-neutral-500 hover:bg-neutral-100" aria-label="Close editor"><X className="h-5 w-5" /></button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-5">
+              {navigationSelected ? (
+                <div className="space-y-6">
+                  <section className="rounded-lg border border-neutral-200 bg-white p-4">
+                    <h3 className="text-sm font-bold text-neutral-950">Site identity</h3>
+                    <div className="mt-4 space-y-4">
+                      <MediaTextField
+                        label="Header Logo"
+                        value={theme.header.logoUrl}
+                        onChange={(logoUrl) => setTheme((current) => ({
+                          ...current,
+                          header: { ...current.header, logoUrl },
+                          updatedAt: new Date().toISOString(),
+                        }))}
+                        onSelect={(asset) => setTheme((current) => ({
+                          ...current,
+                          header: {
+                            ...current.header,
+                            logoUrl: asset.publicUrl,
+                            logoAlt: current.header.logoAlt || mediaAlt(asset),
+                          },
+                          updatedAt: new Date().toISOString(),
+                        }))}
+                      />
+                      <TextField
+                        label="Logo Alt / Site Name"
+                        value={theme.header.logoAlt}
+                        onChange={(logoAlt) => setTheme((current) => ({
+                          ...current,
+                          header: { ...current.header, logoAlt },
+                          updatedAt: new Date().toISOString(),
+                        }))}
+                      />
+                    </div>
+                  </section>
+                  <MenuTreeEditor menu={theme.menu ?? []} pages={menuPages} onChange={(menu) => setTheme((current) => ({ ...current, menu, updatedAt: new Date().toISOString() }))} />
+                </div>
+              ) : selectedBlock ? (
+                <BlockEditorFields block={selectedBlock} onChange={(content) => updateBlockContent(selectedBlock.id!, content)} />
+              ) : null}
+            </div>
+            <div className="border-t border-neutral-200 bg-white p-4">
+              {navigationSelected ? (
+                <div className="flex items-center justify-between gap-3">
+                  <div className="text-xs font-semibold text-neutral-500">{navigationMessage || (navigationDirty ? 'Unsaved header changes' : 'Header settings are saved')}</div>
+                  <button type="button" onClick={saveNavigation} disabled={!navigationDirty || savingNavigation} className="inline-flex h-10 items-center gap-2 rounded-md bg-pumpkin-600 px-4 text-sm font-bold text-white hover:bg-pumpkin-700 disabled:opacity-50"><Save className="h-4 w-4" />{savingNavigation ? 'Saving…' : 'Save Header'}</button>
+                </div>
+              ) : (
+                <button type="button" onClick={closeDrawer} className="ml-auto flex h-10 items-center rounded-md bg-pumpkin-600 px-4 text-sm font-bold text-white hover:bg-pumpkin-700">Done</button>
+              )}
+            </div>
+          </aside>
+        </div>
+      )}
+
+      {insertIndex !== null && <AddBlockPicker onSelect={insertBlock} onClose={() => setInsertIndex(null)} />}
 
       <StructuredDataModal
         isOpen={structuredDataModal.isOpen}
@@ -775,7 +1003,11 @@ function normalizePage(page: Page): Page {
     Layout: page.Layout || 'standard',
     MetaData: { ...defaultMetaData, ...page.MetaData },
     searchData: { ...defaultSearchData, ...page.searchData },
-    ContentData: { ...defaultContentData, ...page.ContentData },
+    ContentData: {
+      ...defaultContentData,
+      ...page.ContentData,
+      ContentBlocks: ensureBlockIds(page.ContentData?.ContentBlocks ?? []),
+    },
     contentRelationships: { ...defaultRelationships, ...page.contentRelationships },
     seo: {
       ...defaultSeo,
@@ -806,4 +1038,48 @@ function normalizeSlug(value: string) {
 
 function encodeSlugPath(slug: string) {
   return slug.split('/').map((segment) => encodeURIComponent(segment)).join('/');
+}
+
+function ensureBlockIds(blocks: IHtmlBlock[]): IHtmlBlock[] {
+  const used = new Set<string>();
+  return blocks.map((block, index) => {
+    const editorBlock = block as EditorBlock;
+    let id = editorBlock.id?.trim() || `${block.type.toLowerCase()}-${index + 1}`;
+    let suffix = 2;
+    while (used.has(id)) id = `${block.type.toLowerCase()}-${index + 1}-${suffix++}`;
+    used.add(id);
+    return { ...editorBlock, id } as IHtmlBlock;
+  });
+}
+
+function createUniqueBlockId(blocks: EditorBlock[], type: string) {
+  const prefix = type.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  const used = new Set(blocks.map((block) => block.id));
+  let index = blocks.length + 1;
+  let id = `${prefix}-${index}`;
+  while (used.has(id)) id = `${prefix}-${++index}`;
+  return id;
+}
+
+function createDefaultEditorBlock(type: string, blocks: EditorBlock[]): EditorBlock {
+  return {
+    ...createDefaultBlock(type),
+    id: createUniqueBlockId(blocks, type),
+    name: type,
+    enabled: true,
+  } as EditorBlock;
+}
+
+function previewFrameWidth(width: PreviewWidth) {
+  if (width === 'mobile') return '390px';
+  if (width === 'tablet') return '768px';
+  return '100%';
+}
+
+function previewTabClass(active: boolean) {
+  return ['inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 text-xs font-bold', active ? 'bg-neutral-900 text-white' : 'text-neutral-600 hover:bg-neutral-100'].join(' ');
+}
+
+function PreviewWidthButton({ active, children, label, onClick }: { active: boolean; children: ReactNode; label: string; onClick: () => void }) {
+  return <button type="button" title={label} aria-label={label} onClick={onClick} className={['inline-flex h-8 w-8 items-center justify-center rounded-md', active ? 'bg-pumpkin-100 text-pumpkin-700' : 'text-neutral-500 hover:bg-neutral-100'].join(' ')}>{children}</button>;
 }
