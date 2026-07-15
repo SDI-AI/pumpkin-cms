@@ -703,6 +703,9 @@ public static class PumpkinManager
             if (definition == null)
                 return Results.NotFound("Form definition not found or access denied");
 
+            var tenant = await databaseService.GetTenantAsync(tenantId);
+            ApplyPublicCaptchaSettings(definition, tenant);
+
             return Results.Ok(definition);
         }
         catch (UnauthorizedAccessException)
@@ -726,7 +729,8 @@ public static class PumpkinManager
         string tenantId,
         string type,
         Dictionary<string, object?> formData,
-        HttpContext httpContext)
+        HttpContext httpContext,
+        ICaptchaVerifier? captchaVerifier = null)
     {
         try
         {
@@ -758,6 +762,17 @@ public static class PumpkinManager
             var rateLimitResult = ValidateRateLimit(definition, tenantId, normalizedType, ipAddress);
             if (rateLimitResult != null)
                 return rateLimitResult;
+
+            var tenant = await databaseService.GetTenantAsync(tenantId);
+            var captchaResult = await ValidateCaptchaAsync(
+                definition,
+                tenant,
+                formData,
+                ipAddress,
+                captchaVerifier,
+                httpContext.RequestAborted);
+            if (captchaResult != null)
+                return captchaResult;
 
             var allowedFieldNames = definition.Fields
                 .Select(f => f.Name)
@@ -885,6 +900,10 @@ public static class PumpkinManager
                 return Results.BadRequest("Form definition data is required");
             if (string.IsNullOrEmpty(formDefinition.Type))
                 return Results.BadRequest("Form definition type is required");
+            if (!IsValidSubmitRedirect(formDefinition))
+                return Results.BadRequest("Redirect URL must be a relative site path or an absolute HTTP(S) URL");
+            if (!IsValidCaptchaAction(formDefinition))
+                return Results.BadRequest("CAPTCHA action must use 1-32 letters, numbers, underscores, or hyphens");
 
             formDefinition.TenantId = tenantId;
             if (string.IsNullOrEmpty(formDefinition.FormDefinitionId))
@@ -915,6 +934,10 @@ public static class PumpkinManager
                 return Results.BadRequest("Form definition ID is required");
             if (formDefinition == null)
                 return Results.BadRequest("Form definition data is required");
+            if (!IsValidSubmitRedirect(formDefinition))
+                return Results.BadRequest("Redirect URL must be a relative site path or an absolute HTTP(S) URL");
+            if (!IsValidCaptchaAction(formDefinition))
+                return Results.BadRequest("CAPTCHA action must use 1-32 letters, numbers, underscores, or hyphens");
 
             var updated = await databaseService.UpdateFormDefinitionAsync(tenantId, formDefinitionId, formDefinition);
 
@@ -1072,6 +1095,93 @@ public static class PumpkinManager
 
         CleanupRateLimitWindows(windowStart);
         return null;
+    }
+
+    private static async Task<IResult?> ValidateCaptchaAsync(
+        FormDefinition definition,
+        Tenant? tenant,
+        Dictionary<string, object?> formData,
+        string ipAddress,
+        ICaptchaVerifier? captchaVerifier,
+        CancellationToken cancellationToken)
+    {
+        var (required, settings, action) = ResolveCaptchaSettings(definition, tenant);
+        if (!required)
+            return null;
+
+        if (!string.Equals(settings.Provider, CaptchaProviders.Turnstile, StringComparison.OrdinalIgnoreCase) ||
+            string.IsNullOrWhiteSpace(settings.SiteKey) ||
+            captchaVerifier == null)
+        {
+            return Results.Json(
+                new { message = "This form's CAPTCHA is not configured correctly." },
+                statusCode: StatusCodes.Status503ServiceUnavailable);
+        }
+
+        var token = GetStringValue(GetOptionalValue(formData, "_captchaToken"));
+        if (string.IsNullOrWhiteSpace(token) || token.Length > 2048)
+            return Results.BadRequest("Please complete the CAPTCHA challenge");
+
+        var verification = await captchaVerifier.VerifyAsync(
+            settings,
+            token,
+            ipAddress,
+            action,
+            cancellationToken);
+
+        return verification.Success
+            ? null
+            : Results.BadRequest("CAPTCHA verification failed. Please try again.");
+    }
+
+    private static void ApplyPublicCaptchaSettings(FormDefinition definition, Tenant? tenant)
+    {
+        definition.SpamProtection ??= new FormSpamProtection();
+        var (required, settings, action) = ResolveCaptchaSettings(definition, tenant);
+        definition.SpamProtection.Captcha = new FormCaptchaSettings
+        {
+            Mode = required ? FormCaptchaModes.Required : FormCaptchaModes.Disabled,
+            Provider = required ? settings.Provider : CaptchaProviders.None,
+            SiteKey = required ? settings.SiteKey : string.Empty,
+            Action = action,
+        };
+    }
+
+    private static (bool Required, TenantCaptchaSettings Settings, string Action) ResolveCaptchaSettings(
+        FormDefinition definition,
+        Tenant? tenant)
+    {
+        var formCaptcha = definition.SpamProtection?.Captcha ?? new FormCaptchaSettings();
+        var tenantCaptcha = tenant?.Settings?.FormSecurity?.Captcha ?? new TenantCaptchaSettings();
+        var required = string.Equals(formCaptcha.Mode, FormCaptchaModes.Required, StringComparison.OrdinalIgnoreCase) ||
+            (string.Equals(formCaptcha.Mode, FormCaptchaModes.Inherit, StringComparison.OrdinalIgnoreCase) &&
+             tenantCaptcha.EnabledByDefault);
+        if (string.Equals(formCaptcha.Mode, FormCaptchaModes.Disabled, StringComparison.OrdinalIgnoreCase))
+            required = false;
+
+        var action = string.IsNullOrWhiteSpace(formCaptcha.Action)
+            ? "form_submit"
+            : formCaptcha.Action.Trim();
+        return (required, tenantCaptcha, action);
+    }
+
+    private static bool IsValidSubmitRedirect(FormDefinition definition)
+    {
+        if (!string.Equals(definition.SubmitBehavior, FormSubmitBehavior.Redirect, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        var redirectUrl = definition.RedirectUrl?.Trim() ?? string.Empty;
+        if (redirectUrl.StartsWith('/') && !redirectUrl.StartsWith("//", StringComparison.Ordinal))
+            return true;
+
+        return Uri.TryCreate(redirectUrl, UriKind.Absolute, out var uri) &&
+            (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
+    }
+
+    private static bool IsValidCaptchaAction(FormDefinition definition)
+    {
+        var action = definition.SpamProtection?.Captcha?.Action;
+        return string.IsNullOrWhiteSpace(action) || Regex.IsMatch(action, "^[a-zA-Z0-9_-]{1,32}$");
     }
 
     private static void CleanupRateLimitWindows(DateTimeOffset oldestAllowed)

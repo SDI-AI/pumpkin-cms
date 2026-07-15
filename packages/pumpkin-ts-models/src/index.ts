@@ -28,6 +28,8 @@ export type {
   Tenant,
   ApiKeyMeta,
   TenantSettings,
+  TenantFormSecuritySettings,
+  TenantCaptchaSettings,
   Features,
   Contact,
   Billing,
@@ -61,6 +63,9 @@ export type {
   FormSubmitBehavior,
   FormNotificationSettings,
   FormSpamProtection,
+  FormCaptchaSettings,
+  FormCaptchaMode,
+  CaptchaProvider,
   FormRateLimit
 } from './models/FormDefinition';
 

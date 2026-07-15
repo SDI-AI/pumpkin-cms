@@ -71,7 +71,8 @@ export function PageVisualEditor({ initialPage, initialTheme, mode, menuPages, o
 
   const selectedBlock = (page.ContentData.ContentBlocks as EditorBlock[]).find((block) => block.id === selectedBlockId) ?? null;
   const pageDirty = JSON.stringify(page) !== JSON.stringify(savedPage);
-  const navigationDirty = JSON.stringify(theme.menu) !== JSON.stringify(savedTheme.menu);
+  const navigationDirty = JSON.stringify({ menu: theme.menu, header: theme.header }) !==
+    JSON.stringify({ menu: savedTheme.menu, header: savedTheme.header });
 
   const sendPreviewState = () => {
     const message: EditorToPreviewMessage = {
@@ -198,7 +199,7 @@ export function PageVisualEditor({ initialPage, initialTheme, mode, menuPages, o
       setTheme(saved);
       setSavedTheme(saved);
       await fetch('/api/admin/revalidate', { method: 'POST' });
-      setNavigationMessage('Navigation saved across the site.');
+      setNavigationMessage('Header settings saved across the site.');
       router.refresh();
     } catch (err) {
       setNavigationMessage(err instanceof Error ? err.message : 'Unable to save navigation.');
@@ -633,7 +634,41 @@ export function PageVisualEditor({ initialPage, initialTheme, mode, menuPages, o
             </div>
             <div className="flex-1 overflow-y-auto p-5">
               {navigationSelected ? (
-                <MenuTreeEditor menu={theme.menu ?? []} pages={menuPages} onChange={(menu) => setTheme((current) => ({ ...current, menu, updatedAt: new Date().toISOString() }))} />
+                <div className="space-y-6">
+                  <section className="rounded-lg border border-neutral-200 bg-white p-4">
+                    <h3 className="text-sm font-bold text-neutral-950">Site identity</h3>
+                    <div className="mt-4 space-y-4">
+                      <MediaTextField
+                        label="Header Logo"
+                        value={theme.header.logoUrl}
+                        onChange={(logoUrl) => setTheme((current) => ({
+                          ...current,
+                          header: { ...current.header, logoUrl },
+                          updatedAt: new Date().toISOString(),
+                        }))}
+                        onSelect={(asset) => setTheme((current) => ({
+                          ...current,
+                          header: {
+                            ...current.header,
+                            logoUrl: asset.publicUrl,
+                            logoAlt: current.header.logoAlt || mediaAlt(asset),
+                          },
+                          updatedAt: new Date().toISOString(),
+                        }))}
+                      />
+                      <TextField
+                        label="Logo Alt / Site Name"
+                        value={theme.header.logoAlt}
+                        onChange={(logoAlt) => setTheme((current) => ({
+                          ...current,
+                          header: { ...current.header, logoAlt },
+                          updatedAt: new Date().toISOString(),
+                        }))}
+                      />
+                    </div>
+                  </section>
+                  <MenuTreeEditor menu={theme.menu ?? []} pages={menuPages} onChange={(menu) => setTheme((current) => ({ ...current, menu, updatedAt: new Date().toISOString() }))} />
+                </div>
               ) : selectedBlock ? (
                 <BlockEditorFields block={selectedBlock} onChange={(content) => updateBlockContent(selectedBlock.id!, content)} />
               ) : null}
@@ -641,8 +676,8 @@ export function PageVisualEditor({ initialPage, initialTheme, mode, menuPages, o
             <div className="border-t border-neutral-200 bg-white p-4">
               {navigationSelected ? (
                 <div className="flex items-center justify-between gap-3">
-                  <div className="text-xs font-semibold text-neutral-500">{navigationMessage || (navigationDirty ? 'Unsaved navigation changes' : 'Navigation is saved')}</div>
-                  <button type="button" onClick={saveNavigation} disabled={!navigationDirty || savingNavigation} className="inline-flex h-10 items-center gap-2 rounded-md bg-pumpkin-600 px-4 text-sm font-bold text-white hover:bg-pumpkin-700 disabled:opacity-50"><Save className="h-4 w-4" />{savingNavigation ? 'Saving…' : 'Save Navigation'}</button>
+                  <div className="text-xs font-semibold text-neutral-500">{navigationMessage || (navigationDirty ? 'Unsaved header changes' : 'Header settings are saved')}</div>
+                  <button type="button" onClick={saveNavigation} disabled={!navigationDirty || savingNavigation} className="inline-flex h-10 items-center gap-2 rounded-md bg-pumpkin-600 px-4 text-sm font-bold text-white hover:bg-pumpkin-700 disabled:opacity-50"><Save className="h-4 w-4" />{savingNavigation ? 'Saving…' : 'Save Header'}</button>
                 </div>
               ) : (
                 <button type="button" onClick={closeDrawer} className="ml-auto flex h-10 items-center rounded-md bg-pumpkin-600 px-4 text-sm font-bold text-white hover:bg-pumpkin-700">Done</button>

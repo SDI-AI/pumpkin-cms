@@ -78,7 +78,13 @@
     "honeypotFieldName": "_website",
     "rejectWhenHoneypotFilled": true,
     "requireConsent": false,
-    "consentFieldName": "consent"
+    "consentFieldName": "consent",
+    "captcha": {
+      "mode": "inherit",
+      "provider": "none",
+      "siteKey": "",
+      "action": "form_submit"
+    }
   },
   "rateLimit": {
     "enabled": true,

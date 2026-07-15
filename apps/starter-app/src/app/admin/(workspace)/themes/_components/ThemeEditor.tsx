@@ -2,8 +2,10 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import type { Theme } from 'pumpkin-ts-models';
+import { Image as ImageIcon } from 'lucide-react';
+import type { MediaAsset, Theme } from 'pumpkin-ts-models';
 import { fallbackTheme } from '@/data';
+import { MediaPickerDialog } from '@/components/admin/MediaPickerDialog';
 
 interface ThemeEditorProps {
   initialTheme: Theme;
@@ -223,7 +225,16 @@ export function ThemeEditor({ initialTheme, mode }: ThemeEditorProps) {
       <section className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
         <h2 className="text-base font-bold text-neutral-950">Header</h2>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
-          <TextField label="Logo URL" value={theme.header.logoUrl} onChange={(value) => update('header', { ...theme.header, logoUrl: value })} />
+          <MediaField
+            label="Logo URL"
+            value={theme.header.logoUrl}
+            onChange={(value) => update('header', { ...theme.header, logoUrl: value })}
+            onSelect={(asset) => update('header', {
+              ...theme.header,
+              logoUrl: asset.publicUrl,
+              logoAlt: theme.header.logoAlt || mediaAlt(asset),
+            })}
+          />
           <TextField label="Logo Alt" value={theme.header.logoAlt} onChange={(value) => update('header', { ...theme.header, logoAlt: value })} />
           <TextField label="CTA Text" value={theme.header.ctaText} onChange={(value) => update('header', { ...theme.header, ctaText: value })} />
           <TextField label="CTA URL" value={theme.header.ctaUrl} onChange={(value) => update('header', { ...theme.header, ctaUrl: value })} />
@@ -431,6 +442,68 @@ function TextField({
       />
     </label>
   );
+}
+
+function MediaField({
+  label,
+  onChange,
+  onSelect,
+  value,
+}: {
+  label: string;
+  onChange: (value: string) => void;
+  onSelect: (asset: MediaAsset) => void;
+  value: string;
+}) {
+  const [pickerOpen, setPickerOpen] = useState(false);
+
+  const selectAsset = (asset: MediaAsset) => {
+    onSelect(asset);
+    setPickerOpen(false);
+  };
+
+  return (
+    <div className="block">
+      <span className="text-sm font-semibold text-neutral-800">{label}</span>
+      <div className="mt-2 flex gap-2">
+        <input
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          className="h-10 min-w-0 flex-1 rounded-md border border-neutral-300 px-3 text-sm"
+        />
+        <button
+          type="button"
+          onClick={() => setPickerOpen(true)}
+          className="inline-flex h-10 shrink-0 items-center gap-2 rounded-md border border-neutral-300 bg-white px-3 text-sm font-semibold text-neutral-800 hover:bg-neutral-50"
+        >
+          <ImageIcon className="h-4 w-4" aria-hidden="true" />
+          Media
+        </button>
+      </div>
+      {value && !isEmoji(value) && (
+        <div className="mt-3 flex h-20 items-center justify-center overflow-hidden rounded-md border border-neutral-200 bg-neutral-50 p-2">
+          {/* Theme media URLs may be remote tenant assets, so this preview intentionally uses img. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={value} alt="Current header logo preview" className="max-h-full max-w-full object-contain" />
+        </div>
+      )}
+      {pickerOpen && (
+        <MediaPickerDialog
+          onClose={() => setPickerOpen(false)}
+          onSelect={selectAsset}
+          title="Select header logo"
+        />
+      )}
+    </div>
+  );
+}
+
+function mediaAlt(asset: MediaAsset) {
+  return asset.altText || asset.caption || asset.fileName;
+}
+
+function isEmoji(value: string) {
+  return /\p{Extended_Pictographic}/u.test(value) && !/^https?:\/\//i.test(value);
 }
 
 function Checkbox({

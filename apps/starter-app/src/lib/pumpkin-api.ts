@@ -46,6 +46,7 @@ export async function fetchFormDefinition(type: string): Promise<FormDefinition 
   return fetchFromPumpkin<FormDefinition>(
     `${config.apiUrl}/api/forms/${encodeURIComponent(config.tenantId)}/definitions/${encodeURIComponent(type)}`,
     config.apiKey,
+    { cache: 'no-store' },
   );
 }
 

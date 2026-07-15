@@ -17,6 +17,7 @@ public static class Phase1ContractTests
             ("form submit sanitizes and captures metadata", FormSubmitSanitizesAndCapturesMetadataAsync),
             ("form submit rejects missing required field", FormSubmitRejectsMissingRequiredFieldAsync),
             ("form submit rejects honeypot spam", FormSubmitRejectsHoneypotSpamAsync),
+            ("form submit requires and verifies tenant CAPTCHA", FormSubmitVerifiesTenantCaptchaAsync),
             ("form entry status stamps lifecycle dates", FormEntryStatusStampsLifecycleDatesAsync),
             ("HTML block editor fields survive JSON round trip", HtmlBlockEditorFieldsSurviveJsonRoundTripAsync),
         };
@@ -173,6 +174,66 @@ public static class Phase1ContractTests
         Assert(service.SavedEntries.Count == 0, "spam submissions should not be saved");
     }
 
+    private static async Task FormSubmitVerifiesTenantCaptchaAsync()
+    {
+        var service = new InMemoryPhase1DatabaseService();
+        service.PublicFormDefinition = NewContactFormDefinition();
+        service.PublicFormDefinition.SpamProtection.Captcha.Mode = FormCaptchaModes.Inherit;
+        await service.CreateTenantAsync(new Tenant
+        {
+            Id = "tenant-a",
+            TenantId = "tenant-a",
+            Settings = new TenantSettings
+            {
+                FormSecurity = new TenantFormSecuritySettings
+                {
+                    Captcha = new TenantCaptchaSettings
+                    {
+                        Provider = CaptchaProviders.Turnstile,
+                        SiteKey = "public-site-key",
+                        SecretKeyReference = "Captcha:Tenants:tenant-a:SecretKey",
+                        EnabledByDefault = true,
+                    },
+                },
+            },
+        });
+        var verifier = new FakeCaptchaVerifier();
+        var formData = new Dictionary<string, object?>
+        {
+            ["name"] = "Avery",
+            ["email"] = "avery@example.com",
+            ["message"] = "Hello",
+            ["_consent"] = true,
+            ["_captchaToken"] = "single-use-token",
+        };
+
+        var result = await PumpkinManager.SubmitFormAsync(
+            service,
+            "api-key",
+            "tenant-a",
+            "contact_submission",
+            formData,
+            NewHttpContext(),
+            verifier);
+
+        await AssertStatusAsync(result, StatusCodes.Status201Created);
+        Assert(verifier.Calls == 1, "CAPTCHA should be verified exactly once");
+        Assert(!service.SavedEntries.Single().FormData.ContainsKey("_captchaToken"), "CAPTCHA token should not be stored");
+
+        formData.Remove("_captchaToken");
+        var missingTokenResult = await PumpkinManager.SubmitFormAsync(
+            service,
+            "api-key",
+            "tenant-a",
+            "contact_submission",
+            formData,
+            NewHttpContext(),
+            verifier);
+        await AssertStatusAsync(missingTokenResult, StatusCodes.Status400BadRequest);
+        Assert(verifier.Calls == 1, "missing CAPTCHA tokens should be rejected before provider verification");
+        Assert(service.SavedEntries.Count == 1, "missing CAPTCHA tokens should not be saved");
+    }
+
     private static async Task FormEntryStatusStampsLifecycleDatesAsync()
     {
         var service = new InMemoryPhase1DatabaseService();
@@ -272,6 +333,22 @@ public static class Phase1ContractTests
         {
             throw new InvalidOperationException(message);
         }
+    }
+}
+
+internal sealed class FakeCaptchaVerifier : ICaptchaVerifier
+{
+    public int Calls { get; private set; }
+
+    public Task<CaptchaVerificationResult> VerifyAsync(
+        TenantCaptchaSettings settings,
+        string token,
+        string remoteIp,
+        string expectedAction,
+        CancellationToken cancellationToken = default)
+    {
+        Calls++;
+        return Task.FromResult(new CaptchaVerificationResult(token == "single-use-token"));
     }
 }
 
