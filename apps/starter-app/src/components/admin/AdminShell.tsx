@@ -23,6 +23,7 @@ const navigation = [
 
 export function AdminShell({ context, children }: AdminShellProps) {
   const pathname = usePathname();
+  const isPageEditor = pathname?.startsWith('/admin/pages/') ?? false;
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
   const [refreshMessage, setRefreshMessage] = useState('');
@@ -154,7 +155,10 @@ export function AdminShell({ context, children }: AdminShellProps) {
         </nav>
       </header>
 
-      <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <main className={[
+        'mx-auto w-full px-4 py-8 sm:px-6 lg:px-8',
+        isPageEditor ? 'max-w-none' : 'max-w-7xl',
+      ].join(' ')}>
         {children}
       </main>
     </div>

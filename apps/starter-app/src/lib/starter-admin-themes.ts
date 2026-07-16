@@ -1,4 +1,4 @@
-import type { Theme } from 'pumpkin-ts-models';
+import type { Theme, ThemeCustomCss } from 'pumpkin-ts-models';
 import { getStarterAdminApiContext, starterAdminFetch } from '@/lib/starter-admin-api';
 
 interface ThemesResponse {
@@ -18,6 +18,12 @@ export interface ThemeInstallResponse {
     packageBlobPath: string;
     assetBlobPaths: string[];
   };
+}
+
+export interface ThemeCssResponse {
+  css: string;
+  customCss: ThemeCustomCss;
+  theme?: Theme;
 }
 
 export async function getStarterAdminThemes() {
@@ -87,5 +93,32 @@ export async function deleteStarterAdminTheme(id: string) {
   return starterAdminFetch<{ message: string }>(
     `/api/admin/themes/${encodeURIComponent(tenantId)}/${encodeURIComponent(id)}`,
     { method: 'DELETE' },
+  );
+}
+
+export async function getStarterAdminThemeCss(id: string) {
+  const { tenantId } = await getStarterAdminApiContext();
+  return starterAdminFetch<ThemeCssResponse>(
+    `/api/admin/themes/${encodeURIComponent(tenantId)}/${encodeURIComponent(id)}/css`,
+  );
+}
+
+export async function publishStarterAdminThemeCss(id: string, css: string, note: string) {
+  const { tenantId } = await getStarterAdminApiContext();
+  return starterAdminFetch<ThemeCssResponse>(
+    `/api/admin/themes/${encodeURIComponent(tenantId)}/${encodeURIComponent(id)}/css`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ css, note }),
+    },
+  );
+}
+
+export async function activateStarterAdminThemeCssRevision(id: string, revisionId: string) {
+  const { tenantId } = await getStarterAdminApiContext();
+  return starterAdminFetch<ThemeCssResponse>(
+    `/api/admin/themes/${encodeURIComponent(tenantId)}/${encodeURIComponent(id)}/css/${encodeURIComponent(revisionId)}/activate`,
+    { method: 'POST' },
   );
 }

@@ -47,6 +47,19 @@ export function getThemeCssPath(theme: Theme) {
   return getThemeStylesheet(theme).href;
 }
 
+export function getThemeCustomStylesheet(theme: Theme): ThemeStylesheet | null {
+  const href = normalizeCssPath(theme.customCss?.cssUrl);
+  if (!href) return null;
+
+  const configuredIntegrity = normalizeCssPath(theme.customCss?.cssIntegrity);
+  const integrity = isSameOriginPath(href) ? configuredIntegrity : undefined;
+  return {
+    href,
+    integrity,
+    crossOrigin: integrity ? 'anonymous' : undefined,
+  };
+}
+
 export function resolveThemePlugin(theme: Theme): Theme {
   if (theme.themeId !== 'pumpkin-default' && theme.themeId !== 'pumpkin') {
     return theme;

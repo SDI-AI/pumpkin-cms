@@ -1,15 +1,23 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Image as ImageIcon } from 'lucide-react';
-import type { MediaAsset, Theme } from 'pumpkin-ts-models';
+import { History, Image as ImageIcon, RotateCcw, Upload } from 'lucide-react';
+import type { MediaAsset, Theme, ThemeCustomCss } from 'pumpkin-ts-models';
 import { fallbackTheme } from '@/data';
 import { MediaPickerDialog } from '@/components/admin/MediaPickerDialog';
+import { PageLinkField } from '@/components/admin/PageLinkField';
+import { getThemeStylesheet } from '@/themes/registry';
 
 interface ThemeEditorProps {
   initialTheme: Theme;
   mode: 'create' | 'edit';
+}
+
+interface ThemeCssResponse {
+  css: string;
+  customCss: ThemeCustomCss;
+  theme?: Theme;
 }
 
 export function ThemeEditor({ initialTheme, mode }: ThemeEditorProps) {
@@ -19,6 +27,40 @@ export function ThemeEditor({ initialTheme, mode }: ThemeEditorProps) {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [cssDraft, setCssDraft] = useState('');
+  const [publishedCss, setPublishedCss] = useState('');
+  const [cssNote, setCssNote] = useState('');
+  const [cssLoading, setCssLoading] = useState(mode === 'edit');
+  const [cssPublishing, setCssPublishing] = useState(false);
+  const [cssMessage, setCssMessage] = useState('');
+  const [cssError, setCssError] = useState('');
+
+  useEffect(() => {
+    if (mode !== 'edit') return;
+    let active = true;
+    void fetch(`/api/admin/themes/${encodeURIComponent(initialTheme.themeId)}/css`, { cache: 'no-store' })
+      .then(async (response) => {
+        const data = await response.json().catch(() => null) as ThemeCssResponse | { message?: string } | null;
+        if (!response.ok || !data || !('css' in data)) {
+          throw new Error(data && 'message' in data ? data.message : 'Unable to load custom CSS.');
+        }
+        if (!active) return;
+        setCssDraft(data.css);
+        setPublishedCss(data.css);
+        setTheme((current) => {
+          const next = { ...current, customCss: data.customCss };
+          setAdvancedJson(JSON.stringify(next, null, 2));
+          return next;
+        });
+      })
+      .catch((loadError) => {
+        if (active) setCssError(loadError instanceof Error ? loadError.message : 'Unable to load custom CSS.');
+      })
+      .finally(() => {
+        if (active) setCssLoading(false);
+      });
+    return () => { active = false; };
+  }, [initialTheme.themeId, mode]);
 
   const update = <K extends keyof Theme>(key: K, value: Theme[K]) => {
     setTheme((current) => syncJson({ ...current, [key]: value }));
@@ -60,6 +102,62 @@ export function ThemeEditor({ initialTheme, mode }: ThemeEditorProps) {
       const { compiledAssets: _compiledAssets, ...next } = current;
       return syncJson(next);
     });
+  };
+
+  const applyCssResponse = (data: ThemeCssResponse) => {
+    setCssDraft(data.css);
+    setPublishedCss(data.css);
+    setTheme((current) => syncJson(data.theme ?? { ...current, customCss: data.customCss }));
+  };
+
+  const publishCss = async () => {
+    if (mode !== 'edit') return;
+    setCssPublishing(true);
+    setCssMessage('');
+    setCssError('');
+    try {
+      const response = await fetch(`/api/admin/themes/${encodeURIComponent(initialTheme.themeId)}/css`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ css: cssDraft, note: cssNote }),
+      });
+      const data = await response.json().catch(() => null) as ThemeCssResponse | { message?: string } | null;
+      if (!response.ok || !data || !('css' in data)) {
+        throw new Error(data && 'message' in data ? data.message : 'Unable to publish custom CSS.');
+      }
+      applyCssResponse(data);
+      setCssNote('');
+      setCssMessage('Custom CSS published. The previous version remains available below.');
+      router.refresh();
+    } catch (publishError) {
+      setCssError(publishError instanceof Error ? publishError.message : 'Unable to publish custom CSS.');
+    } finally {
+      setCssPublishing(false);
+    }
+  };
+
+  const activateCssRevision = async (revisionId: string) => {
+    if (cssDraft !== publishedCss && !window.confirm('Discard the unpublished CSS draft and activate this version?')) return;
+    setCssPublishing(true);
+    setCssMessage('');
+    setCssError('');
+    try {
+      const response = await fetch(
+        `/api/admin/themes/${encodeURIComponent(initialTheme.themeId)}/css/${encodeURIComponent(revisionId)}/activate`,
+        { method: 'POST' },
+      );
+      const data = await response.json().catch(() => null) as ThemeCssResponse | { message?: string } | null;
+      if (!response.ok || !data || !('css' in data)) {
+        throw new Error(data && 'message' in data ? data.message : 'Unable to activate CSS revision.');
+      }
+      applyCssResponse(data);
+      setCssMessage(revisionId === 'original' ? 'Original theme CSS restored.' : 'CSS revision activated.');
+      router.refresh();
+    } catch (activateError) {
+      setCssError(activateError instanceof Error ? activateError.message : 'Unable to activate CSS revision.');
+    } finally {
+      setCssPublishing(false);
+    }
   };
 
   const applyAdvancedJson = () => {
@@ -210,6 +308,97 @@ export function ThemeEditor({ initialTheme, mode }: ThemeEditorProps) {
       </section>
 
       <section className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h2 className="text-base font-bold text-neutral-950">Custom CSS</h2>
+            <p className="mt-1 max-w-3xl text-sm leading-6 text-neutral-600">
+              Overrides load after the original theme stylesheet. Publishing creates an immutable version so you can restore any prior revision or return to the untouched original.
+            </p>
+          </div>
+          <span className={[
+            'w-fit rounded-full px-2.5 py-1 text-xs font-bold',
+            cssDraft !== publishedCss ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800',
+          ].join(' ')}>
+            {cssDraft !== publishedCss ? 'Unpublished draft' : 'Published'}
+          </span>
+        </div>
+
+        {(cssMessage || cssError) && (
+          <p className={[
+            'mt-4 rounded-md border px-3 py-2 text-sm',
+            cssError ? 'border-red-200 bg-red-50 text-red-700' : 'border-green-200 bg-green-50 text-green-700',
+          ].join(' ')}>{cssError || cssMessage}</p>
+        )}
+
+        {mode === 'create' ? (
+          <p className="mt-4 rounded-md bg-neutral-50 p-4 text-sm text-neutral-600">Save the new theme before publishing custom CSS.</p>
+        ) : (
+          <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.1fr)_minmax(24rem,0.9fr)]">
+            <div className="min-w-0">
+              <label className="block">
+                <span className="text-sm font-semibold text-neutral-800">CSS overrides</span>
+                <textarea
+                  value={cssDraft}
+                  onChange={(event) => setCssDraft(event.target.value)}
+                  disabled={cssLoading || cssPublishing}
+                  spellCheck={false}
+                  placeholder={":root {\n  --pk-color-primary: #ea580c;\n}\n\n.pk-hero__headline {\n  letter-spacing: -0.03em;\n}"}
+                  className="mt-2 min-h-[30rem] w-full rounded-md border border-neutral-300 bg-neutral-950 p-4 font-mono text-sm leading-6 text-neutral-50 outline-none focus:border-pumpkin-500 focus:ring-2 focus:ring-pumpkin-100 disabled:opacity-60"
+                />
+              </label>
+              <div className="mt-3 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+                <TextField label="Revision note" value={cssNote} onChange={setCssNote} />
+                <button
+                  type="button"
+                  onClick={publishCss}
+                  disabled={cssLoading || cssPublishing || cssDraft === publishedCss}
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-pumpkin-600 px-4 text-sm font-bold text-white hover:bg-pumpkin-700 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <Upload className="h-4 w-4" />
+                  {cssPublishing ? 'Publishing…' : 'Publish CSS'}
+                </button>
+              </div>
+              <p className="mt-2 text-xs text-neutral-500">Maximum 256 KB. Imports, script-like values, and unsafe legacy CSS constructs are rejected.</p>
+            </div>
+
+            <div className="min-w-0 space-y-5">
+              <div>
+                <h3 className="text-sm font-bold text-neutral-900">Live preview</h3>
+                <p className="mt-1 text-xs text-neutral-500">The draft is isolated in a preview frame and does not affect the live site until published.</p>
+                <ThemeCssPreview baseCssHref={getThemeStylesheet(theme).href} css={cssDraft} />
+              </div>
+
+              <div>
+                <div className="flex items-center gap-2">
+                  <History className="h-4 w-4 text-pumpkin-600" />
+                  <h3 className="text-sm font-bold text-neutral-900">Version history</h3>
+                </div>
+                <div className="mt-3 overflow-hidden rounded-md border border-neutral-200">
+                  <CssHistoryRow
+                    title="Original theme"
+                    detail="No custom CSS overrides"
+                    active={!theme.customCss?.activeRevisionId}
+                    disabled={cssPublishing}
+                    onActivate={() => activateCssRevision('original')}
+                  />
+                  {[...(theme.customCss?.revisions ?? [])].sort((left, right) => right.version - left.version).map((revision) => (
+                    <CssHistoryRow
+                      key={revision.revisionId}
+                      title={`Version ${revision.version}`}
+                      detail={[revision.note, formatDateTime(revision.createdAt)].filter(Boolean).join(' · ')}
+                      active={theme.customCss?.activeRevisionId === revision.revisionId}
+                      disabled={cssPublishing}
+                      onActivate={() => activateCssRevision(revision.revisionId)}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </section>
+
+      <section className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
         <h2 className="text-base font-bold text-neutral-950">Typography</h2>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <TextField label="Heading Font" value={theme.typography.headingFont} onChange={(value) => update('typography', { ...theme.typography, headingFont: value })} />
@@ -237,7 +426,7 @@ export function ThemeEditor({ initialTheme, mode }: ThemeEditorProps) {
           />
           <TextField label="Logo Alt" value={theme.header.logoAlt} onChange={(value) => update('header', { ...theme.header, logoAlt: value })} />
           <TextField label="CTA Text" value={theme.header.ctaText} onChange={(value) => update('header', { ...theme.header, ctaText: value })} />
-          <TextField label="CTA URL" value={theme.header.ctaUrl} onChange={(value) => update('header', { ...theme.header, ctaUrl: value })} />
+          <PageLinkField label="CTA URL or page" value={theme.header.ctaUrl} onChange={(value) => update('header', { ...theme.header, ctaUrl: value })} />
           <label className="block">
             <span className="text-sm font-semibold text-neutral-800">CTA Target</span>
             <select
@@ -418,6 +607,89 @@ export function createTheme(tenantId: string): Theme {
     createdAt: now,
     updatedAt: now,
   };
+
+}
+
+function ThemeCssPreview({ baseCssHref, css }: { baseCssHref: string; css: string }) {
+  const frameRef = useRef<HTMLIFrameElement>(null);
+
+  useEffect(() => {
+    const document = frameRef.current?.contentDocument;
+    if (!document) return;
+
+    document.open();
+    document.write('<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body></body></html>');
+    document.close();
+
+    const structure = document.createElement('style');
+    structure.textContent = 'body{margin:0}.preview-shell{min-height:100vh}.preview-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem}.preview-grid .pk-card-grid__card{min-width:0}@media(max-width:480px){.preview-grid{grid-template-columns:1fr}}';
+    document.head.appendChild(structure);
+
+    const base = document.createElement('link');
+    base.rel = 'stylesheet';
+    base.href = baseCssHref;
+    document.head.appendChild(base);
+
+    const draft = document.createElement('style');
+    draft.dataset.themeDraft = 'true';
+    draft.textContent = css;
+    document.head.appendChild(draft);
+
+    document.body.innerHTML = '<div class="preview-shell"><header class="pk-header"><div class="pk-header__container"><span class="pk-header__logo-text">Theme preview</span><a class="pk-header__cta" href="#">Get started</a></div></header><section class="pk-hero"><div class="pk-hero__container"><div><p class="pk-hero__eyebrow">Custom CSS</p><h1 class="pk-hero__headline">See changes before publishing</h1><p class="pk-hero__subheadline">Edit variables, typography, spacing, and component selectors.</p><a class="pk-hero__button" href="#">Preview button</a></div></div></section><section class="pk-card-grid"><div class="pk-card-grid__container"><div class="preview-grid"><article class="pk-card-grid__card"><div class="pk-card-grid__card-body"><h2 class="pk-card-grid__card-title">Example card</h2><p class="pk-card-grid__card-description">A compact component for checking borders, colors, type, and shadows.</p></div></article><article class="pk-card-grid__card"><div class="pk-card-grid__card-body"><h2 class="pk-card-grid__card-title">Second card</h2><p class="pk-card-grid__card-description">Published CSS loads after the original stylesheet.</p></div></article></div></div></section></div>';
+  }, [baseCssHref, css]);
+
+  return (
+    <iframe
+      ref={frameRef}
+      title="Custom CSS live preview"
+      sandbox="allow-same-origin"
+      className="mt-3 h-[32rem] w-full rounded-md border border-neutral-300 bg-white"
+    />
+  );
+}
+
+function CssHistoryRow({
+  active,
+  detail,
+  disabled,
+  onActivate,
+  title,
+}: {
+  active: boolean;
+  detail: string;
+  disabled: boolean;
+  onActivate: () => void;
+  title: string;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 border-b border-neutral-100 bg-white px-3 py-3 last:border-b-0">
+      <div className="min-w-0">
+        <div className="flex items-center gap-2">
+          <p className="text-sm font-bold text-neutral-900">{title}</p>
+          {active && <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold uppercase text-emerald-800">Active</span>}
+        </div>
+        <p className="mt-1 truncate text-xs text-neutral-500">{detail}</p>
+      </div>
+      {!active && (
+        <button
+          type="button"
+          onClick={onActivate}
+          disabled={disabled}
+          className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-neutral-300 px-2.5 text-xs font-semibold text-neutral-800 hover:bg-neutral-50 disabled:opacity-50"
+        >
+          <RotateCcw className="h-3.5 w-3.5" />
+          Restore
+        </button>
+      )}
+    </div>
+  );
+}
+
+function formatDateTime(value: string) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? value
+    : new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(date);
 }
 
 function TextField({

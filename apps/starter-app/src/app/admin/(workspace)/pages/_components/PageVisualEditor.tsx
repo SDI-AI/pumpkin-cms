@@ -12,6 +12,7 @@ import BlockEditorFields from '@/components/blocks/BlockEditorFields';
 import { createDefaultBlock } from '@/components/blocks/blockDefaults';
 import { MediaPickerDialog } from '@/components/admin/MediaPickerDialog';
 import { MenuTreeEditor, normalizeMenuOrders, type MenuPageOption } from '@/components/admin/MenuTreeEditor';
+import { PageLinkField } from '@/components/admin/PageLinkField';
 import { isPreviewMessage, type EditorToPreviewMessage, type PreviewBlockAction } from '@/lib/visual-editor-messages';
 import { StructuredDataModal } from './StructuredDataModal';
 
@@ -338,7 +339,7 @@ export function PageVisualEditor({ initialPage, initialTheme, mode, menuPages, o
         </div>
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-[minmax(420px,0.8fr)_minmax(0,1.2fr)]">
+      <div className="grid gap-5 xl:grid-cols-[minmax(400px,480px)_minmax(0,1fr)]">
         <div className="space-y-4">
           <EditorSection section="basic" expandedSections={expandedSections} setExpandedSections={setExpandedSections}>
             <div className="grid gap-4 md:grid-cols-2">
@@ -577,7 +578,7 @@ export function PageVisualEditor({ initialPage, initialTheme, mode, menuPages, o
                 Hub page
               </label>
               <div className="grid gap-4 md:grid-cols-2">
-                <TextField label="Hub Page Slug" value={page.contentRelationships.hubPageSlug} onChange={(value) => updateField('contentRelationships.hubPageSlug', value)} />
+                <PageLinkField label="Hub page slug" value={page.contentRelationships.hubPageSlug} pages={menuPages} valueFormat="slug" onChange={(value) => updateField('contentRelationships.hubPageSlug', value)} />
                 <TextField label="Topic Cluster" value={page.contentRelationships.topicCluster} onChange={(value) => updateField('contentRelationships.topicCluster', value)} />
               </div>
               <div className="grid gap-4 md:grid-cols-2">

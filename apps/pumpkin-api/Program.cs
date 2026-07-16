@@ -135,6 +135,7 @@ builder.Services.AddSingleton<MongoDataConnection>();
 // Register the main database service (singleton for connection reuse)
 builder.Services.AddSingleton<IDatabaseService, DatabaseService>();
 builder.Services.AddScoped<ThemePackageInstaller>();
+builder.Services.AddScoped<ThemeCssPublisher>();
 builder.Services.AddScoped<MediaAssetUploader>();
 
 var app = builder.Build();
@@ -1920,6 +1921,121 @@ app.MapDelete("/api/admin/media/{tenantId}/{mediaAssetId}",
     .WithSummary("Delete media asset")
     .WithDescription("Deletes the media file from tenant asset storage, then deletes its metadata document. Missing blobs are treated as already deleted.");
 
+// Admin: Read the active custom CSS override and revision history
+app.MapGet("/api/admin/themes/{tenantId}/{themeId}/css",
+    async (IDatabaseService databaseService, ThemeCssPublisher publisher, string tenantId, string themeId, HttpContext context) =>
+    {
+        if (context.User?.Identity?.IsAuthenticated != true)
+            return Results.Unauthorized();
+
+        var userTenantId = context.User.FindFirst("tenantId")?.Value;
+        var userRole = context.User.FindFirst(ClaimTypes.Role)?.Value;
+        if (string.IsNullOrEmpty(userTenantId))
+            return Results.BadRequest("User tenant ID not found in token");
+        if (tenantId != userTenantId && userRole != "SuperAdmin")
+            return Results.Forbid();
+
+        try
+        {
+            var theme = await databaseService.GetThemeAdminAsync(tenantId, themeId);
+            if (theme == null)
+                return Results.NotFound("Theme not found");
+
+            var css = await publisher.ReadActiveCssAsync(theme.CustomCss, context.RequestAborted);
+            return Results.Ok(new { css, customCss = theme.CustomCss ?? new ThemeCustomCss() });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return Results.NotFound(ex.Message);
+        }
+    })
+    .RequireAuthorization("TenantContentReader")
+    .WithTags("Admin - Themes")
+    .WithName("GetThemeCustomCss")
+    .WithSummary("Get active custom CSS and revision history");
+
+// Admin: Publish a new immutable custom CSS revision
+app.MapPut("/api/admin/themes/{tenantId}/{themeId}/css",
+    async (IDatabaseService databaseService, ThemeCssPublisher publisher, string tenantId, string themeId,
+           ThemeCssPublishRequest request, HttpContext context) =>
+    {
+        if (context.User?.Identity?.IsAuthenticated != true)
+            return Results.Unauthorized();
+
+        var userTenantId = context.User.FindFirst("tenantId")?.Value;
+        var userRole = context.User.FindFirst(ClaimTypes.Role)?.Value;
+        if (string.IsNullOrEmpty(userTenantId))
+            return Results.BadRequest("User tenant ID not found in token");
+        if (tenantId != userTenantId && userRole != "SuperAdmin")
+            return Results.Forbid();
+
+        try
+        {
+            var theme = await databaseService.GetThemeAdminAsync(tenantId, themeId);
+            if (theme == null)
+                return Results.NotFound("Theme not found");
+
+            var userId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                ?? context.User.FindFirst("sub")?.Value
+                ?? string.Empty;
+            var published = await publisher.PublishAsync(
+                tenantId,
+                themeId,
+                theme.CustomCss,
+                request.Css ?? string.Empty,
+                request.Note ?? string.Empty,
+                userId,
+                context.RequestAborted);
+            theme.CustomCss = published.CustomCss;
+            var saved = await databaseService.UpdateThemeAsync(tenantId, themeId, theme);
+            return Results.Ok(new { theme = saved, css = published.Css, customCss = saved.CustomCss });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Results.BadRequest(ex.Message);
+        }
+    })
+    .RequireAuthorization("TenantContentOwner")
+    .WithTags("Admin - Themes")
+    .WithName("PublishThemeCustomCss")
+    .WithSummary("Publish a versioned custom CSS override");
+
+// Admin: Roll custom CSS back to a prior revision or the original theme
+app.MapPost("/api/admin/themes/{tenantId}/{themeId}/css/{revisionId}/activate",
+    async (IDatabaseService databaseService, ThemeCssPublisher publisher, string tenantId, string themeId,
+           string revisionId, HttpContext context) =>
+    {
+        if (context.User?.Identity?.IsAuthenticated != true)
+            return Results.Unauthorized();
+
+        var userTenantId = context.User.FindFirst("tenantId")?.Value;
+        var userRole = context.User.FindFirst(ClaimTypes.Role)?.Value;
+        if (string.IsNullOrEmpty(userTenantId))
+            return Results.BadRequest("User tenant ID not found in token");
+        if (tenantId != userTenantId && userRole != "SuperAdmin")
+            return Results.Forbid();
+
+        try
+        {
+            var theme = await databaseService.GetThemeAdminAsync(tenantId, themeId);
+            if (theme == null)
+                return Results.NotFound("Theme not found");
+
+            theme.CustomCss = publisher.ActivateRevision(theme.CustomCss, revisionId);
+            var saved = await databaseService.UpdateThemeAsync(tenantId, themeId, theme);
+            var css = await publisher.ReadActiveCssAsync(saved.CustomCss, context.RequestAborted);
+            return Results.Ok(new { theme = saved, css, customCss = saved.CustomCss });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return Results.NotFound(ex.Message);
+        }
+    })
+    .RequireAuthorization("TenantContentOwner")
+    .WithTags("Admin - Themes")
+    .WithName("ActivateThemeCssRevision")
+    .WithSummary("Activate a prior CSS revision or restore the original theme");
+
 // Admin: Get a specific theme by ID
 app.MapGet("/api/admin/themes/{tenantId}/{themeId}",
     async (IDatabaseService databaseService, string tenantId, string themeId, HttpContext context) =>
@@ -2483,6 +2599,8 @@ app.Run();
 
 /// <summary>Request body for updating a form entry's status.</summary>
 record StatusUpdateRequest(string Status);
+
+record ThemeCssPublishRequest(string? Css, string? Note);
 
 /// <summary>Sanitized admin user response. PasswordHash is intentionally omitted.</summary>
 record AdminUserInfo(

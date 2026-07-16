@@ -4,6 +4,7 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronDown, ChevronUp, Plus, Save, Trash2 } from 'lucide-react';
 import type { MenuItem, Theme } from 'pumpkin-ts-models';
+import { PageLinkField } from '@/components/admin/PageLinkField';
 
 interface NavigationEditorProps {
   initialTheme: Theme;
@@ -181,7 +182,7 @@ function MenuItemEditor({
     <div className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
       <div className="grid gap-3 lg:grid-cols-[1.2fr_1.4fr_0.7fr_0.7fr_auto] lg:items-end">
         <TextField label="Label" value={item.label} onChange={(value) => onUpdate(path, { label: value })} />
-        <TextField label="URL" value={item.url} onChange={(value) => onUpdate(path, { url: value })} />
+        <PageLinkField label="URL or page" value={item.url} onChange={(value) => onUpdate(path, { url: value })} />
         <label className="block">
           <span className="text-sm font-semibold text-neutral-800">Target</span>
           <select

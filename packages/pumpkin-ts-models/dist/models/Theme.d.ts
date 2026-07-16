@@ -81,6 +81,29 @@ export interface ThemeCompiledAssets {
     /** Content hash used for cache busting and package verification. */
     contentHash?: string;
 }
+export interface ThemeCssRevision {
+    revisionId: string;
+    version: number;
+    cssUrl: string;
+    cssIntegrity: string;
+    contentHash: string;
+    blobPath: string;
+    note: string;
+    createdAt: string;
+    createdByUserId: string;
+}
+/**
+ * Versioned tenant CSS overrides. The compiled theme remains the immutable base;
+ * this stylesheet is loaded after it and can be rolled back independently.
+ */
+export interface ThemeCustomCss {
+    activeRevisionId: string;
+    cssUrl: string;
+    cssIntegrity: string;
+    contentHash: string;
+    publishedAt?: string;
+    revisions: ThemeCssRevision[];
+}
 /**
  * A site-wide theme stored per tenant.  Contains header & footer layout settings,
  * per-block-type style overrides (matching the BlockClassNamesMap pattern),
@@ -107,6 +130,7 @@ export interface Theme {
     borders: ThemeBorders;
     shadows: ThemeShadows;
     compiledAssets?: ThemeCompiledAssets;
+    customCss?: ThemeCustomCss;
     header: ThemeHeader;
     footer: ThemeFooter;
     /** Per-block-type classNames overrides (mirrors BlockClassNamesMap). */
