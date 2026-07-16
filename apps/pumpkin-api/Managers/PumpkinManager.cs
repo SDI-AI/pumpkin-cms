@@ -12,7 +12,7 @@ public static class PumpkinManager
 
     public static IResult GetWelcomeMessage()
     {
-        return Results.Ok("Welcome to Pumpkin CMS v1");
+        return Results.Ok("Welcome to Pumpkin CMS v1.03");
     }
 
     public static async Task<IResult> GetPageAsync(IDatabaseService databaseService, string apiKey, string tenantId, string pageSlug, ILogger? logger = null)
