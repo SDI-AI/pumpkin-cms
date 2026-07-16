@@ -41,6 +41,7 @@ export function VisualPreviewFrame() {
         integrity={state.stylesheetIntegrity}
         crossOrigin={state.stylesheetIntegrity ? 'anonymous' : undefined}
       />
+      {state.theme.customCss?.cssUrl && <link rel="stylesheet" href={state.theme.customCss.cssUrl} />}
       <div className="visual-editor-chrome" data-selected={state.navigationSelected ? 'true' : 'false'} onClick={() => send({ type: 'pumpkin:edit-navigation' })}>
         <SiteHeader
           header={state.theme.header}

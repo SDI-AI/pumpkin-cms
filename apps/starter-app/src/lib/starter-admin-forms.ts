@@ -1,10 +1,17 @@
-import type { FormDefinition } from 'pumpkin-ts-models';
+import type { FormDefinition, FormEntry, FormEntryStatus } from 'pumpkin-ts-models';
 import { getStarterAdminApiContext, starterAdminFetch } from '@/lib/starter-admin-api';
 
 interface FormDefinitionsResponse {
   definitions: FormDefinition[];
   count: number;
   tenantId: string;
+}
+
+interface FormEntriesResponse {
+  entries: FormEntry[];
+  count: number;
+  tenantId: string;
+  type: string;
 }
 
 export async function getStarterAdminFormDefinitions() {
@@ -52,5 +59,26 @@ export async function deleteStarterAdminFormDefinition(id: string) {
   return starterAdminFetch<{ message: string }>(
     `/api/admin/forms/${encodeURIComponent(tenantId)}/definitions/${encodeURIComponent(id)}`,
     { method: 'DELETE' },
+  );
+}
+
+export async function getStarterAdminFormEntries(type?: string) {
+  const { tenantId } = await getStarterAdminApiContext();
+  const query = type ? `?type=${encodeURIComponent(type)}` : '';
+  const response = await starterAdminFetch<FormEntriesResponse>(
+    `/api/admin/forms/${encodeURIComponent(tenantId)}/entries${query}`,
+  );
+  return response.entries;
+}
+
+export async function updateStarterAdminFormEntryStatus(id: string, status: FormEntryStatus) {
+  const { tenantId } = await getStarterAdminApiContext();
+  return starterAdminFetch<FormEntry>(
+    `/api/admin/forms/${encodeURIComponent(tenantId)}/entries/${encodeURIComponent(id)}/status`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    },
   );
 }

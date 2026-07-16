@@ -3,14 +3,11 @@
 import type { ReactNode } from 'react';
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Plus, Trash2 } from 'lucide-react';
 import type { MenuItem } from 'pumpkin-ts-models';
+import { PageLinkField, type PageLinkOption } from '@/components/admin/PageLinkField';
 
 type MenuPath = number[];
 
-export interface MenuPageOption {
-  pageSlug: string;
-  title: string;
-  isPublished: boolean;
-}
+export type MenuPageOption = PageLinkOption;
 
 interface MenuTreeEditorProps {
   menu: MenuItem[];
@@ -75,17 +72,12 @@ function MenuNode({ item, path, siblingCount, pages, onAddChild, onIndent, onMov
 }) {
   const children = sortMenu(item.children ?? []);
   const index = path.at(-1) ?? 0;
-  const internalPage = pages.find((page) => menuUrl(page.pageSlug) === item.url);
 
   return (
     <div className="rounded-lg border border-neutral-200 bg-white p-3 shadow-sm">
       <div className="grid gap-3 md:grid-cols-2">
         <MenuField label="Label" value={item.label} onChange={(label) => onUpdate(path, { label })} />
-        <label className="block">
-          <span className="text-xs font-bold uppercase tracking-wide text-neutral-600">URL or page</span>
-          <input list="visual-editor-page-links" value={item.url} onChange={(event) => onUpdate(path, { url: event.target.value })} className="mt-1 h-10 w-full rounded-md border border-neutral-300 px-3 text-sm outline-none focus:border-pumpkin-500 focus:ring-2 focus:ring-pumpkin-100" />
-          {internalPage && !internalPage.isPublished && <span className="mt-1 block text-xs font-semibold text-amber-700">Destination is currently a draft.</span>}
-        </label>
+        <PageLinkField label="URL or page" value={item.url} pages={pages} onChange={(url) => onUpdate(path, { url })} />
       </div>
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
         <label className="block">
@@ -114,11 +106,6 @@ function MenuNode({ item, path, siblingCount, pages, onAddChild, onIndent, onMov
           ))}
         </div>
       )}
-      {path.length === 1 && index === 0 && (
-        <datalist id="visual-editor-page-links">
-          {pages.map((page) => <option key={page.pageSlug} value={menuUrl(page.pageSlug)}>{page.title}{page.isPublished ? '' : ' (draft)'}</option>)}
-        </datalist>
-      )}
     </div>
   );
 }
@@ -132,7 +119,6 @@ function TreeButton({ children, danger, disabled, label, onClick }: { children: 
 }
 
 function createMenuItem(): MenuItem { return { label: 'New Item', url: '/', target: '_self', icon: '', order: 0, isVisible: true, children: [] }; }
-function menuUrl(slug: string) { return slug === 'home' ? '/' : `/${slug}`; }
 function sortMenu(menu: MenuItem[]): MenuItem[] { return [...menu].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)).map((item) => ({ ...item, children: sortMenu(item.children ?? []) })); }
 export function normalizeMenuOrders(menu: MenuItem[]): MenuItem[] { return menu.map((item, order) => ({ ...item, order, target: item.target || '_self', isVisible: item.isVisible !== false, children: normalizeMenuOrders(item.children ?? []) })); }
 

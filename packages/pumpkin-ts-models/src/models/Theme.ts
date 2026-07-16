@@ -104,6 +104,31 @@ export interface ThemeCompiledAssets {
   contentHash?: string;
 }
 
+export interface ThemeCssRevision {
+  revisionId: string;
+  version: number;
+  cssUrl: string;
+  cssIntegrity: string;
+  contentHash: string;
+  blobPath: string;
+  note: string;
+  createdAt: string;
+  createdByUserId: string;
+}
+
+/**
+ * Versioned tenant CSS overrides. The compiled theme remains the immutable base;
+ * this stylesheet is loaded after it and can be rolled back independently.
+ */
+export interface ThemeCustomCss {
+  activeRevisionId: string;
+  cssUrl: string;
+  cssIntegrity: string;
+  contentHash: string;
+  publishedAt?: string;
+  revisions: ThemeCssRevision[];
+}
+
 // ─── Theme (top-level document) ──────────────────────────────
 
 /**
@@ -133,6 +158,7 @@ export interface Theme {
   borders: ThemeBorders;
   shadows: ThemeShadows;
   compiledAssets?: ThemeCompiledAssets;
+  customCss?: ThemeCustomCss;
 
   header: ThemeHeader;
   footer: ThemeFooter;

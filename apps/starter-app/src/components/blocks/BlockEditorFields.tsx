@@ -5,6 +5,7 @@ import type { ReactNode } from 'react'
 import { ChevronDown, ChevronUp, Image as ImageIcon, X } from 'lucide-react'
 import type { IHtmlBlock, MediaAsset } from 'pumpkin-ts-models'
 import { MediaPickerDialog } from '@/components/admin/MediaPickerDialog'
+import { PageLinkField } from '@/components/admin/PageLinkField'
 
 interface BlockEditorFieldsProps {
   block: IHtmlBlock
@@ -221,7 +222,7 @@ function HeroFields({ content, update, onChange }: { content: any; update: (k: s
       />
       <div className="grid grid-cols-2 gap-3">
         <Field label="Button Text" value={content.buttonText} onChange={v => update('buttonText', v)} />
-        <Field label="Button Link" value={content.buttonLink} onChange={v => update('buttonLink', v)} />
+        <PageLinkField label="Button link or page" value={content.buttonLink} onChange={v => update('buttonLink', v)} />
       </div>
     </div>
   )
@@ -236,12 +237,12 @@ function PrimaryCtaFields({ content, update, onChange }: { content: any; update:
       <Field label="Description" value={content.description} onChange={v => update('description', v)} multiline />
       <div className="grid grid-cols-2 gap-3">
         <Field label="Button Text" value={content.buttonText} onChange={v => update('buttonText', v)} />
-        <Field label="Button Link" value={content.buttonLink} onChange={v => update('buttonLink', v)} />
+        <PageLinkField label="Button link or page" value={content.buttonLink} onChange={v => update('buttonLink', v)} />
       </div>
       <Field label="Secondary Text" value={content.secondaryText} onChange={v => update('secondaryText', v)} />
       <div className="grid grid-cols-2 gap-3">
         <Field label="Secondary Link Text" value={content.secondaryLinkText} onChange={v => update('secondaryLinkText', v)} />
-        <Field label="Secondary Link" value={content.secondaryLink} onChange={v => update('secondaryLink', v)} />
+        <PageLinkField label="Secondary link or page" value={content.secondaryLink} onChange={v => update('secondaryLink', v)} />
       </div>
       <div className="grid grid-cols-2 gap-3">
         <MediaField label="Background Image" value={content.backgroundImage} onChange={v => update('backgroundImage', v)} />
@@ -279,7 +280,7 @@ function SecondaryCtaFields({ content, update }: { content: any; update: (k: str
       <Field label="Description" value={content.description} onChange={v => update('description', v)} multiline />
       <div className="grid grid-cols-2 gap-3">
         <Field label="Button Text" value={content.buttonText} onChange={v => update('buttonText', v)} />
-        <Field label="Button Link" value={content.buttonLink} onChange={v => update('buttonLink', v)} />
+        <PageLinkField label="Button link or page" value={content.buttonLink} onChange={v => update('buttonLink', v)} />
       </div>
     </div>
   )
@@ -328,7 +329,7 @@ function CardGridFields({ content, onChange }: { content: any; onChange: (c: any
             </div>
             <div className="grid grid-cols-2 gap-2">
               <Field label="Icon" value={card.icon} onChange={v => updateCard({ ...card, icon: v })} />
-              <Field label="Link" value={card.link} onChange={v => updateCard({ ...card, link: v })} />
+              <PageLinkField label="Link or page" value={card.link} onChange={v => updateCard({ ...card, link: v })} />
             </div>
           </div>
         )}
@@ -373,7 +374,7 @@ function HubSpokesFields({ content, update }: { content: any; update: (k: string
     <div className="space-y-3">
       <Field label="Title" value={content.title} onChange={v => update('title', v)} />
       <Field label="Subtitle" value={content.subtitle} onChange={v => update('subtitle', v)} multiline />
-      <Field label="Hub Page Slug" value={content.hubPageSlug} onChange={v => update('hubPageSlug', v.trim().toLowerCase())} placeholder="Leave blank to use this page" />
+      <PageLinkField label="Hub page slug" value={content.hubPageSlug} valueFormat="slug" onChange={v => update('hubPageSlug', v.trim().toLowerCase())} placeholder="Leave blank to use this page" />
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className={labelClass}>Layout</label>
@@ -413,7 +414,7 @@ function BreadcrumbsFields({ content, onChange }: { content: any; onChange: (c: 
         <div className="space-y-2">
           <div className="grid grid-cols-2 gap-2">
             <Field label="Label" value={item.label} onChange={v => updateItem({ ...item, label: v })} />
-            <Field label="URL" value={item.url} onChange={v => updateItem({ ...item, url: v })} />
+            <PageLinkField label="URL or page" value={item.url} onChange={v => updateItem({ ...item, url: v })} />
           </div>
           <label className="flex items-center gap-2 text-xs text-neutral-600">
             <input type="checkbox" checked={item.current || false} onChange={e => updateItem({ ...item, current: e.target.checked })} className="rounded border-neutral-300 text-pumpkin-600" />

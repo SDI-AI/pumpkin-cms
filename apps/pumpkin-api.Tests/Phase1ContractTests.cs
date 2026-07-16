@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using pumpkin_api.Managers;
 using pumpkin_api.Services;
 using pumpkin_net_models.Models;
@@ -14,6 +16,7 @@ public static class Phase1ContractTests
         {
             ("theme activation updates active pointer", ThemeActivationUpdatesActivePointerAsync),
             ("theme delete clears active pointer", ThemeDeleteClearsActivePointerAsync),
+            ("theme CSS revision rollback preserves history", ThemeCssRevisionRollbackPreservesHistoryAsync),
             ("form submit sanitizes and captures metadata", FormSubmitSanitizesAndCapturesMetadataAsync),
             ("form submit rejects missing required field", FormSubmitRejectsMissingRequiredFieldAsync),
             ("form submit rejects honeypot spam", FormSubmitRejectsHoneypotSpamAsync),
@@ -172,6 +175,35 @@ public static class Phase1ContractTests
 
         await AssertStatusAsync(result, StatusCodes.Status400BadRequest);
         Assert(service.SavedEntries.Count == 0, "spam submissions should not be saved");
+    }
+
+    private static Task ThemeCssRevisionRollbackPreservesHistoryAsync()
+    {
+        var publisher = new ThemeCssPublisher(
+            Options.Create(new AssetStorageSettings()),
+            NullLogger<ThemeCssPublisher>.Instance);
+        var history = new ThemeCustomCss
+        {
+            ActiveRevisionId = "v2",
+            CssUrl = "https://assets.example/v2.css",
+            ContentHash = "hash-2",
+            Revisions = new List<ThemeCssRevision>
+            {
+                new() { RevisionId = "v1", Version = 1, CssUrl = "https://assets.example/v1.css", CssIntegrity = "sha256-one", ContentHash = "hash-1" },
+                new() { RevisionId = "v2", Version = 2, CssUrl = "https://assets.example/v2.css", CssIntegrity = "sha256-two", ContentHash = "hash-2" }
+            }
+        };
+
+        var restored = publisher.ActivateRevision(history, "v1");
+        Assert(restored.ActiveRevisionId == "v1", "selected CSS revision should become active");
+        Assert(restored.CssUrl.EndsWith("v1.css"), "selected revision URL should be restored");
+        Assert(restored.Revisions.Count == 2, "rollback should preserve immutable revision history");
+
+        var original = publisher.ActivateRevision(restored, "original");
+        Assert(original.ActiveRevisionId == string.Empty, "original rollback should clear the custom CSS pointer");
+        Assert(original.CssUrl == string.Empty, "original rollback should stop loading the override stylesheet");
+        Assert(original.Revisions.Count == 2, "original rollback should preserve revision history");
+        return Task.CompletedTask;
     }
 
     private static async Task FormSubmitVerifiesTenantCaptchaAsync()
