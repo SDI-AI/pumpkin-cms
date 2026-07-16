@@ -177,6 +177,8 @@ export type {
   ThemeBorders,
   ThemeShadows,
   ThemeCompiledAssets,
+  ThemeCustomCss,
+  ThemeCssRevision,
   BlockStyleMap,
   MenuItem
 } from './models/Theme';

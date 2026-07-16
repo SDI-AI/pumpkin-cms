@@ -5,6 +5,7 @@ import type { ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronDown, ChevronUp, Copy, Eye, Plus, Save, Trash2, Wand2 } from 'lucide-react';
 import type { FormDefinition, FormFieldDefinition, FormFieldType, FormFieldWidth } from 'pumpkin-ts-models';
+import { PageLinkField } from '@/components/admin/PageLinkField';
 
 interface FormDefinitionEditorProps {
   initialDefinition: FormDefinition;
@@ -196,7 +197,7 @@ export function FormDefinitionEditor({ initialDefinition, mode }: FormDefinition
               <option value="redirect">Redirect</option>
             </select>
           </label>
-          <TextField label="Success Redirect URL" value={definition.redirectUrl} onChange={(value) => update('redirectUrl', value)} />
+          <PageLinkField label="Success redirect URL or page" value={definition.redirectUrl} onChange={(value) => update('redirectUrl', value)} />
           <TextField
             label="Notification Emails"
             value={definition.notificationEmails.join(', ')}

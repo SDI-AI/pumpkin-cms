@@ -75,6 +75,9 @@ public class Theme
     [JsonPropertyName("compiledAssets")]
     public ThemeCompiledAssets? CompiledAssets { get; set; }
 
+    [JsonPropertyName("customCss")]
+    public ThemeCustomCss? CustomCss { get; set; }
+
     // ── Layout sections ──────────────────────────────────────
 
     [JsonPropertyName("header")]
@@ -214,6 +217,57 @@ public class ThemeCompiledAssets
     /// <summary>Content hash used for cache busting and package verification.</summary>
     [JsonPropertyName("contentHash")]
     public string ContentHash { get; set; } = string.Empty;
+}
+
+public class ThemeCustomCss
+{
+    [JsonPropertyName("activeRevisionId")]
+    public string ActiveRevisionId { get; set; } = string.Empty;
+
+    [JsonPropertyName("cssUrl")]
+    public string CssUrl { get; set; } = string.Empty;
+
+    [JsonPropertyName("cssIntegrity")]
+    public string CssIntegrity { get; set; } = string.Empty;
+
+    [JsonPropertyName("contentHash")]
+    public string ContentHash { get; set; } = string.Empty;
+
+    [JsonPropertyName("publishedAt")]
+    public DateTime? PublishedAt { get; set; }
+
+    [JsonPropertyName("revisions")]
+    public List<ThemeCssRevision> Revisions { get; set; } = new();
+}
+
+public class ThemeCssRevision
+{
+    [JsonPropertyName("revisionId")]
+    public string RevisionId { get; set; } = string.Empty;
+
+    [JsonPropertyName("version")]
+    public int Version { get; set; }
+
+    [JsonPropertyName("cssUrl")]
+    public string CssUrl { get; set; } = string.Empty;
+
+    [JsonPropertyName("cssIntegrity")]
+    public string CssIntegrity { get; set; } = string.Empty;
+
+    [JsonPropertyName("contentHash")]
+    public string ContentHash { get; set; } = string.Empty;
+
+    [JsonPropertyName("blobPath")]
+    public string BlobPath { get; set; } = string.Empty;
+
+    [JsonPropertyName("note")]
+    public string Note { get; set; } = string.Empty;
+
+    [JsonPropertyName("createdAt")]
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    [JsonPropertyName("createdByUserId")]
+    public string CreatedByUserId { get; set; } = string.Empty;
 }
 
 // ─── Header ──────────────────────────────────────────────────
