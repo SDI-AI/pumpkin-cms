@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://pumpkincms.dev/schemas/blocks/blog.schema.json", "title": "BlogBlock",
+  "x-pumpkin": { "type": "Blog", "contentType": "BlogContent", "module": "BlogBlocks", "category": "blog" },
+  "allOf": [{ "$ref": "block-base.schema.json" }, { "type": "object", "properties": { "type": { "const": "Blog" }, "content": { "$ref": "#/$defs/BlogContent" } } }],
+  "$defs": {
+    "RelatedPost": { "type": "object", "required": ["title", "slug", "excerpt", "image", "imageAlt", "publishedDate"], "properties": {
+      "title": { "type": "string", "default": "" }, "slug": { "type": "string", "default": "", "x-pumpkin-editor": "page-link" }, "excerpt": { "type": "string", "default": "" },
+      "image": { "type": "string", "default": "", "x-pumpkin-editor": "media" }, "imageAlt": { "type": "string", "default": "" }, "publishedDate": { "type": "string", "default": "" }
+    }, "additionalProperties": true },
+    "BlogContent": { "type": "object", "required": ["title", "subtitle", "author", "authorImage", "authorBio", "publishedDate", "featuredImage", "featuredImageAlt", "excerpt", "body", "tags", "categories", "readingTime", "relatedPosts"], "properties": {
+      "title": { "type": "string", "default": "" }, "subtitle": { "type": "string", "default": "" }, "author": { "type": "string", "default": "" },
+      "authorImage": { "type": "string", "default": "", "x-pumpkin-editor": "media" }, "authorBio": { "type": "string", "default": "" }, "publishedDate": { "type": "string", "default": "" },
+      "featuredImage": { "type": "string", "default": "", "x-pumpkin-editor": "media" }, "featuredImageAlt": { "type": "string", "default": "" },
+      "featuredImageAspect": { "$ref": "shared.schema.json#/$defs/ImageAspect" }, "featuredImageFit": { "$ref": "shared.schema.json#/$defs/ImageFit" }, "featuredImagePosition": { "$ref": "shared.schema.json#/$defs/ImagePosition" },
+      "excerpt": { "type": "string", "default": "" }, "body": { "type": "string", "default": "", "x-pumpkin-editor": "rich-text" },
+      "tags": { "type": "array", "items": { "type": "string" }, "default": [], "x-pumpkin-editor": "tags" }, "categories": { "type": "array", "items": { "type": "string" }, "default": [], "x-pumpkin-editor": "tags" },
+      "readingTime": { "type": "integer", "default": 0 }, "relatedImageAspect": { "$ref": "shared.schema.json#/$defs/ImageAspect" },
+      "relatedImageFit": { "$ref": "shared.schema.json#/$defs/ImageFit" }, "relatedImagePosition": { "$ref": "shared.schema.json#/$defs/ImagePosition" },
+      "relatedPosts": { "type": "array", "items": { "$ref": "#/$defs/RelatedPost" }, "default": [], "x-pumpkin-editor": "collection" }
+    }, "additionalProperties": true }
+  }
+}

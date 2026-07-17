@@ -1,8 +1,5 @@
-import { IHtmlBlock } from './IHtmlBlock';
+import type { IHtmlBlock } from './IHtmlBlock';
 import type { ImageAspect, ImageFit, ImagePosition } from './ImagePresentation';
-/**
- * Related blog post reference
- */
 export interface RelatedPost {
     title: string;
     slug: string;
@@ -11,9 +8,6 @@ export interface RelatedPost {
     imageAlt: string;
     publishedDate: string;
 }
-/**
- * Blog block content structure
- */
 export interface BlogContent {
     title: string;
     subtitle: string;
@@ -36,11 +30,8 @@ export interface BlogContent {
     relatedImagePosition?: ImagePosition;
     relatedPosts: RelatedPost[];
 }
-/**
- * Blog block for displaying blog post content
- */
 export interface BlogBlock extends IHtmlBlock {
-    type: 'Blog';
+    type: "Blog";
     content: BlogContent;
 }
 //# sourceMappingURL=BlogBlocks.d.ts.map

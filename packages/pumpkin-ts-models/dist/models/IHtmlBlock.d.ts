@@ -5,6 +5,7 @@ export interface IHtmlBlock {
     id?: string;
     name?: string;
     enabled?: boolean;
+    schemaVersion?: number;
     type: string;
     content: Record<string, any>;
 }

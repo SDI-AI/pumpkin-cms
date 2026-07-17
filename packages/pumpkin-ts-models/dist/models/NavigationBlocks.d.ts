@@ -1,4 +1,4 @@
-import { IHtmlBlock } from './IHtmlBlock';
+import type { IHtmlBlock } from './IHtmlBlock';
 export interface BreadcrumbItem {
     label: string;
     url: string;
@@ -8,7 +8,7 @@ export interface BreadcrumbsContent {
     items: BreadcrumbItem[];
 }
 export interface BreadcrumbsBlock extends IHtmlBlock {
-    type: 'Breadcrumbs';
+    type: "Breadcrumbs";
     content: BreadcrumbsContent;
 }
 export interface TrustBarItem {
@@ -21,7 +21,7 @@ export interface TrustBarContent {
     items: TrustBarItem[];
 }
 export interface TrustBarBlock extends IHtmlBlock {
-    type: 'TrustBar';
+    type: "TrustBar";
     content: TrustBarContent;
 }
 export interface Step {
@@ -35,7 +35,7 @@ export interface HowItWorksContent {
     steps: Step[];
 }
 export interface HowItWorksBlock extends IHtmlBlock {
-    type: 'HowItWorks';
+    type: "HowItWorks";
     content: HowItWorksContent;
 }
 export interface ServiceAreaMapContent {
@@ -47,7 +47,7 @@ export interface ServiceAreaMapContent {
     nearbyCities: string[];
 }
 export interface ServiceAreaMapBlock extends IHtmlBlock {
-    type: 'ServiceAreaMap';
+    type: "ServiceAreaMap";
     content: ServiceAreaMapContent;
 }
 export interface ProTipItem {
@@ -61,7 +61,7 @@ export interface LocalProTipsContent {
     items: ProTipItem[];
 }
 export interface LocalProTipsBlock extends IHtmlBlock {
-    type: 'LocalProTips';
+    type: "LocalProTips";
     content: LocalProTipsContent;
 }
 //# sourceMappingURL=NavigationBlocks.d.ts.map

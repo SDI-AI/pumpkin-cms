@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://pumpkincms.dev/schemas/blocks/form.schema.json", "title": "FormBlock",
+  "x-pumpkin": { "type": "Form", "contentType": "FormBlockContent", "module": "InteractionBlocks", "category": "interaction" },
+  "allOf": [{ "$ref": "block-base.schema.json" }, { "type": "object", "properties": { "type": { "const": "Form" }, "content": { "$ref": "#/$defs/FormBlockContent" } } }],
+  "$defs": {
+    "FormBlockContent": { "type": "object", "required": ["formType", "title", "subtitle", "layout", "successMessage"], "properties": {
+      "formType": { "type": "string", "default": "contact" }, "title": { "type": "string", "default": "" }, "subtitle": { "type": "string", "default": "" },
+      "description": { "type": "string", "default": "" }, "layout": { "type": "string", "default": "default" }, "successMessage": { "type": "string", "default": "" }
+    }, "additionalProperties": true }
+  }
+}

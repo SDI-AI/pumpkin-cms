@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://pumpkincms.dev/schemas/blocks/hub-spokes.schema.json", "title": "HubSpokesBlock",
+  "x-pumpkin": { "type": "HubSpokes", "contentType": "HubSpokesContent", "module": "ContentBlocks", "category": "content" },
+  "allOf": [{ "$ref": "block-base.schema.json" }, { "type": "object", "properties": { "type": { "const": "HubSpokes" }, "content": { "$ref": "#/$defs/HubSpokesContent" } } }],
+  "$defs": {
+    "HubSpokesLayout": { "type": "string", "default": "cards" },
+    "HubSpokeLink": { "type": "object", "required": ["title", "description", "url", "city", "state", "metro", "spokePriority"], "properties": {
+      "title": { "type": "string", "default": "" }, "description": { "type": "string", "default": "" }, "url": { "type": "string", "default": "" },
+      "city": { "type": "string", "default": "" }, "state": { "type": "string", "default": "" }, "metro": { "type": "string", "default": "" }, "spokePriority": { "type": "integer", "default": 0 }
+    }, "additionalProperties": true },
+    "HubSpokesContent": { "type": "object", "required": ["title", "subtitle", "hubPageSlug", "layout", "limit", "showExcerpt", "showLocation", "ctaText", "spokes"], "properties": {
+      "title": { "type": "string", "default": "Related pages" }, "subtitle": { "type": "string", "default": "" }, "hubPageSlug": { "type": "string", "default": "", "x-pumpkin-editor": "page-link" },
+      "layout": { "$ref": "#/$defs/HubSpokesLayout" }, "limit": { "type": "integer", "default": 12 }, "showExcerpt": { "type": "boolean", "default": true },
+      "showLocation": { "type": "boolean", "default": true }, "ctaText": { "type": "string", "default": "Learn more" },
+      "spokes": { "type": "array", "items": { "$ref": "#/$defs/HubSpokeLink" }, "default": [] }
+    }, "additionalProperties": true }
+  }
+}

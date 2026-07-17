@@ -13,6 +13,9 @@ public interface IHtmlBlock
     [JsonPropertyName("enabled")]
     bool Enabled { get; set; }
 
+    [JsonPropertyName("schemaVersion")]
+    int? SchemaVersion { get; set; }
+
     [JsonPropertyName("type")]
     string Type { get; set; }
 

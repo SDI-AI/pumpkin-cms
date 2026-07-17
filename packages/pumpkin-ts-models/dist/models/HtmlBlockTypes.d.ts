@@ -1,17 +1,21 @@
-import { IHtmlBlock } from './IHtmlBlock';
-import { HeroBlock } from './HeroBlocks';
-import { PrimaryCtaBlock, SecondaryCtaBlock } from './CtaBlocks';
-import { CardGridBlock, FaqBlock, HubSpokesBlock } from './ContentBlocks';
-import { BreadcrumbsBlock, TrustBarBlock, HowItWorksBlock, ServiceAreaMapBlock, LocalProTipsBlock } from './NavigationBlocks';
-import { GalleryBlock, TestimonialsBlock, ContactBlock, FormBlock } from './InteractionBlocks';
-import { BlogBlock } from './BlogBlocks';
-/**
- * Union type of all supported HTML blocks
- */
+import type { IHtmlBlock } from './IHtmlBlock';
+import type { HeroBlock } from './HeroBlocks';
+import type { PrimaryCtaBlock } from './CtaBlocks';
+import type { SecondaryCtaBlock } from './CtaBlocks';
+import type { CardGridBlock } from './ContentBlocks';
+import type { FaqBlock } from './ContentBlocks';
+import type { HubSpokesBlock } from './ContentBlocks';
+import type { BreadcrumbsBlock } from './NavigationBlocks';
+import type { TrustBarBlock } from './NavigationBlocks';
+import type { HowItWorksBlock } from './NavigationBlocks';
+import type { ServiceAreaMapBlock } from './NavigationBlocks';
+import type { LocalProTipsBlock } from './NavigationBlocks';
+import type { GalleryBlock } from './InteractionBlocks';
+import type { TestimonialsBlock } from './InteractionBlocks';
+import type { ContactBlock } from './InteractionBlocks';
+import type { FormBlock } from './InteractionBlocks';
+import type { BlogBlock } from './BlogBlocks';
 export type HtmlBlock = HeroBlock | PrimaryCtaBlock | SecondaryCtaBlock | CardGridBlock | FaqBlock | HubSpokesBlock | BreadcrumbsBlock | TrustBarBlock | HowItWorksBlock | ServiceAreaMapBlock | LocalProTipsBlock | GalleryBlock | TestimonialsBlock | ContactBlock | FormBlock | BlogBlock;
-/**
- * Map of block types to their corresponding interfaces
- */
 export declare const BLOCK_TYPE_MAP: {
     readonly Hero: "HeroBlock";
     readonly PrimaryCTA: "PrimaryCtaBlock";
@@ -30,22 +34,10 @@ export declare const BLOCK_TYPE_MAP: {
     readonly Form: "FormBlock";
     readonly Blog: "BlogBlock";
 };
-/**
- * Array of all supported block types
- */
 export declare const SUPPORTED_BLOCK_TYPES: Array<keyof typeof BLOCK_TYPE_MAP>;
-/**
- * Type guard to check if a block is a specific type
- */
 export declare function isBlockOfType<T extends HtmlBlock['type']>(block: IHtmlBlock, type: T): block is Extract<HtmlBlock, {
     type: T;
 }>;
-/**
- * Type guard to check if an object is a valid HTML block
- */
-export declare function isHtmlBlock(obj: any): obj is IHtmlBlock;
-/**
- * Creates a generic HTML block for unknown types
- */
-export declare function createGenericBlock(type: string, content: Record<string, any>): IHtmlBlock;
+export declare function isHtmlBlock(obj: unknown): obj is IHtmlBlock;
+export declare function createGenericBlock(type: string, content: Record<string, unknown>): IHtmlBlock;
 //# sourceMappingURL=HtmlBlockTypes.d.ts.map

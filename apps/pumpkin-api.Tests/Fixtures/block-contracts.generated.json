@@ -1,0 +1,255 @@
+[
+  {
+    "id": "fixture-hero",
+    "name": "Hero fixture",
+    "enabled": false,
+    "schemaVersion": 1,
+    "type": "Hero",
+    "content": {
+      "type": "Main",
+      "headline": "",
+      "subheadline": "",
+      "backgroundImage": "",
+      "backgroundImageAltText": "",
+      "backgroundImagePosition": "center",
+      "mainImage": "",
+      "mainImageAltText": "",
+      "mainImageAspect": "auto",
+      "mainImageFit": "cover",
+      "mainImagePosition": "center",
+      "buttonText": "",
+      "buttonLink": ""
+    }
+  },
+  {
+    "id": "fixture-primarycta",
+    "name": "PrimaryCTA fixture",
+    "enabled": false,
+    "schemaVersion": 1,
+    "type": "PrimaryCTA",
+    "content": {
+      "title": "",
+      "description": "",
+      "buttonText": "",
+      "buttonLink": "",
+      "secondaryText": "",
+      "secondaryLinkText": "",
+      "secondaryLink": "",
+      "backgroundImage": "",
+      "backgroundImagePosition": "center",
+      "mainImage": "",
+      "mainImageAspect": "auto",
+      "mainImageFit": "cover",
+      "mainImagePosition": "center",
+      "alt": ""
+    }
+  },
+  {
+    "id": "fixture-secondarycta",
+    "name": "SecondaryCTA fixture",
+    "enabled": false,
+    "schemaVersion": 1,
+    "type": "SecondaryCTA",
+    "content": {
+      "title": "",
+      "description": "",
+      "buttonText": "",
+      "buttonLink": ""
+    }
+  },
+  {
+    "id": "fixture-cardgrid",
+    "name": "CardGrid fixture",
+    "enabled": false,
+    "schemaVersion": 1,
+    "type": "CardGrid",
+    "content": {
+      "title": "",
+      "subtitle": "",
+      "layout": "grid-3",
+      "imageAspect": "auto",
+      "imageFit": "cover",
+      "imagePosition": "center",
+      "cards": []
+    }
+  },
+  {
+    "id": "fixture-faq",
+    "name": "FAQ fixture",
+    "enabled": false,
+    "schemaVersion": 1,
+    "type": "FAQ",
+    "content": {
+      "title": "",
+      "subtitle": "",
+      "layout": "accordion",
+      "items": []
+    }
+  },
+  {
+    "id": "fixture-hubspokes",
+    "name": "HubSpokes fixture",
+    "enabled": false,
+    "schemaVersion": 1,
+    "type": "HubSpokes",
+    "content": {
+      "title": "Related pages",
+      "subtitle": "",
+      "hubPageSlug": "",
+      "layout": "cards",
+      "limit": 12,
+      "showExcerpt": true,
+      "showLocation": true,
+      "ctaText": "Learn more",
+      "spokes": []
+    }
+  },
+  {
+    "id": "fixture-breadcrumbs",
+    "name": "Breadcrumbs fixture",
+    "enabled": false,
+    "schemaVersion": 1,
+    "type": "Breadcrumbs",
+    "content": {
+      "items": []
+    }
+  },
+  {
+    "id": "fixture-trustbar",
+    "name": "TrustBar fixture",
+    "enabled": false,
+    "schemaVersion": 1,
+    "type": "TrustBar",
+    "content": {
+      "items": []
+    }
+  },
+  {
+    "id": "fixture-howitworks",
+    "name": "HowItWorks fixture",
+    "enabled": false,
+    "schemaVersion": 1,
+    "type": "HowItWorks",
+    "content": {
+      "title": "",
+      "steps": []
+    }
+  },
+  {
+    "id": "fixture-serviceareamap",
+    "name": "ServiceAreaMap fixture",
+    "enabled": false,
+    "schemaVersion": 1,
+    "type": "ServiceAreaMap",
+    "content": {
+      "title": "",
+      "subtitle": "",
+      "mapEmbedUrl": "",
+      "neighborhoods": [],
+      "zipCodes": [],
+      "nearbyCities": []
+    }
+  },
+  {
+    "id": "fixture-localprotips",
+    "name": "LocalProTips fixture",
+    "enabled": false,
+    "schemaVersion": 1,
+    "type": "LocalProTips",
+    "content": {
+      "title": "",
+      "items": []
+    }
+  },
+  {
+    "id": "fixture-gallery",
+    "name": "Gallery fixture",
+    "enabled": false,
+    "schemaVersion": 1,
+    "type": "Gallery",
+    "content": {
+      "title": "",
+      "subtitle": "",
+      "imageAspect": "auto",
+      "imageFit": "cover",
+      "imagePosition": "center",
+      "images": []
+    }
+  },
+  {
+    "id": "fixture-testimonials",
+    "name": "Testimonials fixture",
+    "enabled": false,
+    "schemaVersion": 1,
+    "type": "Testimonials",
+    "content": {
+      "title": "",
+      "subtitle": "",
+      "layout": "carousel",
+      "items": []
+    }
+  },
+  {
+    "id": "fixture-contact",
+    "name": "Contact fixture",
+    "enabled": false,
+    "schemaVersion": 1,
+    "type": "Contact",
+    "content": {
+      "id": "",
+      "title": "",
+      "subtitle": "",
+      "address": "",
+      "phone": "",
+      "email": "",
+      "hours": "",
+      "formFields": [],
+      "submitButtonText": "Submit",
+      "socialLinks": []
+    }
+  },
+  {
+    "id": "fixture-form",
+    "name": "Form fixture",
+    "enabled": false,
+    "schemaVersion": 1,
+    "type": "Form",
+    "content": {
+      "formType": "contact",
+      "title": "",
+      "subtitle": "",
+      "description": "",
+      "layout": "default",
+      "successMessage": ""
+    }
+  },
+  {
+    "id": "fixture-blog",
+    "name": "Blog fixture",
+    "enabled": false,
+    "schemaVersion": 1,
+    "type": "Blog",
+    "content": {
+      "title": "",
+      "subtitle": "",
+      "author": "",
+      "authorImage": "",
+      "authorBio": "",
+      "publishedDate": "",
+      "featuredImage": "",
+      "featuredImageAlt": "",
+      "featuredImageAspect": "auto",
+      "featuredImageFit": "cover",
+      "featuredImagePosition": "center",
+      "excerpt": "",
+      "body": "",
+      "tags": [],
+      "categories": [],
+      "readingTime": 0,
+      "relatedImageAspect": "auto",
+      "relatedImageFit": "cover",
+      "relatedImagePosition": "center",
+      "relatedPosts": []
+    }
+  }
+]

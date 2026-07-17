@@ -5,6 +5,7 @@ using pumpkin_api.Managers;
 using pumpkin_api.Services;
 using pumpkin_net_models.Models;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace pumpkin_api.Tests;
 
@@ -37,38 +38,70 @@ public static class Phase1ContractTests
 
     private static Task HtmlBlockEditorFieldsSurviveJsonRoundTripAsync()
     {
-        const string json = """
+        var fixturePath = Path.Combine(AppContext.BaseDirectory, "Fixtures", "block-contracts.generated.json");
+        var fixtures = JsonNode.Parse(File.ReadAllText(fixturePath))?.AsArray()
+            ?? throw new InvalidOperationException("Generated block fixtures are required.");
+
+        Assert(fixtures.Count == 16, "every canonical block type should have a fixture");
+        var registeredTypes = HtmlBlockFactory.GetSupportedBlockTypes().Order().ToArray();
+        var fixtureTypes = fixtures
+            .Select(fixture => fixture?["type"]?.GetValue<string>() ?? string.Empty)
+            .Order()
+            .ToArray();
+        Assert(registeredTypes.SequenceEqual(fixtureTypes), "schema fixtures and .NET discriminator registry should match");
+
+        foreach (var fixture in fixtures)
         {
-          "id": "homepage-hero",
-          "name": "Homepage Hero",
+            var json = fixture?.ToJsonString() ?? throw new InvalidOperationException("Fixture cannot be null.");
+            var block = HtmlBlockFactory.CreateBlock(json);
+            Assert(block != null, "known block should deserialize");
+            var serialized = JsonSerializer.Serialize(block, block!.GetType());
+            if (!JsonNode.DeepEquals(fixture, JsonNode.Parse(serialized)))
+            {
+                Console.WriteLine($"Expected: {fixture}");
+                Console.WriteLine($"Actual:   {serialized}");
+            }
+            Assert(JsonNode.DeepEquals(fixture, JsonNode.Parse(serialized)),
+                $"{block.Type} should survive a lossless .NET JSON round trip");
+        }
+
+        const string unknownJson = """
+        {
+          "id": "future-block",
+          "name": "Future block",
           "enabled": false,
-          "type": "Hero",
-          "content": {
-            "type": "Main",
-            "headline": "Headline",
-            "subheadline": "Subheadline",
-            "backgroundImage": "",
-            "backgroundImageAltText": "",
-            "mainImage": "",
-            "mainImageAltText": "",
-            "buttonText": "Start",
-            "buttonLink": "/start"
-          }
+          "schemaVersion": 7,
+          "type": "FuturePlugin",
+          "content": { "headline": "Preserve me", "nested": { "value": 42 } }
         }
         """;
+        var unknown = HtmlBlockFactory.CreateBlock(unknownJson);
+        Assert(unknown is GenericHtmlBlock, "unknown type should use the generic fallback");
+        var unknownRoundTrip = JsonSerializer.Serialize(unknown, unknown!.GetType());
+        Assert(JsonNode.DeepEquals(JsonNode.Parse(unknownJson), JsonNode.Parse(unknownRoundTrip)),
+            "unknown block envelope and content should survive a lossless round trip");
 
-        var block = HtmlBlockFactory.CreateBlock(json);
-        Assert(block != null, "known block should deserialize");
-        Assert(block!.Id == "homepage-hero", "block id should deserialize");
-        Assert(block.Name == "Homepage Hero", "block name should deserialize");
-        Assert(block.Enabled == false, "block enabled state should deserialize");
+        var invalidPage = new Page
+        {
+            ContentData = new ContentData
+            {
+                ContentBlocks = new List<HtmlBlockBase>
+                {
+                    new HeroBlock
+                    {
+                        Content = JsonSerializer.Deserialize<JsonElement>("""{ "headline": "Incomplete" }"""),
+                    },
+                },
+            },
+        };
+        var validationErrors = HtmlBlockContractValidator.ValidatePage(invalidPage);
+        Assert(validationErrors.Any(error => error.Contains("content.subheadline is required", StringComparison.Ordinal)),
+            "known blocks should reject content missing schema-required properties");
 
-        var serialized = JsonSerializer.Serialize(block, block.GetType());
-        using var document = JsonDocument.Parse(serialized);
-        var root = document.RootElement;
-        Assert(root.GetProperty("id").GetString() == "homepage-hero", "block id should serialize");
-        Assert(root.GetProperty("name").GetString() == "Homepage Hero", "block name should serialize");
-        Assert(root.GetProperty("enabled").GetBoolean() == false, "block enabled state should serialize");
+        invalidPage.ContentData.ContentBlocks[0].Content = null!;
+        validationErrors = HtmlBlockContractValidator.ValidatePage(invalidPage);
+        Assert(validationErrors.Single().EndsWith("content must be an object.", StringComparison.Ordinal),
+            "known blocks should reject null content without throwing");
         return Task.CompletedTask;
     }
 

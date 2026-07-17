@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://pumpkincms.dev/schemas/blocks/how-it-works.schema.json", "title": "HowItWorksBlock",
+  "x-pumpkin": { "type": "HowItWorks", "contentType": "HowItWorksContent", "module": "NavigationBlocks", "category": "navigation" },
+  "allOf": [{ "$ref": "block-base.schema.json" }, { "type": "object", "properties": { "type": { "const": "HowItWorks" }, "content": { "$ref": "#/$defs/HowItWorksContent" } } }],
+  "$defs": {
+    "Step": { "type": "object", "required": ["title", "text", "image", "alt"], "properties": {
+      "title": { "type": "string", "default": "" }, "text": { "type": "string", "default": "" }, "image": { "type": "string", "default": "", "x-pumpkin-editor": "media" }, "alt": { "type": "string", "default": "" }
+    }, "additionalProperties": true },
+    "HowItWorksContent": { "type": "object", "required": ["title", "steps"], "properties": {
+      "title": { "type": "string", "default": "" }, "steps": { "type": "array", "items": { "$ref": "#/$defs/Step" }, "default": [], "x-pumpkin-editor": "collection" }
+    }, "additionalProperties": true }
+  }
+}

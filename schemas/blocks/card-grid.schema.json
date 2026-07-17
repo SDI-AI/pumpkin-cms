@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://pumpkincms.dev/schemas/blocks/card-grid.schema.json", "title": "CardGridBlock",
+  "x-pumpkin": { "type": "CardGrid", "contentType": "CardGridContent", "module": "ContentBlocks", "category": "content" },
+  "allOf": [{ "$ref": "block-base.schema.json" }, { "type": "object", "properties": { "type": { "const": "CardGrid" }, "content": { "$ref": "#/$defs/CardGridContent" } } }],
+  "$defs": {
+    "Card": { "type": "object", "required": ["title", "description", "image", "image-alt", "icon", "link", "alt"], "properties": {
+      "title": { "type": "string", "default": "" }, "description": { "type": "string", "default": "" },
+      "image": { "type": "string", "default": "", "x-pumpkin-editor": "media" }, "image-alt": { "type": "string", "default": "", "x-csharp-name": "ImageAltLegacy" },
+      "icon": { "type": "string", "default": "" }, "link": { "type": "string", "default": "", "x-pumpkin-editor": "page-link" }, "alt": { "type": "string", "default": "" }
+    }, "additionalProperties": true },
+    "CardGridContent": { "type": "object", "required": ["title", "subtitle", "layout", "cards"], "properties": {
+      "title": { "type": "string", "default": "" }, "subtitle": { "type": "string", "default": "" }, "layout": { "type": "string", "default": "grid-3" },
+      "imageAspect": { "$ref": "shared.schema.json#/$defs/ImageAspect" }, "imageFit": { "$ref": "shared.schema.json#/$defs/ImageFit" }, "imagePosition": { "$ref": "shared.schema.json#/$defs/ImagePosition" },
+      "cards": { "type": "array", "items": { "$ref": "#/$defs/Card" }, "default": [], "x-pumpkin-editor": "collection" }
+    }, "additionalProperties": true }
+  }
+}

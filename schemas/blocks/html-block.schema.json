@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pumpkincms.dev/schemas/blocks/html-block.schema.json",
+  "title": "HtmlBlock",
+  "oneOf": [
+    { "$ref": "hero.schema.json" }, { "$ref": "primary-cta.schema.json" }, { "$ref": "secondary-cta.schema.json" },
+    { "$ref": "card-grid.schema.json" }, { "$ref": "faq.schema.json" }, { "$ref": "hub-spokes.schema.json" },
+    { "$ref": "breadcrumbs.schema.json" }, { "$ref": "trust-bar.schema.json" }, { "$ref": "how-it-works.schema.json" },
+    { "$ref": "service-area-map.schema.json" }, { "$ref": "local-pro-tips.schema.json" }, { "$ref": "gallery.schema.json" },
+    { "$ref": "testimonials.schema.json" }, { "$ref": "contact.schema.json" }, { "$ref": "form.schema.json" }, { "$ref": "blog.schema.json" }
+  ]
+}

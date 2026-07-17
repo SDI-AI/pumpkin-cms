@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pumpkincms.dev/schemas/blocks/shared.schema.json",
+  "title": "SharedBlockTypes",
+  "$defs": {
+    "ImageAspect": { "type": "string", "enum": ["auto", "square", "4:3", "16:9", "21:9"], "default": "auto" },
+    "ImageFit": { "type": "string", "enum": ["cover", "contain"], "default": "cover" },
+    "ImagePosition": { "type": "string", "enum": ["center", "top", "bottom", "left", "right"], "default": "center" }
+  }
+}

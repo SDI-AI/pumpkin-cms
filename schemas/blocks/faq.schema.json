@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://pumpkincms.dev/schemas/blocks/faq.schema.json", "title": "FaqBlock",
+  "x-pumpkin": { "type": "FAQ", "contentType": "FaqContent", "module": "ContentBlocks", "category": "content" },
+  "allOf": [{ "$ref": "block-base.schema.json" }, { "type": "object", "properties": { "type": { "const": "FAQ" }, "content": { "$ref": "#/$defs/FaqContent" } } }],
+  "$defs": {
+    "FaqItem": { "type": "object", "required": ["question", "answer"], "properties": { "question": { "type": "string", "default": "" }, "answer": { "type": "string", "default": "" } }, "additionalProperties": true },
+    "FaqContent": { "type": "object", "required": ["title", "subtitle", "layout", "items"], "properties": {
+      "title": { "type": "string", "default": "" }, "subtitle": { "type": "string", "default": "" }, "layout": { "type": "string", "default": "accordion" },
+      "items": { "type": "array", "items": { "$ref": "#/$defs/FaqItem" }, "default": [], "x-pumpkin-editor": "collection" }
+    }, "additionalProperties": true }
+  }
+}

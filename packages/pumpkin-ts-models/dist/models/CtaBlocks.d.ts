@@ -1,8 +1,5 @@
-import { IHtmlBlock } from './IHtmlBlock';
+import type { IHtmlBlock } from './IHtmlBlock';
 import type { ImageAspect, ImageFit, ImagePosition } from './ImagePresentation';
-/**
- * Primary CTA block content structure
- */
 export interface PrimaryCtaContent {
     title: string;
     description: string;
@@ -19,27 +16,18 @@ export interface PrimaryCtaContent {
     mainImagePosition?: ImagePosition;
     alt: string;
 }
-/**
- * Primary call-to-action block
- */
 export interface PrimaryCtaBlock extends IHtmlBlock {
-    type: 'PrimaryCTA';
+    type: "PrimaryCTA";
     content: PrimaryCtaContent;
 }
-/**
- * Secondary CTA block content structure
- */
 export interface SecondaryCtaContent {
     title: string;
     description: string;
     buttonText: string;
     buttonLink: string;
 }
-/**
- * Secondary call-to-action block
- */
 export interface SecondaryCtaBlock extends IHtmlBlock {
-    type: 'SecondaryCTA';
+    type: "SecondaryCTA";
     content: SecondaryCtaContent;
 }
 //# sourceMappingURL=CtaBlocks.d.ts.map

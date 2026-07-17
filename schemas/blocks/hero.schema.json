@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pumpkincms.dev/schemas/blocks/hero.schema.json",
+  "title": "HeroBlock",
+  "x-pumpkin": { "type": "Hero", "contentType": "HeroContent", "module": "HeroBlocks", "category": "hero" },
+  "allOf": [
+    { "$ref": "block-base.schema.json" },
+    {
+      "type": "object",
+      "properties": {
+        "type": { "const": "Hero" },
+        "content": { "$ref": "#/$defs/HeroContent" }
+      }
+    }
+  ],
+  "$defs": {
+    "HeroType": { "type": "string", "enum": ["Main", "Secondary", "Tertiary"], "default": "Main" },
+    "HeroContent": {
+      "type": "object",
+      "required": ["type", "headline", "subheadline", "backgroundImage", "backgroundImageAltText", "mainImage", "mainImageAltText", "buttonText", "buttonLink"],
+      "properties": {
+        "type": { "$ref": "#/$defs/HeroType" },
+        "headline": { "type": "string", "default": "", "x-pumpkin-editor": "text" },
+        "subheadline": { "type": "string", "default": "", "x-pumpkin-editor": "textarea" },
+        "backgroundImage": { "type": "string", "default": "", "x-pumpkin-editor": "media" },
+        "backgroundImageAltText": { "type": "string", "default": "" },
+        "backgroundImagePosition": { "$ref": "shared.schema.json#/$defs/ImagePosition" },
+        "mainImage": { "type": "string", "default": "", "x-pumpkin-editor": "media" },
+        "mainImageAltText": { "type": "string", "default": "" },
+        "mainImageAspect": { "$ref": "shared.schema.json#/$defs/ImageAspect" },
+        "mainImageFit": { "$ref": "shared.schema.json#/$defs/ImageFit" },
+        "mainImagePosition": { "$ref": "shared.schema.json#/$defs/ImagePosition" },
+        "buttonText": { "type": "string", "default": "" },
+        "buttonLink": { "type": "string", "default": "", "x-pumpkin-editor": "page-link" }
+      },
+      "additionalProperties": true
+    }
+  }
+}
