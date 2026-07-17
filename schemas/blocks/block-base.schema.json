@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pumpkincms.dev/schemas/blocks/block-base.schema.json",
+  "title": "BlockBase",
+  "type": "object",
+  "required": ["type", "content"],
+  "properties": {
+    "id": { "type": "string" },
+    "name": { "type": "string" },
+    "enabled": { "type": "boolean", "default": true },
+    "schemaVersion": { "type": "integer", "minimum": 1, "default": 1 },
+    "type": { "type": "string" },
+    "content": { "type": "object" }
+  },
+  "additionalProperties": true
+}

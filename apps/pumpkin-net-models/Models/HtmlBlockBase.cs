@@ -16,6 +16,10 @@ public abstract class HtmlBlockBase : IHtmlBlock
     [JsonPropertyName("enabled")]
     public bool Enabled { get; set; } = true;
 
+    [JsonPropertyName("schemaVersion")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public int? SchemaVersion { get; set; }
+
     [JsonPropertyName("type")]
     public virtual string Type { get; set; } = string.Empty;
 

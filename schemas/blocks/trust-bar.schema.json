@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://pumpkincms.dev/schemas/blocks/trust-bar.schema.json", "title": "TrustBarBlock",
+  "x-pumpkin": { "type": "TrustBar", "contentType": "TrustBarContent", "module": "NavigationBlocks", "category": "navigation" },
+  "allOf": [{ "$ref": "block-base.schema.json" }, { "type": "object", "properties": { "type": { "const": "TrustBar" }, "content": { "$ref": "#/$defs/TrustBarContent" } } }],
+  "$defs": {
+    "TrustBarItem": { "type": "object", "required": ["icon", "title", "text", "alt"], "properties": {
+      "icon": { "type": "string", "default": "" }, "title": { "type": "string", "default": "" }, "text": { "type": "string", "default": "" }, "alt": { "type": "string", "default": "" }
+    }, "additionalProperties": true },
+    "TrustBarContent": { "type": "object", "required": ["items"], "properties": { "items": { "type": "array", "items": { "$ref": "#/$defs/TrustBarItem" }, "default": [] } }, "additionalProperties": true }
+  }
+}

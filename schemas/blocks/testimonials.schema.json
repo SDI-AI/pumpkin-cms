@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://pumpkincms.dev/schemas/blocks/testimonials.schema.json", "title": "TestimonialsBlock",
+  "x-pumpkin": { "type": "Testimonials", "contentType": "TestimonialsContent", "module": "InteractionBlocks", "category": "interaction" },
+  "allOf": [{ "$ref": "block-base.schema.json" }, { "type": "object", "properties": { "type": { "const": "Testimonials" }, "content": { "$ref": "#/$defs/TestimonialsContent" } } }],
+  "$defs": {
+    "TestimonialItem": { "type": "object", "required": ["quote", "author", "eventType", "rating"], "properties": {
+      "quote": { "type": "string", "default": "" }, "author": { "type": "string", "default": "" }, "eventType": { "type": "string", "default": "" }, "rating": { "type": "integer", "minimum": 0, "maximum": 5, "default": 5 }
+    }, "additionalProperties": true },
+    "TestimonialsContent": { "type": "object", "required": ["title", "subtitle", "layout", "items"], "properties": {
+      "title": { "type": "string", "default": "" }, "subtitle": { "type": "string", "default": "" }, "layout": { "type": "string", "default": "carousel" },
+      "items": { "type": "array", "items": { "$ref": "#/$defs/TestimonialItem" }, "default": [], "x-pumpkin-editor": "collection" }
+    }, "additionalProperties": true }
+  }
+}

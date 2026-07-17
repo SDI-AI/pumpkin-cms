@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://pumpkincms.dev/schemas/blocks/gallery.schema.json", "title": "GalleryBlock",
+  "x-pumpkin": { "type": "Gallery", "contentType": "GalleryContent", "module": "InteractionBlocks", "category": "interaction" },
+  "allOf": [{ "$ref": "block-base.schema.json" }, { "type": "object", "properties": { "type": { "const": "Gallery" }, "content": { "$ref": "#/$defs/GalleryContent" } } }],
+  "$defs": {
+    "GalleryImage": { "type": "object", "required": ["src", "alt", "caption"], "properties": {
+      "src": { "type": "string", "default": "", "x-pumpkin-editor": "media" }, "alt": { "type": "string", "default": "" }, "caption": { "type": "string", "default": "" }
+    }, "additionalProperties": true },
+    "GalleryContent": { "type": "object", "required": ["title", "subtitle", "images"], "properties": {
+      "title": { "type": "string", "default": "" }, "subtitle": { "type": "string", "default": "" },
+      "imageAspect": { "$ref": "shared.schema.json#/$defs/ImageAspect" }, "imageFit": { "$ref": "shared.schema.json#/$defs/ImageFit" }, "imagePosition": { "$ref": "shared.schema.json#/$defs/ImagePosition" },
+      "images": { "type": "array", "items": { "$ref": "#/$defs/GalleryImage" }, "default": [], "x-pumpkin-editor": "collection" }
+    }, "additionalProperties": true }
+  }
+}

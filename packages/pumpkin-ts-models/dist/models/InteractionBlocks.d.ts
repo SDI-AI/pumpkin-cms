@@ -1,4 +1,4 @@
-import { IHtmlBlock } from './IHtmlBlock';
+import type { IHtmlBlock } from './IHtmlBlock';
 import type { ImageAspect, ImageFit, ImagePosition } from './ImagePresentation';
 export interface GalleryImage {
     src: string;
@@ -14,7 +14,7 @@ export interface GalleryContent {
     images: GalleryImage[];
 }
 export interface GalleryBlock extends IHtmlBlock {
-    type: 'Gallery';
+    type: "Gallery";
     content: GalleryContent;
 }
 export interface TestimonialItem {
@@ -30,7 +30,7 @@ export interface TestimonialsContent {
     items: TestimonialItem[];
 }
 export interface TestimonialsBlock extends IHtmlBlock {
-    type: 'Testimonials';
+    type: "Testimonials";
     content: TestimonialsContent;
 }
 export interface FormField {
@@ -57,7 +57,7 @@ export interface ContactContent {
     socialLinks: SocialLink[];
 }
 export interface ContactBlock extends IHtmlBlock {
-    type: 'Contact';
+    type: "Contact";
     content: ContactContent;
 }
 export interface FormBlockContent {
@@ -69,7 +69,7 @@ export interface FormBlockContent {
     successMessage: string;
 }
 export interface FormBlock extends IHtmlBlock {
-    type: 'Form';
+    type: "Form";
     content: FormBlockContent;
 }
 //# sourceMappingURL=InteractionBlocks.d.ts.map

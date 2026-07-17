@@ -290,6 +290,107 @@ body {
   box-shadow: 0 24px 80px rgb(0 0 0 / 0.25);
 }
 
+.pk-primary-cta {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  background-color: #0f1f18;
+  background-image:
+    radial-gradient(circle at 88% 20%, rgb(249 115 22 / 0.28), transparent 24rem),
+    linear-gradient(135deg, #0f1f18 0%, #134e4a 58%, #0f766e 100%);
+  background-size: cover;
+  color: #ffffff;
+}
+
+.pk-primary-cta__overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgb(15 31 24 / 0.88), rgb(15 31 24 / 0.58));
+}
+
+.pk-primary-cta__container {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2.5rem;
+  max-width: 64rem;
+  margin: 0 auto;
+  padding: 5rem 1.5rem;
+}
+
+.pk-primary-cta__content {
+  flex: 1;
+  text-align: center;
+}
+
+.pk-primary-cta__title {
+  margin: 0;
+  color: #ffffff;
+  font-size: clamp(2rem, 5vw, 3.25rem);
+  font-weight: 900;
+  line-height: 1.08;
+  letter-spacing: -0.025em;
+}
+
+.pk-primary-cta__description {
+  max-width: 44rem;
+  margin: 1rem auto 0;
+  color: #dff5ef;
+  font-size: 1.125rem;
+  line-height: 1.75;
+}
+
+.pk-primary-cta__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1.75rem;
+  padding: 0.8rem 1.35rem;
+  border-radius: var(--pk-radius-md);
+  background: var(--pk-color-accent);
+  color: #ffffff;
+  font-size: 0.875rem;
+  font-weight: 900;
+  text-decoration: none;
+  box-shadow: var(--pk-shadow-md);
+  transition: background 160ms ease, transform 160ms ease;
+}
+
+.pk-primary-cta__button:hover {
+  background: #ea580c;
+  transform: translateY(-1px);
+}
+
+.pk-primary-cta__secondary {
+  margin-top: 1rem;
+  color: #b8d8cf;
+  font-size: 0.875rem;
+}
+
+.pk-primary-cta__secondary-link {
+  color: #ffffff;
+  font-weight: 800;
+  text-decoration: underline;
+  text-decoration-color: rgb(249 115 22 / 0.75);
+  text-underline-offset: 0.2em;
+  transition: color 160ms ease;
+}
+
+.pk-primary-cta__secondary-link:hover {
+  color: #fdba74;
+}
+
+.pk-primary-cta__image {
+  width: 100%;
+  max-width: 20rem;
+  flex-shrink: 0;
+  border: 1px solid rgb(255 255 255 / 0.18);
+  border-radius: var(--pk-radius-lg);
+  box-shadow: 0 24px 80px rgb(0 0 0 / 0.3);
+}
+
 .pk-trust,
 .pk-card-grid,
 .pk-steps,
@@ -900,6 +1001,20 @@ body {
     grid-template-columns: 1.1fr 0.9fr;
     padding-top: 6rem;
     padding-bottom: 6rem;
+  }
+
+  .pk-primary-cta__container {
+    flex-direction: row;
+    padding-top: 6rem;
+    padding-bottom: 6rem;
+  }
+
+  .pk-primary-cta__content {
+    text-align: left;
+  }
+
+  .pk-primary-cta__description {
+    margin-left: 0;
   }
 
   .pk-trust__grid {

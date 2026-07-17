@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://pumpkincms.dev/schemas/blocks/contact.schema.json", "title": "ContactBlock",
+  "x-pumpkin": { "type": "Contact", "contentType": "ContactContent", "module": "InteractionBlocks", "category": "interaction" },
+  "allOf": [{ "$ref": "block-base.schema.json" }, { "type": "object", "properties": { "type": { "const": "Contact" }, "content": { "$ref": "#/$defs/ContactContent" } } }],
+  "$defs": {
+    "FormField": { "type": "object", "required": ["label", "type", "required", "placeholder"], "properties": {
+      "label": { "type": "string", "default": "" }, "type": { "type": "string", "default": "text" }, "required": { "type": "boolean", "default": false }, "placeholder": { "type": "string", "default": "" }
+    }, "additionalProperties": true },
+    "SocialLink": { "type": "object", "required": ["platform", "url", "icon"], "properties": {
+      "platform": { "type": "string", "default": "" }, "url": { "type": "string", "default": "" }, "icon": { "type": "string", "default": "" }
+    }, "additionalProperties": true },
+    "ContactContent": { "type": "object", "required": ["id", "title", "subtitle", "address", "phone", "email", "hours", "formFields", "submitButtonText", "socialLinks"], "properties": {
+      "id": { "type": "string", "default": "" }, "title": { "type": "string", "default": "" }, "subtitle": { "type": "string", "default": "" },
+      "address": { "type": "string", "default": "" }, "phone": { "type": "string", "default": "" }, "email": { "type": "string", "default": "" }, "hours": { "type": "string", "default": "" },
+      "formFields": { "type": "array", "items": { "$ref": "#/$defs/FormField" }, "default": [] }, "submitButtonText": { "type": "string", "default": "Submit" },
+      "socialLinks": { "type": "array", "items": { "$ref": "#/$defs/SocialLink" }, "default": [] }
+    }, "additionalProperties": true }
+  }
+}

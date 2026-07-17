@@ -6,6 +6,9 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
+    "blocks:generate": "node ../../scripts/generate-block-contracts.mjs",
+    "blocks:check": "node ../../scripts/generate-block-contracts.mjs --check",
+    "blocks:test": "node ../../scripts/test-block-contracts.mjs",
     "dev": "tsc --watch",
     "clean": "rimraf dist",
     "test": "jest",

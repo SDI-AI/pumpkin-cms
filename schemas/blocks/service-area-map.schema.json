@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://pumpkincms.dev/schemas/blocks/service-area-map.schema.json", "title": "ServiceAreaMapBlock",
+  "x-pumpkin": { "type": "ServiceAreaMap", "contentType": "ServiceAreaMapContent", "module": "NavigationBlocks", "category": "navigation" },
+  "allOf": [{ "$ref": "block-base.schema.json" }, { "type": "object", "properties": { "type": { "const": "ServiceAreaMap" }, "content": { "$ref": "#/$defs/ServiceAreaMapContent" } } }],
+  "$defs": {
+    "ServiceAreaMapContent": { "type": "object", "required": ["title", "subtitle", "mapEmbedUrl", "neighborhoods", "zipCodes", "nearbyCities"], "properties": {
+      "title": { "type": "string", "default": "" }, "subtitle": { "type": "string", "default": "" }, "mapEmbedUrl": { "type": "string", "default": "" },
+      "neighborhoods": { "type": "array", "items": { "type": "string" }, "default": [] }, "zipCodes": { "type": "array", "items": { "type": "string" }, "default": [] },
+      "nearbyCities": { "type": "array", "items": { "type": "string" }, "default": [] }
+    }, "additionalProperties": true }
+  }
+}

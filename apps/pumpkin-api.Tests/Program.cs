@@ -18,6 +18,12 @@ if (args.Contains("--backfill-pumpkin-theme", StringComparer.OrdinalIgnoreCase))
     return;
 }
 
+if (args.Contains("--audit-block-contracts", StringComparer.OrdinalIgnoreCase))
+{
+    await BlockContractBackfill.RunAsync(args);
+    return;
+}
+
 // ============================================================================
 // 🔐 PUMPKIN CMS - API KEY & USER GENERATOR (TEST UTILITY)
 // ============================================================================

@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pumpkincms.dev/schemas/blocks/primary-cta.schema.json",
+  "title": "PrimaryCtaBlock",
+  "x-pumpkin": { "type": "PrimaryCTA", "contentType": "PrimaryCtaContent", "module": "CtaBlocks", "category": "cta" },
+  "allOf": [{ "$ref": "block-base.schema.json" }, { "type": "object", "properties": { "type": { "const": "PrimaryCTA" }, "content": { "$ref": "#/$defs/PrimaryCtaContent" } } }],
+  "$defs": {
+    "PrimaryCtaContent": {
+      "type": "object",
+      "required": ["title", "description", "buttonText", "buttonLink", "secondaryText", "secondaryLinkText", "secondaryLink", "backgroundImage", "mainImage", "alt"],
+      "properties": {
+        "title": { "type": "string", "default": "" }, "description": { "type": "string", "default": "" },
+        "buttonText": { "type": "string", "default": "" }, "buttonLink": { "type": "string", "default": "", "x-pumpkin-editor": "page-link" },
+        "secondaryText": { "type": "string", "default": "" }, "secondaryLinkText": { "type": "string", "default": "" },
+        "secondaryLink": { "type": "string", "default": "", "x-pumpkin-editor": "page-link" },
+        "backgroundImage": { "type": "string", "default": "", "x-pumpkin-editor": "media" },
+        "backgroundImagePosition": { "$ref": "shared.schema.json#/$defs/ImagePosition" },
+        "mainImage": { "type": "string", "default": "", "x-pumpkin-editor": "media" },
+        "mainImageAspect": { "$ref": "shared.schema.json#/$defs/ImageAspect" },
+        "mainImageFit": { "$ref": "shared.schema.json#/$defs/ImageFit" },
+        "mainImagePosition": { "$ref": "shared.schema.json#/$defs/ImagePosition" },
+        "alt": { "type": "string", "default": "" }
+      },
+      "additionalProperties": true
+    }
+  }
+}

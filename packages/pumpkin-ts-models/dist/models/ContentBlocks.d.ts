@@ -1,20 +1,14 @@
-import { IHtmlBlock } from './IHtmlBlock';
+import type { IHtmlBlock } from './IHtmlBlock';
 import type { ImageAspect, ImageFit, ImagePosition } from './ImagePresentation';
-/**
- * Individual card within a card grid
- */
 export interface Card {
     title: string;
     description: string;
     image: string;
-    'image-alt': string;
+    "image-alt": string;
     icon: string;
     link: string;
     alt: string;
 }
-/**
- * Card grid content structure
- */
 export interface CardGridContent {
     title: string;
     subtitle: string;
@@ -24,39 +18,25 @@ export interface CardGridContent {
     imagePosition?: ImagePosition;
     cards: Card[];
 }
-/**
- * Card grid block for displaying cards in a grid layout
- */
 export interface CardGridBlock extends IHtmlBlock {
-    type: 'CardGrid';
+    type: "CardGrid";
     content: CardGridContent;
 }
-/**
- * Individual FAQ item
- */
 export interface FaqItem {
     question: string;
     answer: string;
 }
-/**
- * FAQ content structure
- */
 export interface FaqContent {
     title: string;
     subtitle: string;
     layout: string;
     items: FaqItem[];
 }
-/**
- * FAQ block for frequently asked questions
- */
 export interface FaqBlock extends IHtmlBlock {
-    type: 'FAQ';
+    type: "FAQ";
     content: FaqContent;
 }
-/**
- * A lightweight public link to a spoke page connected to a hub.
- */
+export type HubSpokesLayout = string;
 export interface HubSpokeLink {
     title: string;
     description: string;
@@ -66,11 +46,6 @@ export interface HubSpokeLink {
     metro: string;
     spokePriority: number;
 }
-export type HubSpokesLayout = 'cards' | 'list' | 'compact' | string;
-/**
- * Hub spokes content structure.
- * `spokes` is hydrated at render time by the starter app from published pages.
- */
 export interface HubSpokesContent {
     title: string;
     subtitle: string;
@@ -82,11 +57,8 @@ export interface HubSpokesContent {
     ctaText: string;
     spokes: HubSpokeLink[];
 }
-/**
- * Block for displaying published spoke pages linked to a hub.
- */
 export interface HubSpokesBlock extends IHtmlBlock {
-    type: 'HubSpokes';
+    type: "HubSpokes";
     content: HubSpokesContent;
 }
 //# sourceMappingURL=ContentBlocks.d.ts.map

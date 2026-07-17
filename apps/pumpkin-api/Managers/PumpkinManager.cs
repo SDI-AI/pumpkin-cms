@@ -79,6 +79,10 @@ public static class PumpkinManager
             if (string.IsNullOrEmpty(page.PageId))
                 return Results.BadRequest("Page ID is required");
 
+            var blockErrors = HtmlBlockContractValidator.ValidatePage(page);
+            if (blockErrors.Count > 0)
+                return Results.BadRequest(new { message = "Page contains invalid block content.", errors = blockErrors });
+
             var savedPage = await databaseService.SavePageAsync(apiKey, tenantId, page);
             
             return Results.Created($"/api/pages/{tenantId}/{savedPage.PageId}", savedPage);
@@ -113,6 +117,10 @@ public static class PumpkinManager
             
             if (page == null)
                 return Results.BadRequest("Page data is required");
+
+            var blockErrors = HtmlBlockContractValidator.ValidatePage(page);
+            if (blockErrors.Count > 0)
+                return Results.BadRequest(new { message = "Page contains invalid block content.", errors = blockErrors });
 
             var updatedPage = await databaseService.UpdatePageAsync(apiKey, tenantId, pageSlug, page);
             

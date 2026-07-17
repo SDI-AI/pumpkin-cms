@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://pumpkincms.dev/schemas/blocks/breadcrumbs.schema.json", "title": "BreadcrumbsBlock",
+  "x-pumpkin": { "type": "Breadcrumbs", "contentType": "BreadcrumbsContent", "module": "NavigationBlocks", "category": "navigation" },
+  "allOf": [{ "$ref": "block-base.schema.json" }, { "type": "object", "properties": { "type": { "const": "Breadcrumbs" }, "content": { "$ref": "#/$defs/BreadcrumbsContent" } } }],
+  "$defs": {
+    "BreadcrumbItem": { "type": "object", "required": ["label", "url", "current"], "properties": {
+      "label": { "type": "string", "default": "" }, "url": { "type": "string", "default": "", "x-pumpkin-editor": "page-link" }, "current": { "type": "boolean", "default": false }
+    }, "additionalProperties": true },
+    "BreadcrumbsContent": { "type": "object", "required": ["items"], "properties": { "items": { "type": "array", "items": { "$ref": "#/$defs/BreadcrumbItem" }, "default": [] } }, "additionalProperties": true }
+  }
+}

@@ -1261,6 +1261,10 @@ app.MapPost("/api/admin/pages/{tenantId}",
             if (string.IsNullOrEmpty(page.PageId))
                 return Results.BadRequest("Page ID is required");
 
+            var blockErrors = HtmlBlockContractValidator.ValidatePage(page);
+            if (blockErrors.Count > 0)
+                return Results.BadRequest(new { message = "Page contains invalid block content.", errors = blockErrors });
+
             var savedPage = await databaseService.SavePageAdminAsync(tenantId, page);
             return Results.Created($"/api/admin/pages/{tenantId}/{savedPage.PageSlug}", savedPage);
         }
@@ -1309,6 +1313,10 @@ app.MapPut("/api/admin/pages/{tenantId}/{**pageSlug}",
         {
             if (page == null)
                 return Results.BadRequest("Page data is required");
+
+            var blockErrors = HtmlBlockContractValidator.ValidatePage(page);
+            if (blockErrors.Count > 0)
+                return Results.BadRequest(new { message = "Page contains invalid block content.", errors = blockErrors });
 
             var decodedSlug = Uri.UnescapeDataString(pageSlug);
             var updatedPage = await databaseService.UpdatePageAdminAsync(tenantId, decodedSlug, page);

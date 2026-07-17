@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://pumpkincms.dev/schemas/blocks/local-pro-tips.schema.json", "title": "LocalProTipsBlock",
+  "x-pumpkin": { "type": "LocalProTips", "contentType": "LocalProTipsContent", "module": "NavigationBlocks", "category": "navigation" },
+  "allOf": [{ "$ref": "block-base.schema.json" }, { "type": "object", "properties": { "type": { "const": "LocalProTips" }, "content": { "$ref": "#/$defs/LocalProTipsContent" } } }],
+  "$defs": {
+    "ProTipItem": { "type": "object", "required": ["icon", "image", "title", "text"], "properties": {
+      "icon": { "type": "string", "default": "" }, "image": { "type": "string", "default": "", "x-pumpkin-editor": "media" }, "title": { "type": "string", "default": "" }, "text": { "type": "string", "default": "" }
+    }, "additionalProperties": true },
+    "LocalProTipsContent": { "type": "object", "required": ["title", "items"], "properties": {
+      "title": { "type": "string", "default": "" }, "items": { "type": "array", "items": { "$ref": "#/$defs/ProTipItem" }, "default": [], "x-pumpkin-editor": "collection" }
+    }, "additionalProperties": true }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pumpkincms.dev/schemas/blocks/secondary-cta.schema.json",
+  "title": "SecondaryCtaBlock",
+  "x-pumpkin": { "type": "SecondaryCTA", "contentType": "SecondaryCtaContent", "module": "CtaBlocks", "category": "cta" },
+  "allOf": [{ "$ref": "block-base.schema.json" }, { "type": "object", "properties": { "type": { "const": "SecondaryCTA" }, "content": { "$ref": "#/$defs/SecondaryCtaContent" } } }],
+  "$defs": {
+    "SecondaryCtaContent": {
+      "type": "object",
+      "required": ["title", "description", "buttonText", "buttonLink"],
+      "properties": {
+        "title": { "type": "string", "default": "" }, "description": { "type": "string", "default": "" },
+        "buttonText": { "type": "string", "default": "" }, "buttonLink": { "type": "string", "default": "", "x-pumpkin-editor": "page-link" }
+      },
+      "additionalProperties": true
+    }
+  }
+}

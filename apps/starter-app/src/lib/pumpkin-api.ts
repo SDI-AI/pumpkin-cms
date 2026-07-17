@@ -34,6 +34,7 @@ export async function getSiteTheme(): Promise<Theme> {
   const theme = await fetchFromPumpkin<Theme>(
     `${config.apiUrl}/api/themes/${encodeURIComponent(config.tenantId)}`,
     config.apiKey,
+    { cache: 'no-store' },
   );
 
   return resolveThemePlugin(theme ?? fallbackTheme);

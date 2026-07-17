@@ -4,6 +4,9 @@ import { SiteHeader } from '@/components/SiteHeader';
 import { getSiteTheme } from '@/lib/pumpkin-api';
 import { getThemeCustomStylesheet, getThemeStylesheet } from '@/themes/registry';
 
+// Theme selection and published CSS can change independently of a deployment.
+export const dynamic = 'force-dynamic';
+
 export default async function SiteLayout({ children }: { children: React.ReactNode }) {
   const theme = await getSiteTheme();
   const stylesheet = getThemeStylesheet(theme);

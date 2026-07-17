@@ -8,25 +8,7 @@ namespace pumpkin_net_models.Models;
 /// </summary>
 public static class HtmlBlockFactory
 {
-    private static readonly Dictionary<string, Type> BlockTypeMap = new()
-    {
-        { "Hero", typeof(HeroBlock) },
-        { "PrimaryCTA", typeof(PrimaryCtaBlock) },
-        { "SecondaryCTA", typeof(SecondaryCtaBlock) },
-        { "CardGrid", typeof(CardGridBlock) },
-        { "FAQ", typeof(FaqBlock) },
-        { "Breadcrumbs", typeof(BreadcrumbsBlock) },
-        { "TrustBar", typeof(TrustBarBlock) },
-        { "HowItWorks", typeof(HowItWorksBlock) },
-        { "ServiceAreaMap", typeof(ServiceAreaMapBlock) },
-        { "LocalProTips", typeof(LocalProTipsBlock) },
-        { "HubSpokes", typeof(HubSpokesBlock) },
-        { "Gallery", typeof(GalleryBlock) },
-        { "Testimonials", typeof(TestimonialsBlock) },
-        { "Contact", typeof(ContactBlock) },
-        { "Form", typeof(FormBlock) },
-        { "Blog", typeof(BlogBlock) }
-    };
+    private static IReadOnlyDictionary<string, Type> BlockTypeMap => GeneratedBlockTypeRegistry.Types;
 
     /// <summary>
     /// Creates an HTML block from a JsonElement
@@ -42,11 +24,8 @@ public static class HtmlBlockFactory
         if (string.IsNullOrEmpty(blockType) || !BlockTypeMap.TryGetValue(blockType, out var type))
         {
             // Return a generic block for unknown types
-            return new GenericHtmlBlock
-            {
-                Type = blockType ?? "Unknown",
-                Content = JsonSerializer.Deserialize<Dictionary<string, object>>(blockElement.GetProperty("content").GetRawText()) ?? new()
-            };
+            return JsonSerializer.Deserialize<GenericHtmlBlock>(blockElement.GetRawText()) ??
+                new GenericHtmlBlock { Type = blockType ?? "Unknown" };
         }
 
         return (IHtmlBlock?)JsonSerializer.Deserialize(blockElement.GetRawText(), type);
