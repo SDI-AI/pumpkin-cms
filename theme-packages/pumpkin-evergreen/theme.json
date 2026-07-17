@@ -11,7 +11,7 @@
   "isSystem": false,
   "isCustom": true,
   "createdByUserId": "system",
-  "version": 1,
+  "version": 2,
   "preview": {
     "palette": ["#0f766e", "#134e4a", "#f97316", "#f7fbf6", "#16231d"],
     "background": "#f7fbf6",
@@ -132,6 +132,18 @@
       "button": "pk-hero__button",
       "mainImage": "pk-hero__image"
     },
+    "PrimaryCTA": {
+      "root": "pk-primary-cta",
+      "overlay": "pk-primary-cta__overlay",
+      "container": "pk-primary-cta__container",
+      "textWrapper": "pk-primary-cta__content",
+      "title": "pk-primary-cta__title",
+      "description": "pk-primary-cta__description",
+      "button": "pk-primary-cta__button",
+      "secondaryWrapper": "pk-primary-cta__secondary",
+      "secondaryLink": "pk-primary-cta__secondary-link",
+      "mainImage": "pk-primary-cta__image"
+    },
     "TrustBar": {
       "root": "pk-trust",
       "container": "pk-trust__container",
@@ -244,5 +256,5 @@
     }
   ],
   "createdAt": "2026-07-10T00:00:00Z",
-  "updatedAt": "2026-07-10T00:00:00Z"
+  "updatedAt": "2026-07-17T00:00:00Z"
 }
