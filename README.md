@@ -1,5 +1,7 @@
 # 🎃 Pumpkin CMS
 
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+
 A modern, headless CMS built with .NET 9.0 and Azure Cosmos DB, designed for multi-tenant content management with flexible HTML block-based pages.
 
 ## Overview
@@ -142,7 +144,16 @@ The SaaS/operator admin used for cross-tenant management is intentionally kept o
 
 ## License
 
-Copyright © 2025 Innov8now
+Pumpkin CMS is licensed under the [Apache License 2.0](LICENSE). See
+[NOTICE](NOTICE) for attribution and trademark information. Third-party
+dependencies remain subject to their respective licenses.
+
+The license covers the open-source CMS core in this repository. Pumpkin Cloud,
+the cross-tenant platform administration application, managed hosting
+operations, and related commercial services are separate products and are not
+licensed by this repository.
+
+Copyright © 2025-2026 Innov8now
 
 ## Support
 

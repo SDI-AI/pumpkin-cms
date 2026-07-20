@@ -211,4 +211,5 @@ npm run clean
 
 ## License
 
-MIT - See LICENSE file for details.
+Licensed under the [Apache License 2.0](LICENSE). See [NOTICE](NOTICE) for
+attribution and trademark information.
