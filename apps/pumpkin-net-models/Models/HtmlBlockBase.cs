@@ -13,6 +13,10 @@ public abstract class HtmlBlockBase : IHtmlBlock
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Name { get; set; }
 
+    [JsonPropertyName("styleKey")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? StyleKey { get; set; }
+
     [JsonPropertyName("enabled")]
     public bool Enabled { get; set; } = true;
 

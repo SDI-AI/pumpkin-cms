@@ -31,3 +31,5 @@ npm run blocks:test
 6. Run the schema, .NET, package, and Starter App verification commands.
 
 `schemaVersion` is optional for existing stored blocks and defaults to `1` for newly created blocks. Additive optional properties are backward compatible. Renames, removals, or structural changes require an explicit migration and a schema-version increment.
+
+`id` is the stable machine identity for a block. Editors generate UUIDs for new blocks, while legacy non-empty identifiers remain valid for backward compatibility. `styleKey` is an optional, human-readable CSS hook using lowercase kebab case; renderers expose it as `data-style-key`.

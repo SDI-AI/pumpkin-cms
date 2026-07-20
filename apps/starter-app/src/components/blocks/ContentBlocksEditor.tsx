@@ -56,7 +56,8 @@ export default function ContentBlocksEditor({ blocks, onChange }: ContentBlocksE
 
   const duplicateBlock = (index: number) => {
     const clone = JSON.parse(JSON.stringify(blocks[index])) as EditorBlock;
-    clone.id = uniqueBlockId(blocks, clone.type);
+    clone.id = uniqueBlockId(blocks);
+    clone.styleKey = undefined;
     clone.name = clone.name ? `${clone.name} Copy` : `${clone.type} Copy`;
     const updated = [...blocks];
     updated.splice(index + 1, 0, clone);
@@ -66,6 +67,13 @@ export default function ContentBlocksEditor({ blocks, onChange }: ContentBlocksE
 
   const updateBlockContent = (index: number, content: Record<string, unknown>) => {
     onChange(blocks.map((block, blockIndex) => blockIndex === index ? { ...block, content } : block));
+  };
+
+  const updateBlockStyleKey = (index: number, value: string) => {
+    const styleKey = normalizeStyleKeyInput(value);
+    onChange(blocks.map((block, blockIndex) => (
+      blockIndex === index ? { ...block, styleKey: styleKey || undefined } : block
+    )));
   };
 
   return (
@@ -131,7 +139,24 @@ export default function ContentBlocksEditor({ blocks, onChange }: ContentBlocksE
                   </div>
 
                   {isExpanded && (
-                    <div className="border-t border-neutral-100 px-4 py-4">
+                    <div className="space-y-5 border-t border-neutral-100 px-4 py-4">
+                      <section className="rounded-lg border border-neutral-200 bg-neutral-50 p-4">
+                        <label className="block">
+                          <span className="mb-1 block text-xs font-bold uppercase tracking-wide text-neutral-600">Style key</span>
+                          <input
+                            type="text"
+                            value={block.styleKey ?? ''}
+                            onChange={(event) => updateBlockStyleKey(index, event.target.value)}
+                            maxLength={80}
+                            placeholder="home-hero"
+                            className="h-10 w-full rounded-md border border-neutral-300 px-3 text-sm outline-none focus:border-pumpkin-500 focus:ring-2 focus:ring-pumpkin-100"
+                          />
+                        </label>
+                        <p className="mt-2 text-xs text-neutral-500">
+                          Optional CSS hook: <code>[data-style-key=&quot;{block.styleKey || 'your-key'}&quot;]</code>
+                        </p>
+                        <p className="mt-1 break-all text-xs text-neutral-400">Block ID: {block.id}</p>
+                      </section>
                       <BlockEditorFields
                         block={block}
                         onChange={(content) => updateBlockContent(index, content)}
@@ -161,16 +186,20 @@ export default function ContentBlocksEditor({ blocks, onChange }: ContentBlocksE
 }
 
 function withEditorIdentity(block: IHtmlBlock, blocks: IHtmlBlock[]): IHtmlBlock {
-  return { ...block, id: uniqueBlockId(blocks, block.type), name: block.type, enabled: true } as IHtmlBlock;
+  return { ...block, id: uniqueBlockId(blocks), name: block.type, enabled: true } as IHtmlBlock;
 }
 
-function uniqueBlockId(blocks: IHtmlBlock[], type: string) {
-  const prefix = type.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-  const used = new Set(blocks.map((block) => (block as EditorBlock).id));
-  let index = blocks.length + 1;
-  let id = `${prefix}-${index}`;
-  while (used.has(id)) id = `${prefix}-${++index}`;
+function uniqueBlockId(blocks: IHtmlBlock[]) {
+  const used = new Set(blocks.map((block) => (block as EditorBlock).id).filter((id): id is string => Boolean(id)));
+  let id = crypto.randomUUID();
+  while (used.has(id)) id = crypto.randomUUID();
   return id;
+}
+
+function normalizeStyleKeyInput(value: string) {
+  let styleKey = value.toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/-{2,}/g, '-').replace(/^-+/, '');
+  if (styleKey && !/^[a-z]/.test(styleKey)) styleKey = `block-${styleKey}`;
+  return styleKey.slice(0, 80);
 }
 
 function IconButton({

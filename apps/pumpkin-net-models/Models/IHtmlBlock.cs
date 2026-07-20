@@ -10,6 +10,9 @@ public interface IHtmlBlock
     [JsonPropertyName("name")]
     string? Name { get; set; }
 
+    [JsonPropertyName("styleKey")]
+    string? StyleKey { get; set; }
+
     [JsonPropertyName("enabled")]
     bool Enabled { get; set; }
 

@@ -51,6 +51,7 @@ export function PageRenderer({ page, blockStyles, formDefinitions = {}, editor }
             id={getSectionId(block)}
             className={editor ? 'visual-editor-block' : undefined}
             data-block-id={blockId}
+            data-style-key={block.styleKey?.trim() || undefined}
             data-selected={selected ? 'true' : 'false'}
             onClick={editor ? () => editor.onSelectBlock(blockId) : undefined}
           >

@@ -148,6 +148,13 @@ export function PageVisualEditor({ initialPage, initialTheme, mode, menuPages, o
     handleBlocksChange((page.ContentData.ContentBlocks as EditorBlock[]).map((block) => block.id === blockId ? { ...block, content } : block));
   };
 
+  const updateBlockStyleKey = (blockId: string, value: string) => {
+    const styleKey = normalizeStyleKeyInput(value);
+    handleBlocksChange((page.ContentData.ContentBlocks as EditorBlock[]).map((block) => (
+      block.id === blockId ? { ...block, styleKey: styleKey || undefined } : block
+    )));
+  };
+
   const handleBlockAction = (action: PreviewBlockAction, blockId: string) => {
     const blocks = [...page.ContentData.ContentBlocks] as EditorBlock[];
     const index = blocks.findIndex((block) => block.id === blockId);
@@ -159,7 +166,8 @@ export function PageVisualEditor({ initialPage, initialTheme, mode, menuPages, o
       setSelectedBlockId(null);
     } else if (action === 'duplicate') {
       const clone = structuredClone(blocks[index]);
-      clone.id = createUniqueBlockId(blocks, clone.type);
+      clone.id = createUniqueBlockId(blocks);
+      clone.styleKey = undefined;
       clone.name = clone.name ? `${clone.name} Copy` : `${clone.type} Copy`;
       blocks.splice(index + 1, 0, clone);
       setSelectedBlockId(clone.id);
@@ -671,7 +679,20 @@ export function PageVisualEditor({ initialPage, initialTheme, mode, menuPages, o
                   <MenuTreeEditor menu={theme.menu ?? []} pages={menuPages} onChange={(menu) => setTheme((current) => ({ ...current, menu, updatedAt: new Date().toISOString() }))} />
                 </div>
               ) : selectedBlock ? (
-                <BlockEditorFields block={selectedBlock} onChange={(content) => updateBlockContent(selectedBlock.id!, content)} />
+                <div className="space-y-5">
+                  <section className="rounded-lg border border-neutral-200 bg-neutral-50 p-4">
+                    <TextField
+                      label="Style key"
+                      value={selectedBlock.styleKey ?? ''}
+                      onChange={(styleKey) => updateBlockStyleKey(selectedBlock.id!, styleKey)}
+                    />
+                    <p className="mt-2 text-xs text-neutral-500">
+                      Optional CSS hook: <code>[data-style-key=&quot;{selectedBlock.styleKey || 'your-key'}&quot;]</code>
+                    </p>
+                    <p className="mt-1 break-all text-xs text-neutral-400">Block ID: {selectedBlock.id}</p>
+                  </section>
+                  <BlockEditorFields block={selectedBlock} onChange={(content) => updateBlockContent(selectedBlock.id!, content)} />
+                </div>
               ) : null}
             </div>
             <div className="border-t border-neutral-200 bg-white p-4">
@@ -1043,29 +1064,40 @@ function encodeSlugPath(slug: string) {
 
 function ensureBlockIds(blocks: IHtmlBlock[]): IHtmlBlock[] {
   const used = new Set<string>();
-  return blocks.map((block, index) => {
+  return blocks.map((block) => {
     const editorBlock = block as EditorBlock;
-    let id = editorBlock.id?.trim() || `${block.type.toLowerCase()}-${index + 1}`;
-    let suffix = 2;
-    while (used.has(id)) id = `${block.type.toLowerCase()}-${index + 1}-${suffix++}`;
+    let id = editorBlock.id?.trim();
+    if (!id || used.has(id)) id = createUniqueBlockIdFromSet(used);
     used.add(id);
-    return { ...editorBlock, id } as IHtmlBlock;
+    const styleKey = normalizeStyleKey(editorBlock.styleKey ?? '');
+    return { ...editorBlock, id, styleKey: styleKey || undefined } as IHtmlBlock;
   });
 }
 
-function createUniqueBlockId(blocks: EditorBlock[], type: string) {
-  const prefix = type.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-  const used = new Set(blocks.map((block) => block.id));
-  let index = blocks.length + 1;
-  let id = `${prefix}-${index}`;
-  while (used.has(id)) id = `${prefix}-${++index}`;
+function createUniqueBlockId(blocks: EditorBlock[]) {
+  return createUniqueBlockIdFromSet(new Set(blocks.map((block) => block.id).filter((id): id is string => Boolean(id))));
+}
+
+function createUniqueBlockIdFromSet(used: Set<string>) {
+  let id = crypto.randomUUID();
+  while (used.has(id)) id = crypto.randomUUID();
   return id;
+}
+
+function normalizeStyleKeyInput(value: string) {
+  let styleKey = value.toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/-{2,}/g, '-').replace(/^-+/, '');
+  if (styleKey && !/^[a-z]/.test(styleKey)) styleKey = `block-${styleKey}`;
+  return styleKey.slice(0, 80);
+}
+
+function normalizeStyleKey(value: string) {
+  return normalizeStyleKeyInput(value.trim()).replace(/-+$/, '');
 }
 
 function createDefaultEditorBlock(type: string, blocks: EditorBlock[]): EditorBlock {
   return {
     ...createDefaultBlock(type),
-    id: createUniqueBlockId(blocks, type),
+    id: createUniqueBlockId(blocks),
     name: type,
     enabled: true,
   } as EditorBlock;

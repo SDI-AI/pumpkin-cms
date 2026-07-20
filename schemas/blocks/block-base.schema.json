@@ -5,8 +5,18 @@
   "type": "object",
   "required": ["type", "content"],
   "properties": {
-    "id": { "type": "string" },
+    "id": {
+      "type": "string",
+      "description": "Stable block identity. New blocks use UUIDs; legacy identifiers remain supported."
+    },
     "name": { "type": "string" },
+    "styleKey": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80,
+      "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$",
+      "description": "Optional human-readable CSS hook exposed as data-style-key on the rendered block."
+    },
     "enabled": { "type": "boolean", "default": true },
     "schemaVersion": { "type": "integer", "minimum": 1, "default": 1 },
     "type": { "type": "string" },

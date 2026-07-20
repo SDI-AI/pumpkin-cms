@@ -69,6 +69,7 @@ public static class Phase1ContractTests
         {
           "id": "future-block",
           "name": "Future block",
+          "styleKey": "future-feature",
           "enabled": false,
           "schemaVersion": 7,
           "type": "FuturePlugin",

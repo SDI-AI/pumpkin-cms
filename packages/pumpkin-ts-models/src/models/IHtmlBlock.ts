@@ -4,6 +4,7 @@
 export interface IHtmlBlock {
   id?: string;
   name?: string;
+  styleKey?: string;
   enabled?: boolean;
   schemaVersion?: number;
   type: string;
