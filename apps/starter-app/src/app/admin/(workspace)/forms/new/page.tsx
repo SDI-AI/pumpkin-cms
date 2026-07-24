@@ -1,7 +1,8 @@
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { requireStarterAdmin } from '@/lib/admin-auth';
+import { createFormDefinition } from '@/lib/form-definition-factory';
 import { getStarterAdminApiContext } from '@/lib/starter-admin-api';
-import { FormDefinitionEditor, createFormDefinition } from '../_components/FormDefinitionEditor';
+import { FormDefinitionEditor } from '../_components/FormDefinitionEditor';
 
 export default async function StarterAdminNewFormPage() {
   await requireStarterAdmin();

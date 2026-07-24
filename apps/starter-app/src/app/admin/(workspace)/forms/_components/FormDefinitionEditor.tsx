@@ -462,36 +462,6 @@ export function FormDefinitionEditor({ initialDefinition, mode }: FormDefinition
   );
 }
 
-export function createFormDefinition(tenantId: string): FormDefinition {
-  const now = new Date().toISOString();
-  return normalizeFormDefinition({
-    id: 'new-form',
-    formDefinitionId: 'new-form',
-    tenantId,
-    name: 'New Form',
-    type: 'new_form',
-    description: '',
-    fields: [createField('name', 1), createField('email', 2, 'email')],
-    submitButtonText: 'Submit',
-    successMessage: 'Thanks, your message was sent.',
-    submitBehavior: 'message',
-    redirectUrl: '',
-    notificationEmails: [],
-    notifications: { enabled: false, replyToField: 'email', subjectTemplate: '' },
-    spamProtection: {
-      honeypotFieldName: 'company',
-      rejectWhenHoneypotFilled: true,
-      requireConsent: false,
-      consentFieldName: 'consent',
-      captcha: { mode: 'inherit', provider: 'none', siteKey: '', action: 'form_submit' },
-    },
-    rateLimit: { enabled: false, maxSubmissions: 5, windowSeconds: 3600 },
-    isActive: true,
-    createdAt: now,
-    updatedAt: now,
-  });
-}
-
 function normalizeFormDefinition(definition: FormDefinition): FormDefinition {
   const now = new Date().toISOString();
   const defaultNotifications: FormDefinition['notifications'] = {

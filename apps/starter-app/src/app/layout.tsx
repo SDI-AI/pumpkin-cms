@@ -1,13 +1,15 @@
 import type { Metadata } from 'next';
+import { loadTenantConfig } from '@/lib/tenant-config';
 import './globals.css';
 
-export const metadata: Metadata = {
-  title: {
-    default: 'Pumpkin CMS',
-    template: '%s | Pumpkin CMS',
-  },
-  description: 'An API-first, block-based CMS for fast tenant websites.',
-};
+export function generateMetadata(): Metadata {
+  const siteName = loadTenantConfig()?.siteName || 'Pumpkin CMS';
+
+  return {
+    title: siteName,
+    description: `${siteName} website powered by Pumpkin CMS.`,
+  };
+}
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

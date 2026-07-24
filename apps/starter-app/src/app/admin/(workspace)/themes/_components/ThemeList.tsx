@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { CheckCircle2, Download, Palette, Search, Upload } from 'lucide-react';
 import type { Theme } from 'pumpkin-ts-models';
-import { createTheme } from './ThemeEditor';
+import { createTheme } from '@/lib/theme-factory';
 
 interface ThemeListProps {
   themes: Theme[];

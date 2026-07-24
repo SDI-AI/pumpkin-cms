@@ -40,7 +40,10 @@ export function Icon({ name, className = '', size = 20, strokeWidth = 2 }: IconP
   }
 
   // Check if it's an emoji or special character (passthrough)
-  const emojiRegex = /[\p{Emoji}\p{Emoji_Presentation}]/u;
+  // Unicode's broad `Emoji` property also includes ASCII digits because they
+  // can participate in keycap sequences. Use pictographs so Lucide names such
+  // as Code2, Globe2, and Building2 still reach the icon lookup.
+  const emojiRegex = /\p{Extended_Pictographic}/u;
   if (emojiRegex.test(name)) {
     return (
       <span 

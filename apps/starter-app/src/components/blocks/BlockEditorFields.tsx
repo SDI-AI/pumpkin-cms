@@ -6,6 +6,7 @@ import { ChevronDown, ChevronUp, Image as ImageIcon, X } from 'lucide-react'
 import type { IHtmlBlock, MediaAsset } from 'pumpkin-ts-models'
 import { MediaPickerDialog } from '@/components/admin/MediaPickerDialog'
 import { PageLinkField } from '@/components/admin/PageLinkField'
+import { IconPickerField } from './IconPickerField'
 
 interface BlockEditorFieldsProps {
   block: IHtmlBlock
@@ -328,7 +329,7 @@ function CardGridFields({ content, onChange }: { content: any; onChange: (c: any
               <Field label="Image Alt" value={card['image-alt']} onChange={v => updateCard({ ...card, 'image-alt': v })} />
             </div>
             <div className="grid grid-cols-2 gap-2">
-              <Field label="Icon" value={card.icon} onChange={v => updateCard({ ...card, icon: v })} />
+              <IconPickerField value={card.icon} onChange={v => updateCard({ ...card, icon: v })} />
               <PageLinkField label="Link or page" value={card.link} onChange={v => updateCard({ ...card, link: v })} />
             </div>
           </div>
@@ -438,7 +439,7 @@ function TrustBarFields({ content, onChange }: { content: any; onChange: (c: any
       renderItem={(item: any, _, updateItem) => (
         <div className="space-y-2">
           <div className="grid grid-cols-2 gap-2">
-            <Field label="Icon" value={item.icon} onChange={v => updateItem({ ...item, icon: v })} />
+            <IconPickerField value={item.icon} onChange={v => updateItem({ ...item, icon: v })} />
             <Field label="Title" value={item.title} onChange={v => updateItem({ ...item, title: v })} />
           </div>
           <Field label="Text" value={item.text} onChange={v => updateItem({ ...item, text: v })} />
@@ -511,7 +512,7 @@ function LocalProTipsFields({ content, onChange }: { content: any; onChange: (c:
         renderItem={(item: any, _, updateItem) => (
           <div className="space-y-2">
             <div className="grid grid-cols-2 gap-2">
-              <Field label="Icon" value={item.icon} onChange={v => updateItem({ ...item, icon: v })} />
+              <IconPickerField value={item.icon} onChange={v => updateItem({ ...item, icon: v })} />
               <MediaField label="Image" value={item.image} onChange={v => updateItem({ ...item, image: v })} />
             </div>
             <Field label="Title" value={item.title} onChange={v => updateItem({ ...item, title: v })} />
@@ -644,7 +645,7 @@ function ContactFields({ content, update, onChange }: { content: any; update: (k
           <div className="grid grid-cols-3 gap-2">
             <Field label="Platform" value={link.platform} onChange={v => updateLink({ ...link, platform: v })} />
             <Field label="URL" value={link.url} onChange={v => updateLink({ ...link, url: v })} />
-            <Field label="Icon" value={link.icon} onChange={v => updateLink({ ...link, icon: v })} />
+            <IconPickerField value={link.icon} onChange={v => updateLink({ ...link, icon: v })} />
           </div>
         )}
       />
