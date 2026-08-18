@@ -47,6 +47,8 @@ export default function BlockEditorFields({ block, onChange }: BlockEditorFields
       return <GalleryFields content={content} update={update} onChange={onChange} />
     case 'Testimonials':
       return <TestimonialsFields content={content} update={update} onChange={onChange} />
+    case 'SocialEmbed':
+      return <SocialEmbedFields content={content} update={update} onChange={onChange} />
     case 'Contact':
       return <ContactFields content={content} update={update} onChange={onChange} />
     case 'Form':
@@ -583,6 +585,50 @@ function TestimonialsFields({ content, update, onChange }: { content: any; updat
               <Field label="Event Type" value={item.eventType} onChange={v => updateItem({ ...item, eventType: v })} />
               <NumberField label="Rating (1-5)" value={item.rating} onChange={v => updateItem({ ...item, rating: Math.min(5, Math.max(1, v)) })} />
             </div>
+          </div>
+        )}
+      />
+    </div>
+  )
+}
+
+function SocialEmbedFields({ content, update, onChange }: { content: any; update: (k: string, v: any) => void; onChange: (c: any) => void }) {
+  return (
+    <div className="space-y-3">
+      <Field label="Title" value={content.title} onChange={v => update('title', v)} />
+      <Field label="Subtitle" value={content.subtitle} onChange={v => update('subtitle', v)} multiline />
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className={labelClass}>Layout</label>
+          <select value={content.layout || 'grid'} onChange={e => update('layout', e.target.value)} className={inputClass}>
+            <option value="grid">Grid</option>
+            <option value="stack">Stack</option>
+            <option value="carousel">Carousel</option>
+          </select>
+        </div>
+        <PresetSelect label="Embed Aspect" value={content.aspect || 'auto'} options={aspectOptions} onChange={v => update('aspect', v)} />
+      </div>
+      <ArrayManager
+        label="Embeds"
+        items={content.items || []}
+        onUpdate={items => onChange({ ...content, items })}
+        createItem={() => ({ platform: 'Instagram', url: '', caption: '' })}
+        renderItem={(item: any, _i, updateItem) => (
+          <div className="space-y-2">
+            <div>
+              <label className={labelClass}>Platform</label>
+              <select value={item.platform || 'Instagram'} onChange={e => updateItem({ ...item, platform: e.target.value })} className={inputClass}>
+                <option value="Instagram">Instagram</option>
+                <option value="YouTube">YouTube</option>
+                <option value="TikTok">TikTok</option>
+                <option value="Facebook">Facebook</option>
+                <option value="X">X / Twitter</option>
+                <option value="Pinterest">Pinterest</option>
+                <option value="LinkedIn">LinkedIn</option>
+              </select>
+            </div>
+            <Field label="Public URL or embed URL" value={item.url} onChange={v => updateItem({ ...item, url: v })} placeholder="https://www.instagram.com/p/..." />
+            <Field label="Caption" value={item.caption} onChange={v => updateItem({ ...item, caption: v })} />
           </div>
         )}
       />

@@ -43,6 +43,29 @@ export interface TestimonialsBlock extends IHtmlBlock {
   content: TestimonialsContent;
 }
 
+export type SocialEmbedPlatform = "Instagram" | "YouTube" | "TikTok" | "Facebook" | "X" | "Pinterest" | "LinkedIn";
+
+export type SocialEmbedLayout = "grid" | "stack" | "carousel";
+
+export interface SocialEmbedItem {
+  platform: SocialEmbedPlatform;
+  url: string;
+  caption: string;
+}
+
+export interface SocialEmbedContent {
+  title: string;
+  subtitle: string;
+  layout: SocialEmbedLayout;
+  aspect: ImageAspect;
+  items: SocialEmbedItem[];
+}
+
+export interface SocialEmbedBlock extends IHtmlBlock {
+  type: "SocialEmbed";
+  content: SocialEmbedContent;
+}
+
 export interface FormField {
   label: string;
   type: string;

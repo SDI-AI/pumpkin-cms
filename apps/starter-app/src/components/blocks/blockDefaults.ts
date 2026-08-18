@@ -23,6 +23,7 @@ export const BLOCK_TYPE_INFO: BlockTypeInfo[] = [
   { type: 'LocalProTips', label: 'Local Pro Tips', icon: 'TIP', category: 'navigation', description: 'Expert tips section.' },
   { type: 'Gallery', label: 'Gallery', icon: 'IMG', category: 'interaction', description: 'Image gallery with captions.' },
   { type: 'Testimonials', label: 'Testimonials', icon: 'REV', category: 'interaction', description: 'Customer reviews and testimonials.' },
+  { type: 'SocialEmbed', label: 'Social Embeds', icon: 'SOC', category: 'interaction', description: 'Curated embeds from supported social platforms.' },
   { type: 'Contact', label: 'Contact', icon: 'CON', category: 'interaction', description: 'Contact form with details.' },
   { type: 'Form', label: 'Form', icon: 'FRM', category: 'interaction', description: 'Form definition renderer.' },
   { type: 'Blog', label: 'Blog', icon: 'BLG', category: 'blog', description: 'Blog post content block.' },

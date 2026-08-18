@@ -16,6 +16,7 @@ export const GENERATED_BLOCK_DEFAULT_CONTENT = {
   "LocalProTips": {"title":"","items":[]},
   "Gallery": {"title":"","subtitle":"","imageAspect":"auto","imageFit":"cover","imagePosition":"center","images":[]},
   "Testimonials": {"title":"","subtitle":"","layout":"carousel","items":[]},
+  "SocialEmbed": {"title":"","subtitle":"","layout":"grid","aspect":"auto","items":[]},
   "Contact": {"id":"","title":"","subtitle":"","address":"","phone":"","email":"","hours":"","formFields":[],"submitButtonText":"Submit","socialLinks":[]},
   "Form": {"formType":"contact","title":"","subtitle":"","description":"","layout":"default","successMessage":""},
   "Blog": {"title":"","subtitle":"","author":"","authorImage":"","authorBio":"","publishedDate":"","featuredImage":"","featuredImageAlt":"","featuredImageAspect":"auto","featuredImageFit":"cover","featuredImagePosition":"center","excerpt":"","body":"","tags":[],"categories":[],"readingTime":0,"relatedImageAspect":"auto","relatedImageFit":"cover","relatedImagePosition":"center","relatedPosts":[]},

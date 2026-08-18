@@ -12,11 +12,11 @@ export type { HeroType, HeroContent, HeroBlock } from './models/HeroBlocks';
 export type { PrimaryCtaContent, PrimaryCtaBlock, SecondaryCtaContent, SecondaryCtaBlock } from './models/CtaBlocks';
 export type { Card, CardGridContent, CardGridBlock, FaqItem, FaqContent, FaqBlock, HubSpokeLink, HubSpokesContent, HubSpokesLayout, HubSpokesBlock } from './models/ContentBlocks';
 export type { BreadcrumbItem, BreadcrumbsContent, BreadcrumbsBlock, TrustBarItem, TrustBarContent, TrustBarBlock, Step, HowItWorksContent, HowItWorksBlock, ServiceAreaMapContent, ServiceAreaMapBlock, ProTipItem, LocalProTipsContent, LocalProTipsBlock } from './models/NavigationBlocks';
-export type { GalleryImage, GalleryContent, GalleryBlock, TestimonialItem, TestimonialsContent, TestimonialsBlock, FormField, SocialLink, ContactContent, ContactBlock, FormBlockContent, FormBlock } from './models/InteractionBlocks';
+export type { GalleryImage, GalleryContent, GalleryBlock, TestimonialItem, TestimonialsContent, TestimonialsBlock, SocialEmbedPlatform, SocialEmbedLayout, SocialEmbedItem, SocialEmbedContent, SocialEmbedBlock, FormField, SocialLink, ContactContent, ContactBlock, FormBlockContent, FormBlock } from './models/InteractionBlocks';
 export type { RelatedPost, BlogContent, BlogBlock } from './models/BlogBlocks';
 export type { HtmlBlock } from './models/HtmlBlockTypes';
 export { BLOCK_TYPE_MAP, SUPPORTED_BLOCK_TYPES, isBlockOfType, isHtmlBlock, createGenericBlock } from './models/HtmlBlockTypes';
-export type { Theme, ThemeHeader, ThemeFooter, ThemePreview, ThemeTypography, ThemeSpacing, ThemeBorders, ThemeShadows, ThemeCompiledAssets, ThemeCustomCss, ThemeCssRevision, BlockStyleMap, MenuItem } from './models/Theme';
+export type { Theme, ThemeHeader, ThemeHeaderBanner, ThemeFooter, ThemePreview, ThemeTypography, ThemeSpacing, ThemeBorders, ThemeShadows, ThemeCompiledAssets, ThemeCustomCss, ThemeCssRevision, BlockStyleMap, MenuItem } from './models/Theme';
 export { PageJsonConverter } from './PageJsonConverter';
 export type { JsonConverterOptions } from './PageJsonConverter';
 //# sourceMappingURL=index.d.ts.map

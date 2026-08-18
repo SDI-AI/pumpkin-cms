@@ -5,7 +5,7 @@ import type {
   CardGridBlock, FaqBlock, HubSpokesBlock, BreadcrumbsBlock,
   TrustBarBlock, HowItWorksBlock, ServiceAreaMapBlock,
   LocalProTipsBlock, GalleryBlock, TestimonialsBlock,
-  ContactBlock, FormBlock, FormDefinition, BlogBlock,
+  SocialEmbedBlock, ContactBlock, FormBlock, FormDefinition, BlogBlock,
 } from 'pumpkin-ts-models';
 
 import { HeroBlockView } from './views/HeroBlockView';
@@ -21,6 +21,7 @@ import { ServiceAreaMapBlockView } from './views/ServiceAreaMapBlockView';
 import { LocalProTipsBlockView } from './views/LocalProTipsBlockView';
 import { GalleryBlockView } from './views/GalleryBlockView';
 import { TestimonialsBlockView } from './views/TestimonialsBlockView';
+import { SocialEmbedBlockView } from './views/SocialEmbedBlockView';
 import { ContactBlockView } from './views/ContactBlockView';
 import { FormBlockView } from './views/FormBlockView';
 import { BlogBlockView } from './views/BlogBlockView';
@@ -38,6 +39,7 @@ import type { ServiceAreaMapClassNames } from './defaults/serviceAreaMap';
 import type { LocalProTipsClassNames } from './defaults/localProTips';
 import type { GalleryClassNames } from './defaults/gallery';
 import type { TestimonialsClassNames } from './defaults/testimonials';
+import type { SocialEmbedClassNames } from './defaults/socialEmbed';
 import type { ContactClassNames } from './defaults/contact';
 import type { FormClassNames } from './defaults/form';
 import type { BlogClassNames } from './defaults/blog';
@@ -59,6 +61,7 @@ export interface BlockClassNamesMap {
   LocalProTips?: LocalProTipsClassNames;
   Gallery?: GalleryClassNames;
   Testimonials?: TestimonialsClassNames;
+  SocialEmbed?: SocialEmbedClassNames;
   Contact?: ContactClassNames;
   Form?: FormClassNames;
   Blog?: BlogClassNames;
@@ -143,6 +146,9 @@ export function BlockViewRenderer({ block, classNames, overrides, fallback }: Bl
 
     case 'Testimonials':
       return <TestimonialsBlockView block={block as TestimonialsBlock} classNames={classNames?.Testimonials} />;
+
+    case 'SocialEmbed':
+      return <SocialEmbedBlockView block={block as SocialEmbedBlock} classNames={classNames?.SocialEmbed} />;
 
     case 'Contact':
       return (

@@ -521,6 +521,45 @@ public class TestimonialsContent
     public List<TestimonialItem> Items { get; set; } = new();
 }
 
+public class SocialEmbedBlock : HtmlBlockBase
+{
+    [JsonPropertyName("type")]
+    public override string Type { get; set; } = "SocialEmbed";
+
+    [JsonPropertyName("content")]
+    public override object Content { get; set; } = new SocialEmbedContent();
+}
+
+public class SocialEmbedItem
+{
+    [JsonPropertyName("platform")]
+    public string Platform { get; set; } = "Instagram";
+
+    [JsonPropertyName("url")]
+    public string Url { get; set; } = string.Empty;
+
+    [JsonPropertyName("caption")]
+    public string Caption { get; set; } = string.Empty;
+}
+
+public class SocialEmbedContent
+{
+    [JsonPropertyName("title")]
+    public string Title { get; set; } = string.Empty;
+
+    [JsonPropertyName("subtitle")]
+    public string Subtitle { get; set; } = string.Empty;
+
+    [JsonPropertyName("layout")]
+    public string Layout { get; set; } = "grid";
+
+    [JsonPropertyName("aspect")]
+    public string Aspect { get; set; } = "auto";
+
+    [JsonPropertyName("items")]
+    public List<SocialEmbedItem> Items { get; set; } = new();
+}
+
 public class ContactBlock : HtmlBlockBase
 {
     [JsonPropertyName("type")]
@@ -730,6 +769,7 @@ internal static class GeneratedBlockTypeRegistry
         ["LocalProTips"] = typeof(LocalProTipsBlock),
         ["Gallery"] = typeof(GalleryBlock),
         ["Testimonials"] = typeof(TestimonialsBlock),
+        ["SocialEmbed"] = typeof(SocialEmbedBlock),
         ["Contact"] = typeof(ContactBlock),
         ["Form"] = typeof(FormBlock),
         ["Blog"] = typeof(BlogBlock),
@@ -754,6 +794,7 @@ public static class HtmlBlockContractValidator
             ["LocalProTips"] = new[] { "title", "items" },
             ["Gallery"] = new[] { "title", "subtitle", "images" },
             ["Testimonials"] = new[] { "title", "subtitle", "layout", "items" },
+            ["SocialEmbed"] = new[] { "title", "subtitle", "layout", "aspect", "items" },
             ["Contact"] = new[] { "id", "title", "subtitle", "address", "phone", "email", "hours", "formFields", "submitButtonText", "socialLinks" },
             ["Form"] = new[] { "formType", "title", "subtitle", "layout", "successMessage" },
             ["Blog"] = new[] { "title", "subtitle", "author", "authorImage", "authorBio", "publishedDate", "featuredImage", "featuredImageAlt", "excerpt", "body", "tags", "categories", "readingTime", "relatedPosts" },

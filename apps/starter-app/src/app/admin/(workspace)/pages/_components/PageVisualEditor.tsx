@@ -674,6 +674,52 @@ export function PageVisualEditor({ initialPage, initialTheme, mode, menuPages, o
                           updatedAt: new Date().toISOString(),
                         }))}
                       />
+                      <Checkbox
+                        label="Show Header Banner"
+                        checked={theme.header.banner?.enabled ?? false}
+                        onChange={(enabled) => setTheme((current) => ({
+                          ...current,
+                          header: { ...current.header, banner: { ...defaultHeaderBanner(current.header.banner), enabled } },
+                          updatedAt: new Date().toISOString(),
+                        }))}
+                      />
+                      <TextField
+                        label="Banner Text"
+                        value={theme.header.banner?.text ?? ''}
+                        onChange={(text) => setTheme((current) => ({
+                          ...current,
+                          header: { ...current.header, banner: { ...defaultHeaderBanner(current.header.banner), text } },
+                          updatedAt: new Date().toISOString(),
+                        }))}
+                      />
+                      <TextField
+                        label="Banner Link Text"
+                        value={theme.header.banner?.linkText ?? ''}
+                        onChange={(linkText) => setTheme((current) => ({
+                          ...current,
+                          header: { ...current.header, banner: { ...defaultHeaderBanner(current.header.banner), linkText } },
+                          updatedAt: new Date().toISOString(),
+                        }))}
+                      />
+                      <PageLinkField
+                        label="Banner link or page"
+                        value={theme.header.banner?.linkUrl ?? ''}
+                        onChange={(linkUrl) => setTheme((current) => ({
+                          ...current,
+                          header: { ...current.header, banner: { ...defaultHeaderBanner(current.header.banner), linkUrl } },
+                          updatedAt: new Date().toISOString(),
+                        }))}
+                      />
+                      <SelectField
+                        label="Banner Link Target"
+                        value={theme.header.banner?.linkTarget ?? '_self'}
+                        onChange={(linkTarget) => setTheme((current) => ({
+                          ...current,
+                          header: { ...current.header, banner: { ...defaultHeaderBanner(current.header.banner), linkTarget } },
+                          updatedAt: new Date().toISOString(),
+                        }))}
+                        options={['_self', '_blank']}
+                      />
                     </div>
                   </section>
                   <MenuTreeEditor menu={theme.menu ?? []} pages={menuPages} onChange={(menu) => setTheme((current) => ({ ...current, menu, updatedAt: new Date().toISOString() }))} />
@@ -822,6 +868,20 @@ function TextField({
   );
 }
 
+function Checkbox({ checked, label, onChange }: { checked: boolean; label: string; onChange: (checked: boolean) => void }) {
+  return (
+    <label className="flex items-center gap-2 text-sm font-semibold text-neutral-800">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(event) => onChange(event.target.checked)}
+        className="h-4 w-4 rounded border-neutral-300 text-pumpkin-600 focus:ring-pumpkin-500"
+      />
+      {label}
+    </label>
+  );
+}
+
 function MediaTextField({
   label,
   onChange,
@@ -876,6 +936,17 @@ function MediaTextField({
 
 function mediaAlt(asset: MediaAsset) {
   return asset.altText || asset.caption || asset.fileName;
+}
+
+function defaultHeaderBanner(banner: Theme['header']['banner'] = undefined) {
+  return {
+    enabled: false,
+    text: '',
+    linkText: '',
+    linkUrl: '',
+    linkTarget: '_self',
+    ...banner,
+  };
 }
 
 function TextAreaField({

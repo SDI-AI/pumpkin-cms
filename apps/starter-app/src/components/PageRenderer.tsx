@@ -154,6 +154,7 @@ function getSectionId(block: CmsBlock) {
     Form: 'contact',
     Testimonials: 'testimonials',
     Gallery: 'gallery',
+    SocialEmbed: 'social',
   };
 
   return ids[block.type] ?? block.id ?? block.type.toLowerCase();

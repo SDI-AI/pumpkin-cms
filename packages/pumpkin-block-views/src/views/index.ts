@@ -37,6 +37,9 @@ export type { GalleryBlockViewProps } from './GalleryBlockView';
 export { TestimonialsBlockView } from './TestimonialsBlockView';
 export type { TestimonialsBlockViewProps } from './TestimonialsBlockView';
 
+export { SocialEmbedBlockView } from './SocialEmbedBlockView';
+export type { SocialEmbedBlockViewProps } from './SocialEmbedBlockView';
+
 export { ContactBlockView } from './ContactBlockView';
 export type { ContactBlockViewProps } from './ContactBlockView';
 

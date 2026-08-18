@@ -19,6 +19,7 @@ exports.BLOCK_TYPE_MAP = {
     "LocalProTips": "LocalProTipsBlock",
     "Gallery": "GalleryBlock",
     "Testimonials": "TestimonialsBlock",
+    "SocialEmbed": "SocialEmbedBlock",
     "Contact": "ContactBlock",
     "Form": "FormBlock",
     "Blog": "BlogBlock",

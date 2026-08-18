@@ -42,8 +42,8 @@ public static class Phase1ContractTests
         var fixtures = JsonNode.Parse(File.ReadAllText(fixturePath))?.AsArray()
             ?? throw new InvalidOperationException("Generated block fixtures are required.");
 
-        Assert(fixtures.Count == 16, "every canonical block type should have a fixture");
         var registeredTypes = HtmlBlockFactory.GetSupportedBlockTypes().Order().ToArray();
+        Assert(fixtures.Count == registeredTypes.Length, "every canonical block type should have a fixture");
         var fixtureTypes = fixtures
             .Select(fixture => fixture?["type"]?.GetValue<string>() ?? string.Empty)
             .Order()

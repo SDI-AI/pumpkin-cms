@@ -11,6 +11,7 @@ for (const file of [
   'breadcrumbs.schema.json', 'trust-bar.schema.json', 'how-it-works.schema.json',
   'service-area-map.schema.json', 'local-pro-tips.schema.json', 'gallery.schema.json',
   'testimonials.schema.json', 'contact.schema.json', 'form.schema.json', 'blog.schema.json',
+  'social-embed.schema.json',
 ]) {
   schemas.set(file, JSON.parse(await readFile(path.join(schemaRoot, file), 'utf8')));
 }
@@ -32,7 +33,8 @@ for (const fixture of fixtures) {
   validate(fixture.content, contentSchema, `${fixture.type}.content`, match[1]);
 }
 
-if (fixtures.length !== 16) errors.push(`expected 16 fixtures, found ${fixtures.length}`);
+const expectedFixtureCount = [...schemas.values()].filter((schema) => schema['x-pumpkin']?.type).length;
+if (fixtures.length !== expectedFixtureCount) errors.push(`expected ${expectedFixtureCount} fixtures, found ${fixtures.length}`);
 if (errors.length > 0) {
   console.error(`Block contract validation failed with ${errors.length} error(s):`);
   errors.forEach((error) => console.error(`- ${error}`));

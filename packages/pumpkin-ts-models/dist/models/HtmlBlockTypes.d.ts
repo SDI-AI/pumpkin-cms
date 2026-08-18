@@ -12,10 +12,11 @@ import type { ServiceAreaMapBlock } from './NavigationBlocks';
 import type { LocalProTipsBlock } from './NavigationBlocks';
 import type { GalleryBlock } from './InteractionBlocks';
 import type { TestimonialsBlock } from './InteractionBlocks';
+import type { SocialEmbedBlock } from './InteractionBlocks';
 import type { ContactBlock } from './InteractionBlocks';
 import type { FormBlock } from './InteractionBlocks';
 import type { BlogBlock } from './BlogBlocks';
-export type HtmlBlock = HeroBlock | PrimaryCtaBlock | SecondaryCtaBlock | CardGridBlock | FaqBlock | HubSpokesBlock | BreadcrumbsBlock | TrustBarBlock | HowItWorksBlock | ServiceAreaMapBlock | LocalProTipsBlock | GalleryBlock | TestimonialsBlock | ContactBlock | FormBlock | BlogBlock;
+export type HtmlBlock = HeroBlock | PrimaryCtaBlock | SecondaryCtaBlock | CardGridBlock | FaqBlock | HubSpokesBlock | BreadcrumbsBlock | TrustBarBlock | HowItWorksBlock | ServiceAreaMapBlock | LocalProTipsBlock | GalleryBlock | TestimonialsBlock | SocialEmbedBlock | ContactBlock | FormBlock | BlogBlock;
 export declare const BLOCK_TYPE_MAP: {
     readonly Hero: "HeroBlock";
     readonly PrimaryCTA: "PrimaryCtaBlock";
@@ -30,6 +31,7 @@ export declare const BLOCK_TYPE_MAP: {
     readonly LocalProTips: "LocalProTipsBlock";
     readonly Gallery: "GalleryBlock";
     readonly Testimonials: "TestimonialsBlock";
+    readonly SocialEmbed: "SocialEmbedBlock";
     readonly Contact: "ContactBlock";
     readonly Form: "FormBlock";
     readonly Blog: "BlogBlock";

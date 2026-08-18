@@ -190,6 +190,20 @@
     }
   },
   {
+    "id": "fixture-socialembed",
+    "name": "SocialEmbed fixture",
+    "enabled": false,
+    "schemaVersion": 1,
+    "type": "SocialEmbed",
+    "content": {
+      "title": "",
+      "subtitle": "",
+      "layout": "grid",
+      "aspect": "auto",
+      "items": []
+    }
+  },
+  {
     "id": "fixture-contact",
     "name": "Contact fixture",
     "enabled": false,

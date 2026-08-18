@@ -34,6 +34,9 @@ export function HeaderView({ header, menu, currentPath, classNames }: HeaderView
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [openMobileDropdown, setOpenMobileDropdown] = useState<string | null>(null);
   const navRef = useRef<HTMLElement>(null);
+  const banner = header.banner;
+  const showBanner = Boolean(banner?.enabled && banner.text?.trim());
+  const bannerTarget = banner?.linkTarget || '_self';
 
   // Close desktop dropdown when clicking outside
   const handleClickOutside = useCallback((e: MouseEvent) => {
@@ -74,6 +77,18 @@ export function HeaderView({ header, menu, currentPath, classNames }: HeaderView
 
   return (
     <header className={rootClassName}>
+      {showBanner && (
+        <div className={cx.banner}>
+          <div className={cx.bannerInner}>
+            <span className={cx.bannerText}>{banner?.text}</span>
+            {banner?.linkText && banner.linkUrl && (
+              <a href={banner.linkUrl} target={bannerTarget} rel={bannerTarget === '_blank' ? 'noreferrer' : undefined} className={cx.bannerLink}>
+                {banner.linkText}
+              </a>
+            )}
+          </div>
+        </div>
+      )}
       <div className={cx.container}>
         {renderLogo()}
 

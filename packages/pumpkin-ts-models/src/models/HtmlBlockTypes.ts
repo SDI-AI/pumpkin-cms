@@ -14,6 +14,7 @@ import type { ServiceAreaMapBlock } from './NavigationBlocks';
 import type { LocalProTipsBlock } from './NavigationBlocks';
 import type { GalleryBlock } from './InteractionBlocks';
 import type { TestimonialsBlock } from './InteractionBlocks';
+import type { SocialEmbedBlock } from './InteractionBlocks';
 import type { ContactBlock } from './InteractionBlocks';
 import type { FormBlock } from './InteractionBlocks';
 import type { BlogBlock } from './BlogBlocks';
@@ -32,6 +33,7 @@ export type HtmlBlock =
   | LocalProTipsBlock
   | GalleryBlock
   | TestimonialsBlock
+  | SocialEmbedBlock
   | ContactBlock
   | FormBlock
   | BlogBlock
@@ -51,6 +53,7 @@ export const BLOCK_TYPE_MAP = {
   "LocalProTips": "LocalProTipsBlock",
   "Gallery": "GalleryBlock",
   "Testimonials": "TestimonialsBlock",
+  "SocialEmbed": "SocialEmbedBlock",
   "Contact": "ContactBlock",
   "Form": "FormBlock",
   "Blog": "BlogBlock",

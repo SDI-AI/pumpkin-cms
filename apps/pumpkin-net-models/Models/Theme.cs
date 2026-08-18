@@ -283,6 +283,10 @@ public class ThemeHeader
     [JsonPropertyName("sticky")]
     public bool Sticky { get; set; } = false;
 
+    /// <summary>Optional announcement or promotional banner rendered above the header nav.</summary>
+    [JsonPropertyName("banner")]
+    public ThemeHeaderBanner Banner { get; set; } = new();
+
     /// <summary>CTA button label shown in the header (e.g. "Get Started"). Empty = hidden.</summary>
     [JsonPropertyName("ctaText")]
     public string CtaText { get; set; } = string.Empty;
@@ -298,6 +302,24 @@ public class ThemeHeader
     /// <summary>Style-slot class overrides applied to the header wrapper.</summary>
     [JsonPropertyName("classNames")]
     public Dictionary<string, string> ClassNames { get; set; } = new();
+}
+
+public class ThemeHeaderBanner
+{
+    [JsonPropertyName("enabled")]
+    public bool Enabled { get; set; } = false;
+
+    [JsonPropertyName("text")]
+    public string Text { get; set; } = string.Empty;
+
+    [JsonPropertyName("linkText")]
+    public string LinkText { get; set; } = string.Empty;
+
+    [JsonPropertyName("linkUrl")]
+    public string LinkUrl { get; set; } = string.Empty;
+
+    [JsonPropertyName("linkTarget")]
+    public string LinkTarget { get; set; } = "_self";
 }
 
 // ─── Footer ──────────────────────────────────────────────────
