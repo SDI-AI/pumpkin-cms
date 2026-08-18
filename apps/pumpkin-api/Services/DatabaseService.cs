@@ -22,11 +22,10 @@ public class DatabaseService : IDatabaseService, IDisposable
 
         _logger.LogInformation("Initializing DatabaseService with provider: {Provider}", databaseSettings.Provider);
 
-        // Phase 1 supports Cosmos DB only.
         _dataConnection = databaseSettings.Provider.ToLowerInvariant() switch
         {
             "cosmosdb" => serviceProvider.GetRequiredService<CosmosDataConnection>(),
-            "mongodb" => throw new NotSupportedException("MongoDB support is disabled in this build. Configure Database:Provider to CosmosDb."),
+            "mongodb" => serviceProvider.GetRequiredService<MongoDataConnection>(),
             _ => throw new InvalidOperationException($"Unsupported database provider: {databaseSettings.Provider}")
         };
 

@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Options;
+using MongoDB.Driver;
 using pumpkin_net_models.Models;
 using System.Security.Cryptography;
 
@@ -300,6 +301,11 @@ public class MongoDataConnection : IDataConnection, IDisposable
             if (string.IsNullOrEmpty(formEntry.TenantId))
             {
                 formEntry.TenantId = tenantId;
+            }
+            formEntry.Status = FormEntryStatuses.New;
+            if (string.IsNullOrWhiteSpace(formEntry.Source))
+            {
+                formEntry.Source = "website_form";
             }
 
             var formEntryCollection = _database.GetCollection<FormEntry>("FormEntry");
@@ -1116,12 +1122,489 @@ public class MongoDataConnection : IDataConnection, IDisposable
         return result.DeletedCount > 0;
     }
 
+    public async Task<List<Page>> GetPublishedSpokePagesAsync(string apiKey, string tenantId, string hubPageSlug, int limit)
+    {
+        var isValidTenant = await ValidateTenantApiKeyAsync(apiKey, tenantId);
+        if (!isValidTenant)
+        {
+            _logger.LogWarning("Invalid API key for published spokes - TenantId: {TenantId}", tenantId);
+            throw new UnauthorizedAccessException("Invalid API key or tenant ID");
+        }
+
+        if (string.IsNullOrWhiteSpace(hubPageSlug))
+        {
+            throw new ArgumentException("Hub page slug is required", nameof(hubPageSlug));
+        }
+
+        var safeLimit = Math.Clamp(limit <= 0 ? 12 : limit, 1, 50);
+        var normalizedHubSlug = hubPageSlug.Trim().ToLowerInvariant();
+        var collection = _database.GetCollection<Page>("Page");
+        var filter = Builders<Page>.Filter.And(
+            Builders<Page>.Filter.Eq(page => page.TenantId, tenantId),
+            Builders<Page>.Filter.Eq(page => page.ContentRelationships.HubPageSlug, normalizedHubSlug),
+            Builders<Page>.Filter.Eq(page => page.IsPublished, true),
+            Builders<Page>.Filter.Eq(page => page.ContentRelationships.IsHub, false));
+        var sort = Builders<Page>.Sort
+            .Descending(page => page.ContentRelationships.SpokePriority)
+            .Descending(page => page.MetaData.UpdatedAt);
+
+        return await collection.Find(filter).Sort(sort).Limit(safeLimit).ToListAsync();
+    }
+
+    public async Task<FormDefinition?> GetFormDefinitionPublicAsync(string apiKey, string tenantId, string type)
+    {
+        var isValidTenant = await ValidateTenantApiKeyAsync(apiKey, tenantId);
+        if (!isValidTenant)
+        {
+            _logger.LogWarning("Invalid API key for form definition lookup - TenantId: {TenantId}", tenantId);
+            throw new UnauthorizedAccessException("Invalid API key or tenant ID");
+        }
+
+        if (string.IsNullOrWhiteSpace(type))
+        {
+            throw new ArgumentException("Form type is required", nameof(type));
+        }
+
+        var collection = _database.GetCollection<FormDefinition>("FormDefinition");
+        var normalizedType = NormalizeFormType(type);
+        var filter = Builders<FormDefinition>.Filter.And(
+            Builders<FormDefinition>.Filter.Eq(definition => definition.TenantId, tenantId),
+            Builders<FormDefinition>.Filter.Eq(definition => definition.Type, normalizedType),
+            Builders<FormDefinition>.Filter.Eq(definition => definition.IsActive, true));
+
+        return await collection.Find(filter).FirstOrDefaultAsync();
+    }
+
+    public async Task<FormDefinition?> GetFormDefinitionAsync(string tenantId, string formDefinitionId)
+    {
+        if (string.IsNullOrWhiteSpace(formDefinitionId))
+        {
+            throw new ArgumentException("Form definition ID is required", nameof(formDefinitionId));
+        }
+
+        var collection = _database.GetCollection<FormDefinition>("FormDefinition");
+        var filter = Builders<FormDefinition>.Filter.And(
+            Builders<FormDefinition>.Filter.Eq(definition => definition.TenantId, tenantId),
+            Builders<FormDefinition>.Filter.Or(
+                Builders<FormDefinition>.Filter.Eq(definition => definition.FormDefinitionId, formDefinitionId),
+                Builders<FormDefinition>.Filter.Eq(definition => definition.Id, formDefinitionId)));
+
+        return await collection.Find(filter).FirstOrDefaultAsync();
+    }
+
+    public async Task<FormDefinition?> GetFormDefinitionByTypeAsync(string tenantId, string type)
+    {
+        if (string.IsNullOrWhiteSpace(type))
+        {
+            throw new ArgumentException("Form type is required", nameof(type));
+        }
+
+        var collection = _database.GetCollection<FormDefinition>("FormDefinition");
+        var normalizedType = NormalizeFormType(type);
+        var filter = Builders<FormDefinition>.Filter.And(
+            Builders<FormDefinition>.Filter.Eq(definition => definition.TenantId, tenantId),
+            Builders<FormDefinition>.Filter.Eq(definition => definition.Type, normalizedType));
+
+        return await collection.Find(filter).FirstOrDefaultAsync();
+    }
+
+    public async Task<List<FormDefinition>> GetFormDefinitionsByTenantAsync(string tenantId)
+    {
+        var collection = _database.GetCollection<FormDefinition>("FormDefinition");
+        var filter = Builders<FormDefinition>.Filter.Eq(definition => definition.TenantId, tenantId);
+        var sort = Builders<FormDefinition>.Sort
+            .Descending(definition => definition.UpdatedAt)
+            .Ascending(definition => definition.Name);
+
+        return await collection.Find(filter).Sort(sort).ToListAsync();
+    }
+
+    public async Task<FormDefinition> CreateFormDefinitionAsync(string tenantId, FormDefinition formDefinition)
+    {
+        if (formDefinition == null)
+        {
+            throw new ArgumentNullException(nameof(formDefinition));
+        }
+
+        if (string.IsNullOrWhiteSpace(formDefinition.Type))
+        {
+            throw new ArgumentException("Form type is required", nameof(formDefinition));
+        }
+
+        formDefinition.TenantId = tenantId;
+        formDefinition.Type = NormalizeFormType(formDefinition.Type);
+        ValidateFormDefinition(formDefinition);
+
+        if (string.IsNullOrWhiteSpace(formDefinition.FormDefinitionId))
+        {
+            formDefinition.FormDefinitionId = string.IsNullOrWhiteSpace(formDefinition.Id)
+                ? Guid.NewGuid().ToString()
+                : formDefinition.Id;
+        }
+        formDefinition.Id = formDefinition.FormDefinitionId;
+
+        var existingById = await GetFormDefinitionAsync(tenantId, formDefinition.FormDefinitionId);
+        if (existingById != null)
+        {
+            throw new InvalidOperationException($"Form definition with ID '{formDefinition.FormDefinitionId}' already exists");
+        }
+
+        var existingByType = await GetFormDefinitionByTypeAsync(tenantId, formDefinition.Type);
+        if (existingByType != null)
+        {
+            throw new InvalidOperationException($"Form definition with type '{formDefinition.Type}' already exists");
+        }
+
+        if (formDefinition.CreatedAt == default)
+        {
+            formDefinition.CreatedAt = DateTime.UtcNow;
+        }
+        formDefinition.UpdatedAt = DateTime.UtcNow;
+
+        var collection = _database.GetCollection<FormDefinition>("FormDefinition");
+        await collection.InsertOneAsync(formDefinition);
+        return formDefinition;
+    }
+
+    public async Task<FormDefinition> UpdateFormDefinitionAsync(string tenantId, string formDefinitionId, FormDefinition formDefinition)
+    {
+        if (formDefinition == null)
+        {
+            throw new ArgumentNullException(nameof(formDefinition));
+        }
+
+        if (string.IsNullOrWhiteSpace(formDefinition.Type))
+        {
+            throw new ArgumentException("Form type is required", nameof(formDefinition));
+        }
+
+        var existing = await GetFormDefinitionAsync(tenantId, formDefinitionId);
+        if (existing == null)
+        {
+            throw new KeyNotFoundException($"Form definition with ID '{formDefinitionId}' not found");
+        }
+
+        var normalizedType = NormalizeFormType(formDefinition.Type);
+        formDefinition.Type = normalizedType;
+        ValidateFormDefinition(formDefinition);
+
+        var existingByType = await GetFormDefinitionByTypeAsync(tenantId, normalizedType);
+        if (existingByType != null && existingByType.FormDefinitionId != existing.FormDefinitionId)
+        {
+            throw new InvalidOperationException($"Form definition with type '{normalizedType}' already exists");
+        }
+
+        formDefinition.Id = existing.Id;
+        formDefinition.FormDefinitionId = existing.FormDefinitionId;
+        formDefinition.TenantId = tenantId;
+        formDefinition.CreatedAt = existing.CreatedAt;
+        formDefinition.UpdatedAt = DateTime.UtcNow;
+
+        var collection = _database.GetCollection<FormDefinition>("FormDefinition");
+        var filter = Builders<FormDefinition>.Filter.And(
+            Builders<FormDefinition>.Filter.Eq(definition => definition.TenantId, tenantId),
+            Builders<FormDefinition>.Filter.Eq(definition => definition.Id, existing.Id));
+        await collection.ReplaceOneAsync(filter, formDefinition);
+        return formDefinition;
+    }
+
+    public async Task<bool> DeleteFormDefinitionAsync(string tenantId, string formDefinitionId)
+    {
+        var existing = await GetFormDefinitionAsync(tenantId, formDefinitionId);
+        if (existing == null)
+        {
+            throw new KeyNotFoundException($"Form definition with ID '{formDefinitionId}' not found");
+        }
+
+        var collection = _database.GetCollection<FormDefinition>("FormDefinition");
+        var filter = Builders<FormDefinition>.Filter.And(
+            Builders<FormDefinition>.Filter.Eq(definition => definition.TenantId, tenantId),
+            Builders<FormDefinition>.Filter.Eq(definition => definition.Id, existing.Id));
+        var result = await collection.DeleteOneAsync(filter);
+        return result.DeletedCount > 0;
+    }
+
+    public async Task<List<MediaAsset>> GetMediaAssetsByTenantAsync(string tenantId, string? folder = null, string? contentType = null)
+    {
+        var filters = new List<FilterDefinition<MediaAsset>>
+        {
+            Builders<MediaAsset>.Filter.Eq(asset => asset.TenantId, tenantId)
+        };
+
+        if (!string.IsNullOrWhiteSpace(folder))
+        {
+            filters.Add(Builders<MediaAsset>.Filter.Eq(asset => asset.Folder, folder.Trim()));
+        }
+
+        if (!string.IsNullOrWhiteSpace(contentType))
+        {
+            filters.Add(Builders<MediaAsset>.Filter.Regex(asset => asset.ContentType, $"^{System.Text.RegularExpressions.Regex.Escape(contentType.Trim())}"));
+        }
+
+        var collection = _database.GetCollection<MediaAsset>("MediaAsset");
+        var filter = Builders<MediaAsset>.Filter.And(filters);
+        var sort = Builders<MediaAsset>.Sort
+            .Descending(asset => asset.UpdatedAt)
+            .Ascending(asset => asset.FileName);
+
+        return await collection.Find(filter).Sort(sort).ToListAsync();
+    }
+
+    public async Task<MediaAsset?> GetMediaAssetAsync(string tenantId, string mediaAssetId)
+    {
+        if (string.IsNullOrWhiteSpace(mediaAssetId))
+        {
+            throw new ArgumentException("Media asset ID is required", nameof(mediaAssetId));
+        }
+
+        var collection = _database.GetCollection<MediaAsset>("MediaAsset");
+        var filter = Builders<MediaAsset>.Filter.And(
+            Builders<MediaAsset>.Filter.Eq(asset => asset.TenantId, tenantId),
+            Builders<MediaAsset>.Filter.Or(
+                Builders<MediaAsset>.Filter.Eq(asset => asset.MediaAssetId, mediaAssetId),
+                Builders<MediaAsset>.Filter.Eq(asset => asset.Id, mediaAssetId)));
+
+        return await collection.Find(filter).FirstOrDefaultAsync();
+    }
+
+    public async Task<MediaAsset> CreateMediaAssetAsync(string tenantId, MediaAsset mediaAsset)
+    {
+        if (mediaAsset == null)
+        {
+            throw new ArgumentNullException(nameof(mediaAsset));
+        }
+
+        ApplyMediaAssetDefaults(mediaAsset, tenantId);
+
+        var existing = await GetMediaAssetAsync(tenantId, mediaAsset.MediaAssetId);
+        if (existing != null)
+        {
+            throw new InvalidOperationException($"Media asset with ID '{mediaAsset.MediaAssetId}' already exists");
+        }
+
+        var collection = _database.GetCollection<MediaAsset>("MediaAsset");
+        await collection.InsertOneAsync(mediaAsset);
+        return mediaAsset;
+    }
+
+    public async Task<MediaAsset> UpdateMediaAssetAsync(string tenantId, string mediaAssetId, MediaAsset mediaAsset)
+    {
+        if (mediaAsset == null)
+        {
+            throw new ArgumentNullException(nameof(mediaAsset));
+        }
+
+        var existing = await GetMediaAssetAsync(tenantId, mediaAssetId);
+        if (existing == null)
+        {
+            throw new KeyNotFoundException($"Media asset with ID '{mediaAssetId}' not found");
+        }
+
+        mediaAsset.Id = existing.Id;
+        mediaAsset.MediaAssetId = existing.MediaAssetId;
+        mediaAsset.TenantId = tenantId;
+        mediaAsset.CreatedAt = existing.CreatedAt;
+        mediaAsset.CreatedByUserId = existing.CreatedByUserId;
+        mediaAsset.UpdatedAt = DateTime.UtcNow;
+        NormalizeMediaAssetFields(mediaAsset);
+
+        var collection = _database.GetCollection<MediaAsset>("MediaAsset");
+        var filter = Builders<MediaAsset>.Filter.And(
+            Builders<MediaAsset>.Filter.Eq(asset => asset.TenantId, tenantId),
+            Builders<MediaAsset>.Filter.Eq(asset => asset.Id, existing.Id));
+        await collection.ReplaceOneAsync(filter, mediaAsset);
+        return mediaAsset;
+    }
+
+    public async Task<bool> DeleteMediaAssetAsync(string tenantId, string mediaAssetId)
+    {
+        var existing = await GetMediaAssetAsync(tenantId, mediaAssetId);
+        if (existing == null)
+        {
+            throw new KeyNotFoundException($"Media asset with ID '{mediaAssetId}' not found");
+        }
+
+        var collection = _database.GetCollection<MediaAsset>("MediaAsset");
+        var filter = Builders<MediaAsset>.Filter.And(
+            Builders<MediaAsset>.Filter.Eq(asset => asset.TenantId, tenantId),
+            Builders<MediaAsset>.Filter.Eq(asset => asset.Id, existing.Id));
+        var result = await collection.DeleteOneAsync(filter);
+        return result.DeletedCount > 0;
+    }
+
+    public async Task<List<FormEntry>> GetFormEntriesByTenantAsync(string tenantId, string? type = null)
+    {
+        var filters = new List<FilterDefinition<FormEntry>>
+        {
+            Builders<FormEntry>.Filter.Eq(entry => entry.TenantId, tenantId)
+        };
+
+        if (!string.IsNullOrWhiteSpace(type))
+        {
+            filters.Add(Builders<FormEntry>.Filter.Eq(entry => entry.Type, type.Trim()));
+        }
+
+        var collection = _database.GetCollection<FormEntry>("FormEntry");
+        var filter = Builders<FormEntry>.Filter.And(filters);
+        var sort = Builders<FormEntry>.Sort.Descending(entry => entry.SubmittedAt);
+        return await collection.Find(filter).Sort(sort).ToListAsync();
+    }
+
+    public async Task<FormEntry?> GetFormEntryAsync(string tenantId, string entryId)
+    {
+        if (string.IsNullOrWhiteSpace(entryId))
+        {
+            throw new ArgumentException("Form entry ID is required", nameof(entryId));
+        }
+
+        var collection = _database.GetCollection<FormEntry>("FormEntry");
+        var filter = Builders<FormEntry>.Filter.And(
+            Builders<FormEntry>.Filter.Eq(entry => entry.TenantId, tenantId),
+            Builders<FormEntry>.Filter.Eq(entry => entry.Id, entryId));
+
+        return await collection.Find(filter).FirstOrDefaultAsync();
+    }
+
+    public async Task<FormEntry> UpdateFormEntryStatusAsync(string tenantId, string entryId, string status)
+    {
+        if (string.IsNullOrWhiteSpace(status) || !FormEntryStatuses.All.Contains(status.Trim()))
+        {
+            throw new ArgumentException("Status must be one of: new, read, actioned, archived", nameof(status));
+        }
+
+        var existing = await GetFormEntryAsync(tenantId, entryId);
+        if (existing == null)
+        {
+            throw new KeyNotFoundException($"Form entry with ID '{entryId}' not found");
+        }
+
+        existing.Status = status.Trim().ToLowerInvariant();
+        var now = DateTime.UtcNow;
+        if (existing.Status == FormEntryStatuses.Read && existing.ReadAt == null)
+        {
+            existing.ReadAt = now;
+        }
+        else if (existing.Status == FormEntryStatuses.Actioned && existing.ActionedAt == null)
+        {
+            existing.ActionedAt = now;
+        }
+        else if (existing.Status == FormEntryStatuses.Archived && existing.ArchivedAt == null)
+        {
+            existing.ArchivedAt = now;
+        }
+
+        var collection = _database.GetCollection<FormEntry>("FormEntry");
+        var filter = Builders<FormEntry>.Filter.And(
+            Builders<FormEntry>.Filter.Eq(entry => entry.TenantId, tenantId),
+            Builders<FormEntry>.Filter.Eq(entry => entry.Id, existing.Id));
+        await collection.ReplaceOneAsync(filter, existing);
+        return existing;
+    }
+
     private static void ValidateNewPassword(string password)
     {
         if (string.IsNullOrWhiteSpace(password) || password.Length < 8)
         {
             throw new ArgumentException("Password must be at least 8 characters", nameof(password));
         }
+    }
+
+    private static string NormalizeFormType(string type)
+    {
+        return type.Trim().ToLowerInvariant();
+    }
+
+    private static void ValidateFormDefinition(FormDefinition formDefinition)
+    {
+        var duplicateFieldNames = formDefinition.Fields
+            .Where(field => !string.IsNullOrWhiteSpace(field.Name))
+            .GroupBy(field => field.Name.Trim(), StringComparer.OrdinalIgnoreCase)
+            .Where(group => group.Count() > 1)
+            .Select(group => group.Key)
+            .ToList();
+
+        if (duplicateFieldNames.Any())
+        {
+            throw new ArgumentException($"Duplicate field names are not allowed: {string.Join(", ", duplicateFieldNames)}");
+        }
+
+        foreach (var field in formDefinition.Fields)
+        {
+            field.Name = field.Name.Trim();
+            field.Type = string.IsNullOrWhiteSpace(field.Type)
+                ? FormFieldTypes.Text
+                : field.Type.Trim().ToLowerInvariant();
+
+            if (string.IsNullOrWhiteSpace(field.Name))
+            {
+                throw new ArgumentException("Every form field must have a name");
+            }
+
+            if ((field.Type == FormFieldTypes.Select || field.Type == FormFieldTypes.Radio) &&
+                (field.Options == null || field.Options.Count == 0))
+            {
+                throw new ArgumentException($"Field '{field.Name}' requires options");
+            }
+        }
+    }
+
+    private static void ApplyMediaAssetDefaults(MediaAsset mediaAsset, string tenantId)
+    {
+        if (string.IsNullOrWhiteSpace(mediaAsset.MediaAssetId))
+        {
+            mediaAsset.MediaAssetId = string.IsNullOrWhiteSpace(mediaAsset.Id)
+                ? Guid.NewGuid().ToString("N")
+                : mediaAsset.Id;
+        }
+
+        mediaAsset.Id = mediaAsset.MediaAssetId;
+        mediaAsset.TenantId = tenantId;
+        NormalizeMediaAssetFields(mediaAsset);
+
+        if (mediaAsset.CreatedAt == default)
+        {
+            mediaAsset.CreatedAt = DateTime.UtcNow;
+        }
+        mediaAsset.UpdatedAt = DateTime.UtcNow;
+    }
+
+    private static void NormalizeMediaAssetFields(MediaAsset mediaAsset)
+    {
+        mediaAsset.FileName = (mediaAsset.FileName ?? string.Empty).Trim();
+        mediaAsset.OriginalFileName = string.IsNullOrWhiteSpace(mediaAsset.OriginalFileName)
+            ? mediaAsset.FileName
+            : mediaAsset.OriginalFileName.Trim();
+        mediaAsset.BlobPath = (mediaAsset.BlobPath ?? string.Empty).Trim();
+        mediaAsset.PublicUrl = (mediaAsset.PublicUrl ?? string.Empty).Trim();
+        mediaAsset.ContentType = (mediaAsset.ContentType ?? string.Empty).Trim().ToLowerInvariant();
+        mediaAsset.Folder = (mediaAsset.Folder ?? string.Empty).Trim().Trim('/');
+        mediaAsset.AltText = mediaAsset.AltText ?? string.Empty;
+        mediaAsset.Caption = mediaAsset.Caption ?? string.Empty;
+        mediaAsset.Source = string.IsNullOrWhiteSpace(mediaAsset.Source) ? "admin" : mediaAsset.Source.Trim();
+        mediaAsset.Tags = NormalizeTags(mediaAsset.Tags);
+
+        if (string.IsNullOrWhiteSpace(mediaAsset.FileName))
+        {
+            throw new ArgumentException("Media asset fileName is required", nameof(mediaAsset));
+        }
+        if (string.IsNullOrWhiteSpace(mediaAsset.BlobPath))
+        {
+            throw new ArgumentException("Media asset blobPath is required", nameof(mediaAsset));
+        }
+        if (string.IsNullOrWhiteSpace(mediaAsset.PublicUrl))
+        {
+            throw new ArgumentException("Media asset publicUrl is required", nameof(mediaAsset));
+        }
+    }
+
+    private static List<string> NormalizeTags(IEnumerable<string>? tags)
+    {
+        return (tags ?? Enumerable.Empty<string>())
+            .Select(tag => tag.Trim())
+            .Where(tag => !string.IsNullOrWhiteSpace(tag))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(tag => tag)
+            .ToList();
     }
 #else
     private readonly ILogger<MongoDataConnection> _logger;
