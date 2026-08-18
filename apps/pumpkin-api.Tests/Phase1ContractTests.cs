@@ -215,6 +215,7 @@ public static class Phase1ContractTests
     {
         var publisher = new ThemeCssPublisher(
             Options.Create(new AssetStorageSettings()),
+            new InMemoryAssetStorageConnection(),
             NullLogger<ThemeCssPublisher>.Instance);
         var history = new ThemeCustomCss
         {
@@ -399,6 +400,40 @@ public static class Phase1ContractTests
         {
             throw new InvalidOperationException(message);
         }
+    }
+}
+
+internal sealed class InMemoryAssetStorageConnection : IAssetStorageConnection
+{
+    private readonly Dictionary<string, string> _textByPath = new(StringComparer.OrdinalIgnoreCase);
+
+    public string Provider => "Test";
+
+    public AssetStorageTarget GetTarget(AssetStorageArea area, string storagePath)
+    {
+        return new AssetStorageTarget(Provider, storagePath, $"https://assets.example/{storagePath.Trim('/')}");
+    }
+
+    public async Task UploadAsync(AssetStorageArea area, string storagePath, Stream stream, string contentType, CancellationToken cancellationToken)
+    {
+        using var reader = new StreamReader(stream);
+        _textByPath[storagePath] = await reader.ReadToEndAsync(cancellationToken);
+    }
+
+    public Task UploadAsync(AssetStorageArea area, string storagePath, BinaryData content, string contentType, CancellationToken cancellationToken)
+    {
+        _textByPath[storagePath] = content.ToString();
+        return Task.CompletedTask;
+    }
+
+    public Task<string> ReadTextAsync(AssetStorageArea area, string storagePath, CancellationToken cancellationToken)
+    {
+        return Task.FromResult(_textByPath.TryGetValue(storagePath, out var text) ? text : string.Empty);
+    }
+
+    public Task<bool> DeleteAsync(AssetStorageArea area, string storagePath, CancellationToken cancellationToken)
+    {
+        return Task.FromResult(_textByPath.Remove(storagePath));
     }
 }
 

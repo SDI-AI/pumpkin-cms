@@ -1,7 +1,3 @@
-using Azure;
-using Azure.Identity;
-using Azure.Storage.Blobs;
-using Azure.Storage.Blobs.Models;
 using Microsoft.Extensions.Options;
 using pumpkin_net_models.Models;
 
@@ -23,11 +19,16 @@ public class MediaAssetUploadRequest
 public class MediaAssetUploader
 {
     private readonly AssetStorageSettings _settings;
+    private readonly IAssetStorageConnection _storage;
     private readonly ILogger<MediaAssetUploader> _logger;
 
-    public MediaAssetUploader(IOptions<AssetStorageSettings> settings, ILogger<MediaAssetUploader> logger)
+    public MediaAssetUploader(
+        IOptions<AssetStorageSettings> settings,
+        IAssetStorageConnection storage,
+        ILogger<MediaAssetUploader> logger)
     {
         _settings = settings.Value;
+        _storage = storage;
         _logger = logger;
     }
 
@@ -65,31 +66,21 @@ public class MediaAssetUploader
                 resolvedContentType);
         }
 
-        var blobPath = _settings.BuildTenantMediaPath(request.TenantId, assetId, cleanFileName, createdAt);
-        var publicUrl = _settings.BuildMediaPublicUrl(blobPath);
+        var storagePath = _settings.BuildTenantMediaPath(request.TenantId, assetId, cleanFileName, createdAt);
+        var publicUrl = _storage.GetTarget(AssetStorageArea.Media, storagePath).PublicUrl;
         if (string.IsNullOrWhiteSpace(publicUrl))
-            throw new InvalidOperationException("AssetStorage:AzureBlob:PublicBaseUrl or MediaPublicBaseUrl is required to create media asset public URLs.");
+            throw new InvalidOperationException("Asset storage public URL settings are required to create media asset public URLs.");
 
         var contentType = resolvedContentType;
 
-        var container = BuildMediaContainerClient();
-        await container.CreateIfNotExistsAsync(cancellationToken: cancellationToken);
+        await _storage.UploadAsync(AssetStorageArea.Media, storagePath, fileStream, contentType, cancellationToken);
 
-        var blobClient = container.GetBlobClient(blobPath);
-        await blobClient.UploadAsync(
-            fileStream,
-            new BlobUploadOptions
-            {
-                HttpHeaders = new BlobHttpHeaders
-                {
-                    ContentType = contentType,
-                    CacheControl = "public, max-age=31536000, immutable"
-                }
-            },
-            cancellationToken);
-
-        _logger.LogInformation("Media asset uploaded - MediaAssetId: {MediaAssetId}, TenantId: {TenantId}, BlobPath: {BlobPath}",
-            assetId, request.TenantId, blobPath);
+        _logger.LogInformation(
+            "Media asset uploaded - MediaAssetId: {MediaAssetId}, TenantId: {TenantId}, Provider: {Provider}, StoragePath: {StoragePath}",
+            assetId,
+            request.TenantId,
+            _storage.Provider,
+            storagePath);
 
         return new MediaAsset
         {
@@ -98,7 +89,7 @@ public class MediaAssetUploader
             TenantId = request.TenantId,
             FileName = cleanFileName,
             OriginalFileName = cleanFileName,
-            BlobPath = blobPath,
+            BlobPath = storagePath,
             PublicUrl = publicUrl,
             ContentType = contentType,
             SizeBytes = request.SizeBytes,
@@ -114,46 +105,21 @@ public class MediaAssetUploader
         };
     }
 
-    public async Task<bool> DeleteAsync(string blobPath, CancellationToken cancellationToken)
+    public async Task<bool> DeleteAsync(string storagePath, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(blobPath))
+        if (string.IsNullOrWhiteSpace(storagePath))
         {
-            _logger.LogWarning("Media blob delete skipped because blob path is empty.");
+            _logger.LogWarning("Media asset delete skipped because storage path is empty.");
             return false;
         }
 
-        var container = BuildMediaContainerClient();
-        var blobClient = container.GetBlobClient(blobPath.Trim('/'));
-
-        try
-        {
-            var response = await blobClient.DeleteIfExistsAsync(DeleteSnapshotsOption.IncludeSnapshots, cancellationToken: cancellationToken);
-
-            _logger.LogInformation("Media blob delete attempted - BlobPath: {BlobPath}, Deleted: {Deleted}", blobPath, response.Value);
-            return response.Value;
-        }
-        catch (RequestFailedException ex) when (ex.Status == StatusCodes.Status404NotFound)
-        {
-            _logger.LogInformation("Media blob delete skipped because the blob or container was not found - BlobPath: {BlobPath}", blobPath);
-            return false;
-        }
-    }
-
-    private BlobContainerClient BuildMediaContainerClient()
-    {
-        var azureBlob = _settings.AzureBlob;
-
-        if (!string.IsNullOrWhiteSpace(azureBlob.ConnectionString))
-        {
-            return new BlobContainerClient(azureBlob.ConnectionString, azureBlob.MediaContainerName);
-        }
-
-        if (string.IsNullOrWhiteSpace(azureBlob.AccountName))
-            throw new InvalidOperationException("AssetStorage:AzureBlob:AccountName is required when ConnectionString is not configured.");
-
-        var serviceUri = new Uri($"https://{azureBlob.AccountName}.blob.core.windows.net");
-        var serviceClient = new BlobServiceClient(serviceUri, new DefaultAzureCredential());
-        return serviceClient.GetBlobContainerClient(azureBlob.MediaContainerName);
+        var deleted = await _storage.DeleteAsync(AssetStorageArea.Media, storagePath, cancellationToken);
+        _logger.LogInformation(
+            "Media asset delete attempted - Provider: {Provider}, StoragePath: {StoragePath}, Deleted: {Deleted}",
+            _storage.Provider,
+            storagePath,
+            deleted);
+        return deleted;
     }
 
     private static string ResolveContentType(string fileName)
