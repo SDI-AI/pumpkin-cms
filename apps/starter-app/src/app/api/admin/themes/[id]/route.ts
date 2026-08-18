@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { isStarterAdminAuthenticated } from '@/lib/admin-auth';
+import { revalidatePublicTheme } from '@/lib/public-page-cache';
 import {
   deleteStarterAdminTheme,
   getStarterAdminTheme,
@@ -39,6 +40,7 @@ export async function PUT(request: NextRequest, { params }: ThemeRouteContext) {
     const theme = (await request.json()) as Theme;
     const { id } = await params;
     const updated = await updateStarterAdminTheme(id, theme);
+    revalidatePublicTheme();
     return NextResponse.json(updated);
   } catch (error) {
     return NextResponse.json(
@@ -56,6 +58,7 @@ export async function DELETE(_request: NextRequest, { params }: ThemeRouteContex
   try {
     const { id } = await params;
     const result = await deleteStarterAdminTheme(id);
+    revalidatePublicTheme();
     return NextResponse.json(result);
   } catch (error) {
     return NextResponse.json(

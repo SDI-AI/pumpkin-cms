@@ -1,6 +1,6 @@
-import { revalidatePath } from 'next/cache';
 import { NextResponse } from 'next/server';
 import { isStarterAdminAuthenticated } from '@/lib/admin-auth';
+import { revalidatePublicTheme } from '@/lib/public-page-cache';
 import { getStarterAdminThemeCss, publishStarterAdminThemeCss } from '@/lib/starter-admin-themes';
 
 interface RouteContext {
@@ -32,7 +32,7 @@ export async function PUT(request: Request, { params }: RouteContext) {
     const body = await request.json() as { css?: string; note?: string };
     const { id } = await params;
     const result = await publishStarterAdminThemeCss(id, body.css ?? '', body.note ?? '');
-    revalidatePath('/', 'layout');
+    revalidatePublicTheme();
     return NextResponse.json(result);
   } catch (error) {
     return NextResponse.json(

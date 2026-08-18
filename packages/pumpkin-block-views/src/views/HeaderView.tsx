@@ -52,18 +52,23 @@ export function HeaderView({ header, menu, currentPath, classNames }: HeaderView
     .filter((m) => m.isVisible)
     .sort((a, b) => a.order - b.order);
 
-  const renderLogo = () => (
-    <a href="/" className={cx.logoWrapper}>
-      {header.logoUrl && isEmoji(header.logoUrl) ? (
-        <span className={cx.logoIcon} role="img" aria-label={header.logoAlt}>
-          {header.logoUrl}
-        </span>
-      ) : header.logoUrl ? (
-        <img src={header.logoUrl} alt={header.logoAlt} className={cx.logoImage} />
-      ) : null}
-      {header.logoAlt && <span className={cx.logoText}>{header.logoAlt}</span>}
-    </a>
-  );
+  const renderLogo = () => {
+    const logoIsEmoji = Boolean(header.logoUrl && isEmoji(header.logoUrl));
+    const logoIsImage = Boolean(header.logoUrl && !logoIsEmoji);
+
+    return (
+      <a href="/" className={cx.logoWrapper}>
+        {logoIsEmoji ? (
+          <span className={cx.logoIcon} role="img" aria-label={header.logoAlt}>
+            {header.logoUrl}
+          </span>
+        ) : logoIsImage ? (
+          <img src={header.logoUrl} alt={header.logoAlt} className={cx.logoImage} />
+        ) : null}
+        {header.logoAlt && !logoIsImage && <span className={cx.logoText}>{header.logoAlt}</span>}
+      </a>
+    );
+  };
 
   const isActive = (url: string) => currentPath === url;
 
