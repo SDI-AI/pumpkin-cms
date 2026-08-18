@@ -26,6 +26,8 @@ pumpkin-cms/
 ├── packages/
 │   ├── pumpkin-block-views/  # Shared React block renderers
 │   └── pumpkin-ts-models/    # TypeScript models
+├── tools/
+│   └── Pumpkin.DatabaseBootstrap/ # Fresh database/container/tenant setup utility
 ├── theme-packages/           # Installable compiled theme packages
 └── docs/                     # Documentation
 ```
@@ -91,9 +93,13 @@ All endpoints require Bearer token authentication via the `Authorization` header
 }
 ```
 
-2. Ensure the following containers exist in your database:
-   - `Tenant` (partition key: `/tenantId`)
-   - `Pages` (partition key: `/tenantId`)
+2. Bootstrap the database containers/collections and first tenant:
+
+```bash
+dotnet run --project tools/Pumpkin.DatabaseBootstrap -- --help
+```
+
+See `tools/Pumpkin.DatabaseBootstrap/README.md` for Cosmos DB and MongoDB examples.
 
 ### Running the API
 
