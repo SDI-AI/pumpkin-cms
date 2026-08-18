@@ -48,6 +48,54 @@ This will automatically use `appsettings.Development.json` when running locally.
 
 ---
 
+## Database Bootstrap
+
+Before first API startup in a new environment, create the database resources and base tenant:
+
+```powershell
+dotnet run --project tools\Pumpkin.DatabaseBootstrap -- --help
+```
+
+The bootstrap utility creates:
+
+- Cosmos DB containers or MongoDB collections
+- MongoDB indexes when using `Database:Provider=MongoDb`
+- a base active tenant with hashed API key
+- optional SuperAdmin user
+- optional default contact form definition
+- optional default active theme
+- optional draft home page
+
+Cosmos DB example:
+
+```powershell
+dotnet run --project tools\Pumpkin.DatabaseBootstrap -- `
+  --provider CosmosDb `
+  --cosmos-connection-string "<connection-string>" `
+  --database PumpkinCMS `
+  --tenant-id pumpkin `
+  --tenant-name "Pumpkin CMS" `
+  --allowed-origin "http://localhost:3003" `
+  --admin-email "admin@example.com"
+```
+
+MongoDB example:
+
+```powershell
+dotnet run --project tools\Pumpkin.DatabaseBootstrap -- `
+  --provider MongoDb `
+  --mongo-connection-string "mongodb://localhost:27017" `
+  --database PumpkinCMS `
+  --tenant-id pumpkin `
+  --tenant-name "Pumpkin CMS" `
+  --allowed-origin "http://localhost:3003" `
+  --admin-email "admin@example.com"
+```
+
+Generated API keys and generated admin passwords are printed once. Store them securely.
+
+---
+
 ## ?? Azure App Service Deployment
 
 ### Option 1: Environment Variables (Recommended)
