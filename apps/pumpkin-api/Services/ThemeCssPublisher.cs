@@ -1,9 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
-using Azure.Identity;
-using Azure.Storage.Blobs;
-using Azure.Storage.Blobs.Models;
 using Microsoft.Extensions.Options;
 using pumpkin_net_models.Models;
 
@@ -27,11 +24,16 @@ public sealed class ThemeCssPublisher
     };
 
     private readonly AssetStorageSettings _settings;
+    private readonly IAssetStorageConnection _storage;
     private readonly ILogger<ThemeCssPublisher> _logger;
 
-    public ThemeCssPublisher(IOptions<AssetStorageSettings> settings, ILogger<ThemeCssPublisher> logger)
+    public ThemeCssPublisher(
+        IOptions<AssetStorageSettings> settings,
+        IAssetStorageConnection storage,
+        ILogger<ThemeCssPublisher> logger)
     {
         _settings = settings.Value;
+        _storage = storage;
         _logger = logger;
     }
 
@@ -67,23 +69,15 @@ public sealed class ThemeCssPublisher
         var revisionId = $"v{version}-{contentHash[..12]}";
         var revisionRoot = $"tenants/{Uri.EscapeDataString(tenantId)}/themes/{Uri.EscapeDataString(themeId)}/css-revisions/{revisionId}";
         var blobPath = $"{revisionRoot}/theme.css";
-        var cssUrl = _settings.BuildThemePublicUrl(revisionRoot, "theme.css");
+        var cssUrl = _storage.GetTarget(AssetStorageArea.Themes, blobPath).PublicUrl;
         if (string.IsNullOrWhiteSpace(cssUrl))
             throw new InvalidOperationException("Theme asset public URL settings are required before CSS can be published.");
 
-        var container = BuildThemeContainerClient();
-        await container.CreateIfNotExistsAsync(cancellationToken: cancellationToken);
-        var blob = container.GetBlobClient(blobPath);
-        await blob.UploadAsync(
+        await _storage.UploadAsync(
+            AssetStorageArea.Themes,
+            blobPath,
             BinaryData.FromBytes(contentBytes),
-            new BlobUploadOptions
-            {
-                HttpHeaders = new BlobHttpHeaders
-                {
-                    ContentType = "text/css; charset=utf-8",
-                    CacheControl = "public, max-age=31536000, immutable"
-                }
-            },
+            "text/css; charset=utf-8",
             cancellationToken);
 
         var createdAt = DateTime.UtcNow;
@@ -110,10 +104,11 @@ public sealed class ThemeCssPublisher
         ApplyRevision(customCss, revision);
 
         _logger.LogInformation(
-            "Published custom theme CSS - TenantId: {TenantId}, ThemeId: {ThemeId}, RevisionId: {RevisionId}",
+            "Published custom theme CSS - TenantId: {TenantId}, ThemeId: {ThemeId}, RevisionId: {RevisionId}, Provider: {Provider}",
             tenantId,
             themeId,
-            revisionId);
+            revisionId,
+            _storage.Provider);
 
         return new ThemeCssPublishResult(customCss, css);
     }
@@ -128,9 +123,7 @@ public sealed class ThemeCssPublisher
         if (string.IsNullOrWhiteSpace(revision.BlobPath))
             throw new KeyNotFoundException("The active CSS revision blob path is missing.");
 
-        var blob = BuildThemeContainerClient().GetBlobClient(revision.BlobPath);
-        var download = await blob.DownloadContentAsync(cancellationToken);
-        return download.Value.Content.ToString();
+        return await _storage.ReadTextAsync(AssetStorageArea.Themes, revision.BlobPath, cancellationToken);
     }
 
     public ThemeCustomCss ActivateRevision(ThemeCustomCss? current, string revisionId)
@@ -220,18 +213,5 @@ public sealed class ThemeCssPublisher
 
         if (depth != 0 || quote != '\0' || inComment)
             throw new InvalidOperationException("Custom CSS has unbalanced blocks, quotes, or comments.");
-    }
-
-    private BlobContainerClient BuildThemeContainerClient()
-    {
-        var azureBlob = _settings.AzureBlob;
-        if (!string.IsNullOrWhiteSpace(azureBlob.ConnectionString))
-            return new BlobContainerClient(azureBlob.ConnectionString, azureBlob.ThemesContainerName);
-        if (string.IsNullOrWhiteSpace(azureBlob.AccountName))
-            throw new InvalidOperationException("AssetStorage:AzureBlob:AccountName is required when ConnectionString is not configured.");
-
-        var serviceUri = new Uri($"https://{azureBlob.AccountName}.blob.core.windows.net");
-        return new BlobServiceClient(serviceUri, new DefaultAzureCredential())
-            .GetBlobContainerClient(azureBlob.ThemesContainerName);
     }
 }

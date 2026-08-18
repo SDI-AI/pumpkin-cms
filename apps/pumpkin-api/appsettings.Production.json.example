@@ -62,6 +62,11 @@
       "ThemesPublicBaseUrl": "",
       "MediaPublicBaseUrl": "",
       "UseManagedIdentity": true
+    },
+    "LocalFile": {
+      "RootPath": "App_Data/assets",
+      "RequestPath": "/assets",
+      "PublicBaseUrl": ""
     }
   }
 }

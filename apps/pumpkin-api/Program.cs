@@ -8,6 +8,7 @@ using System.Security.Claims;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Cors.Infrastructure;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -131,6 +132,9 @@ builder.Services.AddSingleton<ICorsPolicyProvider, TenantCorsPolicyProvider>();
 // Register data connection implementations
 builder.Services.AddSingleton<CosmosDataConnection>();
 builder.Services.AddSingleton<MongoDataConnection>();
+builder.Services.AddSingleton<AzureBlobAssetStorageConnection>();
+builder.Services.AddSingleton<LocalFileAssetStorageConnection>();
+builder.Services.AddSingleton<IAssetStorageConnection, AssetStorageService>();
 
 // Register the main database service (singleton for connection reuse)
 builder.Services.AddSingleton<IDatabaseService, DatabaseService>();
@@ -139,6 +143,8 @@ builder.Services.AddScoped<ThemeCssPublisher>();
 builder.Services.AddScoped<MediaAssetUploader>();
 
 var app = builder.Build();
+
+UseLocalAssetStorage(app);
 
 // Configure CORS (must be before authentication/authorization).
 // "AdminCors" is the default for admin/auth routes; content routes override with "TenantCors".
@@ -1578,7 +1584,12 @@ app.MapPost("/api/admin/themes/{tenantId}/install",
                 theme = saved,
                 storage = new
                 {
+                    provider = installer.Provider,
                     installResult.TenantThemePath,
+                    installResult.CssStoragePath,
+                    installResult.ManifestStoragePath,
+                    installResult.PackageStoragePath,
+                    installResult.AssetStoragePaths,
                     installResult.CssBlobPath,
                     installResult.ManifestBlobPath,
                     installResult.PackageBlobPath,
@@ -1607,7 +1618,7 @@ app.MapPost("/api/admin/themes/{tenantId}/install",
 
 // Admin: Get tenant-scoped theme storage target paths
 app.MapGet("/api/admin/themes/{tenantId}/{themeId}/storage-target",
-    (IOptions<AssetStorageSettings> assetStorageOptions, string tenantId, string themeId, int? version, HttpContext context) =>
+    (IOptions<AssetStorageSettings> assetStorageOptions, IAssetStorageConnection storage, string tenantId, string themeId, int? version, HttpContext context) =>
     {
         if (context.User?.Identity?.IsAuthenticated != true)
             return Results.Unauthorized();
@@ -1623,23 +1634,33 @@ app.MapGet("/api/admin/themes/{tenantId}/{themeId}/storage-target",
 
         var settings = assetStorageOptions.Value;
         var tenantThemePath = settings.BuildTenantThemePath(tenantId, themeId, (version ?? 1).ToString());
+        var cssPath = $"{tenantThemePath}/theme.css";
+        var manifestPath = $"{tenantThemePath}/theme-manifest.json";
+        var packagePath = $"{tenantThemePath}/theme-package.zip";
+        var assetsPath = $"{tenantThemePath}/assets/";
+        var cssTarget = storage.GetTarget(AssetStorageArea.Themes, cssPath);
+        var manifestTarget = storage.GetTarget(AssetStorageArea.Themes, manifestPath);
+        var packageTarget = storage.GetTarget(AssetStorageArea.Themes, packagePath);
+        var assetsTarget = storage.GetTarget(AssetStorageArea.Themes, assetsPath);
 
         return Results.Ok(new
         {
-            provider = settings.Provider,
-            containerName = settings.AzureBlob.ThemesContainerName,
-            publicBaseUrl = string.IsNullOrWhiteSpace(settings.AzureBlob.ThemesPublicBaseUrl)
-                ? settings.AzureBlob.PublicBaseUrl
-                : settings.AzureBlob.ThemesPublicBaseUrl,
+            provider = storage.Provider,
+            containerName = cssTarget.ContainerName,
+            publicBaseUrl = cssTarget.PublicBaseUrl,
             tenantThemePath,
-            cssBlobPath = $"{tenantThemePath}/theme.css",
-            manifestBlobPath = $"{tenantThemePath}/theme-manifest.json",
-            packageBlobPath = $"{tenantThemePath}/theme-package.zip",
-            assetsBlobPath = $"{tenantThemePath}/assets/",
-            cssUrl = settings.BuildThemePublicUrl(tenantThemePath, "theme.css"),
-            manifestUrl = settings.BuildThemePublicUrl(tenantThemePath, "theme-manifest.json"),
-            packageUrl = settings.BuildThemePublicUrl(tenantThemePath, "theme-package.zip"),
-            assetsBaseUrl = settings.BuildThemePublicUrl(tenantThemePath, "assets/")
+            cssStoragePath = cssPath,
+            manifestStoragePath = manifestPath,
+            packageStoragePath = packagePath,
+            assetsStoragePath = assetsPath,
+            cssBlobPath = cssPath,
+            manifestBlobPath = manifestPath,
+            packageBlobPath = packagePath,
+            assetsBlobPath = assetsPath,
+            cssUrl = cssTarget.PublicUrl,
+            manifestUrl = manifestTarget.PublicUrl,
+            packageUrl = packageTarget.PublicUrl,
+            assetsBaseUrl = assetsTarget.PublicUrl
         });
     })
     .RequireAuthorization("TenantContentOwner")
@@ -1650,7 +1671,7 @@ app.MapGet("/api/admin/themes/{tenantId}/{themeId}/storage-target",
 
 // Admin: Get tenant-scoped media storage target paths
 app.MapGet("/api/admin/media/{tenantId}/storage-target",
-    (IOptions<AssetStorageSettings> assetStorageOptions, string tenantId, string fileName, HttpContext context) =>
+    (IOptions<AssetStorageSettings> assetStorageOptions, IAssetStorageConnection storage, string tenantId, string fileName, HttpContext context) =>
     {
         if (context.User?.Identity?.IsAuthenticated != true)
             return Results.Unauthorized();
@@ -1670,17 +1691,17 @@ app.MapGet("/api/admin/media/{tenantId}/storage-target",
         var settings = assetStorageOptions.Value;
         var assetId = Guid.NewGuid().ToString("N");
         var mediaPath = settings.BuildTenantMediaPath(tenantId, assetId, Path.GetFileName(fileName), DateTimeOffset.UtcNow);
+        var mediaTarget = storage.GetTarget(AssetStorageArea.Media, mediaPath);
 
         return Results.Ok(new
         {
-            provider = settings.Provider,
-            containerName = settings.AzureBlob.MediaContainerName,
-            publicBaseUrl = string.IsNullOrWhiteSpace(settings.AzureBlob.MediaPublicBaseUrl)
-                ? settings.AzureBlob.PublicBaseUrl
-                : settings.AzureBlob.MediaPublicBaseUrl,
+            provider = storage.Provider,
+            containerName = mediaTarget.ContainerName,
+            publicBaseUrl = mediaTarget.PublicBaseUrl,
             assetId,
+            storagePath = mediaPath,
             blobPath = mediaPath,
-            publicUrl = settings.BuildMediaPublicUrl(mediaPath)
+            publicUrl = mediaTarget.PublicUrl
         });
     })
     .RequireAuthorization("TenantContentOwner")
@@ -2588,11 +2609,50 @@ static void ValidateStartupConfiguration(IConfiguration configuration, IWebHostE
             errors.Add("AssetStorage:AzureBlob:ConnectionString or AccountName must be configured for production.");
         }
     }
+    else if (storageProvider.Equals("LocalFile", StringComparison.OrdinalIgnoreCase))
+    {
+        var requestPath = configuration["AssetStorage:LocalFile:RequestPath"] ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(requestPath))
+        {
+            errors.Add("AssetStorage:LocalFile:RequestPath must be configured when using local file asset storage.");
+        }
+    }
+    else
+    {
+        errors.Add("AssetStorage:Provider must be AzureBlob or LocalFile.");
+    }
 
     if (errors.Count > 0)
     {
         throw new InvalidOperationException($"Pumpkin API production configuration is invalid: {string.Join(" ", errors)}");
     }
+}
+
+static void UseLocalAssetStorage(WebApplication app)
+{
+    var settings = app.Services.GetRequiredService<IOptions<AssetStorageSettings>>().Value;
+    if (!settings.Provider.Equals("LocalFile", StringComparison.OrdinalIgnoreCase))
+    {
+        return;
+    }
+
+    var localStorage = app.Services.GetRequiredService<LocalFileAssetStorageConnection>();
+    var rootPath = localStorage.ResolveRootPath();
+    Directory.CreateDirectory(rootPath);
+
+    var requestPath = string.IsNullOrWhiteSpace(settings.LocalFile.RequestPath)
+        ? "/assets"
+        : $"/{settings.LocalFile.RequestPath.Trim('/')}";
+
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = new PhysicalFileProvider(rootPath),
+        RequestPath = requestPath,
+        OnPrepareResponse = context =>
+        {
+            context.Context.Response.Headers.CacheControl = "public, max-age=31536000, immutable";
+        }
+    });
 }
 
 static bool IsPlaceholder(string value)

@@ -1,9 +1,6 @@
 using System.IO.Compression;
 using System.Security.Cryptography;
 using System.Text.Json;
-using Azure.Identity;
-using Azure.Storage.Blobs;
-using Azure.Storage.Blobs.Models;
 using Microsoft.Extensions.Options;
 using pumpkin_net_models.Models;
 
@@ -13,6 +10,10 @@ public class ThemePackageInstallResult
 {
     public Theme Theme { get; set; } = new();
     public string TenantThemePath { get; set; } = string.Empty;
+    public string CssStoragePath { get; set; } = string.Empty;
+    public string ManifestStoragePath { get; set; } = string.Empty;
+    public string PackageStoragePath { get; set; } = string.Empty;
+    public List<string> AssetStoragePaths { get; set; } = new();
     public string CssBlobPath { get; set; } = string.Empty;
     public string ManifestBlobPath { get; set; } = string.Empty;
     public string PackageBlobPath { get; set; } = string.Empty;
@@ -27,13 +28,20 @@ public class ThemePackageInstaller
     };
 
     private readonly AssetStorageSettings _settings;
+    private readonly IAssetStorageConnection _storage;
     private readonly ILogger<ThemePackageInstaller> _logger;
 
-    public ThemePackageInstaller(IOptions<AssetStorageSettings> settings, ILogger<ThemePackageInstaller> logger)
+    public ThemePackageInstaller(
+        IOptions<AssetStorageSettings> settings,
+        IAssetStorageConnection storage,
+        ILogger<ThemePackageInstaller> logger)
     {
         _settings = settings.Value;
+        _storage = storage;
         _logger = logger;
     }
+
+    public string Provider => _storage.Provider;
 
     public async Task<ThemePackageInstallResult> InstallAsync(Stream packageStream, string tenantId, CancellationToken cancellationToken)
     {
@@ -54,8 +62,6 @@ public class ThemePackageInstaller
 
         var version = Math.Max(theme.Version, 1).ToString();
         var tenantThemePath = _settings.BuildTenantThemePath(tenantId, theme.ThemeId, version);
-        var container = BuildThemeContainerClient();
-        await container.CreateIfNotExistsAsync(cancellationToken: cancellationToken);
 
         await using var cssStream = new MemoryStream();
         await CopyEntryToAsync(cssEntry, cssStream, cancellationToken);
@@ -65,35 +71,35 @@ public class ThemePackageInstaller
         var cssContentHash = Convert.ToHexString(cssHashBytes).ToLowerInvariant();
         cssStream.Position = 0;
 
-        var cssBlobPath = $"{tenantThemePath}/theme.css";
-        await UploadAsync(container, cssBlobPath, cssStream, "text/css; charset=utf-8", cancellationToken);
+        var cssStoragePath = $"{tenantThemePath}/theme.css";
+        await _storage.UploadAsync(AssetStorageArea.Themes, cssStoragePath, cssStream, "text/css; charset=utf-8", cancellationToken);
 
-        string manifestBlobPath = string.Empty;
+        string manifestStoragePath = string.Empty;
         if (manifestEntry != null)
         {
-            manifestBlobPath = $"{tenantThemePath}/theme-manifest.json";
+            manifestStoragePath = $"{tenantThemePath}/theme-manifest.json";
             await using var manifestStream = new MemoryStream();
             await CopyEntryToAsync(manifestEntry, manifestStream, cancellationToken);
             manifestStream.Position = 0;
-            await UploadAsync(container, manifestBlobPath, manifestStream, "application/json; charset=utf-8", cancellationToken);
+            await _storage.UploadAsync(AssetStorageArea.Themes, manifestStoragePath, manifestStream, "application/json; charset=utf-8", cancellationToken);
         }
 
-        var assetBlobPaths = new List<string>();
+        var assetStoragePaths = new List<string>();
         foreach (var entry in archive.Entries.Where(IsAssetEntry))
         {
             ValidateThemeAssetEntry(entry);
             var relativeAssetPath = NormalizeAssetPath(entry.FullName);
-            var blobPath = $"{tenantThemePath}/{relativeAssetPath}";
+            var storagePath = $"{tenantThemePath}/{relativeAssetPath}";
             await using var assetStream = new MemoryStream();
             await CopyEntryToAsync(entry, assetStream, cancellationToken);
             assetStream.Position = 0;
-            await UploadAsync(container, blobPath, assetStream, ResolveContentType(entry.FullName), cancellationToken);
-            assetBlobPaths.Add(blobPath);
+            await _storage.UploadAsync(AssetStorageArea.Themes, storagePath, assetStream, ResolveContentType(entry.FullName), cancellationToken);
+            assetStoragePaths.Add(storagePath);
         }
 
         packageBuffer.Position = 0;
-        var packageBlobPath = $"{tenantThemePath}/theme-package.zip";
-        await UploadAsync(container, packageBlobPath, packageBuffer, "application/zip", cancellationToken);
+        var packageStoragePath = $"{tenantThemePath}/theme-package.zip";
+        await _storage.UploadAsync(AssetStorageArea.Themes, packageStoragePath, packageBuffer, "application/zip", cancellationToken);
 
         theme.TenantId = tenantId;
         theme.Id = theme.ThemeId;
@@ -101,44 +107,35 @@ public class ThemePackageInstaller
         theme.CompiledAssets = new ThemeCompiledAssets
         {
             Mode = "compiled",
-            CssUrl = _settings.BuildThemePublicUrl(tenantThemePath, "theme.css"),
+            CssUrl = _storage.GetTarget(AssetStorageArea.Themes, cssStoragePath).PublicUrl,
             CssIntegrity = cssIntegrity,
-            AssetsBaseUrl = _settings.BuildThemePublicUrl(tenantThemePath, "assets/"),
-            ManifestUrl = manifestEntry == null ? string.Empty : _settings.BuildThemePublicUrl(tenantThemePath, "theme-manifest.json"),
-            PackageUrl = _settings.BuildThemePublicUrl(tenantThemePath, "theme-package.zip"),
+            AssetsBaseUrl = _storage.GetTarget(AssetStorageArea.Themes, $"{tenantThemePath}/assets/").PublicUrl,
+            ManifestUrl = manifestEntry == null ? string.Empty : _storage.GetTarget(AssetStorageArea.Themes, manifestStoragePath).PublicUrl,
+            PackageUrl = _storage.GetTarget(AssetStorageArea.Themes, packageStoragePath).PublicUrl,
             CompiledAt = DateTime.UtcNow,
             Compiler = "pumpkin-api-theme-installer",
             ContentHash = cssContentHash
         };
 
-        _logger.LogInformation("Theme package installed to blob storage - ThemeId: {ThemeId}, TenantId: {TenantId}", theme.ThemeId, tenantId);
+        _logger.LogInformation(
+            "Theme package installed to asset storage - ThemeId: {ThemeId}, TenantId: {TenantId}, Provider: {Provider}",
+            theme.ThemeId,
+            tenantId,
+            _storage.Provider);
 
         return new ThemePackageInstallResult
         {
             Theme = theme,
             TenantThemePath = tenantThemePath,
-            CssBlobPath = cssBlobPath,
-            ManifestBlobPath = manifestBlobPath,
-            PackageBlobPath = packageBlobPath,
-            AssetBlobPaths = assetBlobPaths
+            CssStoragePath = cssStoragePath,
+            ManifestStoragePath = manifestStoragePath,
+            PackageStoragePath = packageStoragePath,
+            AssetStoragePaths = assetStoragePaths,
+            CssBlobPath = cssStoragePath,
+            ManifestBlobPath = manifestStoragePath,
+            PackageBlobPath = packageStoragePath,
+            AssetBlobPaths = assetStoragePaths
         };
-    }
-
-    private BlobContainerClient BuildThemeContainerClient()
-    {
-        var azureBlob = _settings.AzureBlob;
-
-        if (!string.IsNullOrWhiteSpace(azureBlob.ConnectionString))
-        {
-            return new BlobContainerClient(azureBlob.ConnectionString, azureBlob.ThemesContainerName);
-        }
-
-        if (string.IsNullOrWhiteSpace(azureBlob.AccountName))
-            throw new InvalidOperationException("AssetStorage:AzureBlob:AccountName is required when ConnectionString is not configured.");
-
-        var serviceUri = new Uri($"https://{azureBlob.AccountName}.blob.core.windows.net");
-        var serviceClient = new BlobServiceClient(serviceUri, new DefaultAzureCredential());
-        return serviceClient.GetBlobContainerClient(azureBlob.ThemesContainerName);
     }
 
     private static async Task CopyWithLimitAsync(Stream source, Stream destination, long maxBytes, CancellationToken cancellationToken)
@@ -229,28 +226,6 @@ public class ThemePackageInstaller
     {
         await using var entryStream = entry.Open();
         await entryStream.CopyToAsync(destination, cancellationToken);
-    }
-
-    private static async Task UploadAsync(
-        BlobContainerClient container,
-        string blobPath,
-        Stream stream,
-        string contentType,
-        CancellationToken cancellationToken)
-    {
-        var blobClient = container.GetBlobClient(blobPath);
-        await blobClient.DeleteIfExistsAsync(cancellationToken: cancellationToken);
-        await blobClient.UploadAsync(
-            stream,
-            new BlobUploadOptions
-            {
-                HttpHeaders = new BlobHttpHeaders
-                {
-                    ContentType = contentType,
-                    CacheControl = "public, max-age=31536000, immutable"
-                }
-            },
-            cancellationToken);
     }
 
     private static string ResolveContentType(string fileName)

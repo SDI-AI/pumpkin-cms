@@ -5,7 +5,7 @@ public class AssetStorageSettings
     public const string SectionName = "AssetStorage";
 
     /// <summary>
-    /// Tenant asset provider. Current provisioned value: "AzureBlob".
+    /// Tenant asset provider. Supported values: "AzureBlob" and "LocalFile".
     /// </summary>
     public string Provider { get; set; } = "AzureBlob";
 
@@ -42,6 +42,7 @@ public class AssetStorageSettings
     };
 
     public AzureBlobAssetStorageSettings AzureBlob { get; set; } = new();
+    public LocalFileAssetStorageSettings LocalFile { get; set; } = new();
 
     public string BuildTenantThemePath(string tenantId, string themeId, string version)
     {
@@ -65,15 +66,19 @@ public class AssetStorageSettings
 
     public string BuildThemePublicUrl(string tenantThemePath, string fileName)
     {
-        return BuildPublicUrl(AzureBlob.ThemesPublicBaseUrl, AzureBlob.ThemesContainerName, tenantThemePath, fileName);
+        return Provider.Equals("LocalFile", StringComparison.OrdinalIgnoreCase)
+            ? BuildLocalPublicUrl(tenantThemePath, fileName)
+            : BuildAzurePublicUrl(AzureBlob.ThemesPublicBaseUrl, AzureBlob.ThemesContainerName, tenantThemePath, fileName);
     }
 
     public string BuildMediaPublicUrl(string mediaPath)
     {
-        return BuildPublicUrl(AzureBlob.MediaPublicBaseUrl, AzureBlob.MediaContainerName, mediaPath);
+        return Provider.Equals("LocalFile", StringComparison.OrdinalIgnoreCase)
+            ? BuildLocalPublicUrl(mediaPath)
+            : BuildAzurePublicUrl(AzureBlob.MediaPublicBaseUrl, AzureBlob.MediaContainerName, mediaPath);
     }
 
-    private string BuildPublicUrl(string containerPublicBaseUrl, string containerName, string blobPath, string fileName = "")
+    private string BuildAzurePublicUrl(string containerPublicBaseUrl, string containerName, string blobPath, string fileName = "")
     {
         var baseUrl = string.IsNullOrWhiteSpace(containerPublicBaseUrl)
             ? AzureBlob.PublicBaseUrl
@@ -90,6 +95,23 @@ public class AssetStorageSettings
             return $"{baseUrl.TrimEnd('/')}/{relativePath}";
 
         return $"{baseUrl.TrimEnd('/')}/{containerName.Trim('/')}/{relativePath}";
+    }
+
+    private string BuildLocalPublicUrl(string storagePath, string fileName = "")
+    {
+        var baseUrl = LocalFile.PublicBaseUrl;
+        var requestPath = string.IsNullOrWhiteSpace(LocalFile.RequestPath)
+            ? "/assets"
+            : $"/{LocalFile.RequestPath.Trim('/')}";
+
+        var relativePath = string.IsNullOrWhiteSpace(fileName)
+            ? storagePath.Trim('/')
+            : $"{storagePath.Trim('/')}/{fileName.TrimStart('/')}";
+
+        if (!string.IsNullOrWhiteSpace(baseUrl))
+            return $"{baseUrl.TrimEnd('/')}/{relativePath}";
+
+        return $"{requestPath}/{relativePath}";
     }
 }
 
@@ -111,4 +133,23 @@ public class AzureBlobAssetStorageSettings
     /// <summary>Optional public root mapped directly to the media container.</summary>
     public string MediaPublicBaseUrl { get; set; } = string.Empty;
     public bool UseManagedIdentity { get; set; } = true;
+}
+
+public class LocalFileAssetStorageSettings
+{
+    /// <summary>
+    /// Root directory for local assets. Relative paths resolve under the API content root.
+    /// </summary>
+    public string RootPath { get; set; } = "App_Data/assets";
+
+    /// <summary>
+    /// App-relative request path used to serve local assets.
+    /// </summary>
+    public string RequestPath { get; set; } = "/assets";
+
+    /// <summary>
+    /// Optional absolute public root, for example https://cdn.example.com/assets.
+    /// Leave empty to return app-relative URLs under RequestPath.
+    /// </summary>
+    public string PublicBaseUrl { get; set; } = string.Empty;
 }
