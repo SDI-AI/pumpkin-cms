@@ -17,3 +17,5 @@ Compress-Archive -Path theme-packages\pumpkin-evergreen\* -DestinationPath .tmp\
 Install either zip from the starter admin theme page with `Install Package`, then activate the desired theme.
 
 Keep the starter app fallback theme in code. These packages are for normal runtime install/switching; the fallback covers first-run, empty-database, and recovery scenarios.
+
+For new custom themes, start with `docs/theme-creation-guide.md`.
