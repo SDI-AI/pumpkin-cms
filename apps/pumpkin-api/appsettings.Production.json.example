@@ -28,6 +28,13 @@
       "MaxRetryAttemptsOnRateLimitedRequests": 9,
       "MaxRetryWaitTimeOnRateLimitedRequests": 30,
       "PreferredRegions": ""
+    },
+    "MongoDb": {
+      "ConnectionString": "mongodb://localhost:27017",
+      "DatabaseName": "PumpkinCMS",
+      "MaxConnectionPoolSize": 100,
+      "ConnectTimeoutMs": 30000,
+      "ServerSelectionTimeoutMs": 30000
     }
   },
   "AssetStorage": {

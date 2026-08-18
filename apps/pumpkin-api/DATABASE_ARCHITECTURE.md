@@ -80,19 +80,9 @@ MongoDB-specific implementation of `IDataConnection`.
 - MongoDB driver integration
 - Connection pooling
 - Filter builders for queries
-- Conditional compilation support
+- Page, tenant, user, theme, form definition, form entry, and media metadata operations
 
-**Note:** MongoDB support requires the `MongoDB.Driver` NuGet package. To enable MongoDB:
-```bash
-dotnet add package MongoDB.Driver
-```
-
-Then define the `USE_MONGODB` compilation symbol in your project file:
-```xml
-<PropertyGroup>
-  <DefineConstants>USE_MONGODB</DefineConstants>
-</PropertyGroup>
-```
+**Note:** `MongoDB.Driver` is referenced by `apps/pumpkin-api/pumpkin-api.csproj`. Enable MongoDB by setting `Database:Provider` to `MongoDb` and providing the `Database:MongoDb` settings.
 
 ### 6. **DatabaseSettings** (Configuration)
 Configuration class for database settings.
@@ -307,13 +297,15 @@ The tests demonstrate how to:
 
 ## Troubleshooting
 
-### MongoDB Support Not Available
+### MongoDB Provider Fails at Startup
 
-**Error:** "MongoDB support is not enabled"
+**Error:** connection timeout or authentication failure when `Database:Provider` is `MongoDb`
 
-**Solution:** 
-1. Install MongoDB.Driver package: `dotnet add package MongoDB.Driver`
-2. Define USE_MONGODB compilation symbol (optional, for conditional compilation)
+**Solution:**
+1. Verify `Database:MongoDb:ConnectionString`.
+2. Verify the MongoDB server is reachable from the API host.
+3. Verify authentication credentials and database permissions.
+4. Keep `Database:Provider` set to `CosmosDb` for hosted Cosmos deployments.
 
 ### Provider Not Recognized
 
