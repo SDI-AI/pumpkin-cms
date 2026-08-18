@@ -1,6 +1,11 @@
 import type { FormDefinition, HubSpokeLink, IHtmlBlock, Page, Theme } from 'pumpkin-ts-models';
 import { fallbackTheme } from '@/data';
 import { loadTenantConfig } from '@/lib/tenant-config';
+import {
+  publicFormCacheTags,
+  publicPageCacheTags,
+  publicThemeCacheTags,
+} from '@/lib/public-page-cache';
 import { resolveThemePlugin } from '@/themes/registry';
 
 export const PUBLIC_REVALIDATE_SECONDS = 60 * 60 * 24 * 7;
@@ -9,6 +14,7 @@ const FETCH_TIMEOUT_MS = 5000;
 interface PumpkinFetchOptions {
   cache?: RequestCache;
   revalidate?: number;
+  tags?: string[];
 }
 
 export async function fetchPumpkinPage(slug: string): Promise<Page | null> {
@@ -24,6 +30,7 @@ export async function fetchPumpkinPage(slug: string): Promise<Page | null> {
   return fetchFromPumpkin<Page>(
     `${config.apiUrl}/api/pages/${encodeURIComponent(config.tenantId)}/${slugPath}`,
     config.apiKey,
+    { tags: publicPageCacheTags(config.tenantId, normalizedSlug) },
   );
 }
 
@@ -34,7 +41,7 @@ export async function getSiteTheme(): Promise<Theme> {
   const theme = await fetchFromPumpkin<Theme>(
     `${config.apiUrl}/api/themes/${encodeURIComponent(config.tenantId)}`,
     config.apiKey,
-    { cache: 'no-store' },
+    { tags: publicThemeCacheTags(config.tenantId) },
   );
 
   return resolveThemePlugin(theme ?? fallbackTheme);
@@ -47,7 +54,7 @@ export async function fetchFormDefinition(type: string): Promise<FormDefinition 
   return fetchFromPumpkin<FormDefinition>(
     `${config.apiUrl}/api/forms/${encodeURIComponent(config.tenantId)}/definitions/${encodeURIComponent(type)}`,
     config.apiKey,
-    { cache: 'no-store' },
+    { tags: publicFormCacheTags(config.tenantId, type) },
   );
 }
 
@@ -128,6 +135,7 @@ export async function fetchHubSpokes(hubPageSlug: string, limit = 12): Promise<H
   const response = await fetchFromPumpkin<SpokePagesResponse>(
     `${config.apiUrl}/api/hubs/${encodeURIComponent(config.tenantId)}/spokes/${slugPath}?limit=${normalizeSpokeLimit(limit)}`,
     config.apiKey,
+    { tags: publicPageCacheTags(config.tenantId, hubPageSlug) },
   );
 
   return (response?.spokePages ?? []).map(pageToHubSpokeLink);
@@ -170,7 +178,7 @@ async function fetchFromPumpkin<T>(
   options: PumpkinFetchOptions = {},
 ): Promise<T | null> {
   try {
-    const fetchOptions: RequestInit & { next?: { revalidate: number } } = {
+    const fetchOptions: RequestInit & { next?: { revalidate: number; tags?: string[] } } = {
       headers: {
         Accept: 'application/json',
         Authorization: `Bearer ${apiKey}`,
@@ -181,7 +189,10 @@ async function fetchFromPumpkin<T>(
     if (options.cache === 'no-store') {
       fetchOptions.cache = 'no-store';
     } else {
-      fetchOptions.next = { revalidate: options.revalidate ?? PUBLIC_REVALIDATE_SECONDS };
+      fetchOptions.next = {
+        revalidate: options.revalidate ?? PUBLIC_REVALIDATE_SECONDS,
+        tags: options.tags,
+      };
     }
 
     const response = await fetch(url, fetchOptions);

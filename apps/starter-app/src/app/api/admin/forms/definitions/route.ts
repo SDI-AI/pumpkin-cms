@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { isStarterAdminAuthenticated } from '@/lib/admin-auth';
+import { revalidatePublicForms } from '@/lib/public-page-cache';
 import {
   createStarterAdminFormDefinition,
   getStarterAdminFormDefinitions,
@@ -30,6 +31,7 @@ export async function POST(request: NextRequest) {
   try {
     const definition = (await request.json()) as FormDefinition;
     const created = await createStarterAdminFormDefinition(definition);
+    revalidatePublicForms(created.type);
     return NextResponse.json(created, { status: 201 });
   } catch (error) {
     return NextResponse.json(

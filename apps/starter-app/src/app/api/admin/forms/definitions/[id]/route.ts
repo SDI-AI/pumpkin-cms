@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { isStarterAdminAuthenticated } from '@/lib/admin-auth';
+import { revalidatePublicForms } from '@/lib/public-page-cache';
 import {
   deleteStarterAdminFormDefinition,
   getStarterAdminFormDefinition,
@@ -39,6 +40,7 @@ export async function PUT(request: NextRequest, { params }: FormDefinitionRouteC
     const definition = (await request.json()) as FormDefinition;
     const { id } = await params;
     const updated = await updateStarterAdminFormDefinition(id, definition);
+    revalidatePublicForms(definition.type, updated.type);
     return NextResponse.json(updated);
   } catch (error) {
     return NextResponse.json(
@@ -56,6 +58,7 @@ export async function DELETE(_request: NextRequest, { params }: FormDefinitionRo
   try {
     const { id } = await params;
     const result = await deleteStarterAdminFormDefinition(id);
+    revalidatePublicForms();
     return NextResponse.json(result);
   } catch (error) {
     return NextResponse.json(

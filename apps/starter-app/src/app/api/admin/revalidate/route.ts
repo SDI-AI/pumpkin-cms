@@ -1,14 +1,22 @@
-import { revalidatePath } from 'next/cache';
 import { NextRequest, NextResponse } from 'next/server';
 import { isStarterAdminAuthenticated } from '@/lib/admin-auth';
+import {
+  revalidatePublicForms,
+  revalidatePublicPages,
+  revalidatePublicTheme,
+} from '@/lib/public-page-cache';
 
 const MAX_TARGETED_PATHS = 25;
 
 interface RevalidateRequestBody {
+  forms?: boolean;
+  formType?: string;
+  formTypes?: string[];
   path?: string;
   paths?: string[];
   slug?: string;
   slugs?: string[];
+  theme?: boolean;
 }
 
 export async function POST(request: NextRequest) {
@@ -18,6 +26,7 @@ export async function POST(request: NextRequest) {
 
   const body = await readBody(request);
   const paths = resolveTargetPaths(body);
+  const slugs = resolveTargetSlugs(body);
 
   if (paths.length > MAX_TARGETED_PATHS) {
     return NextResponse.json(
@@ -26,16 +35,23 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  revalidatePath('/', 'layout');
-  for (const path of paths) {
-    revalidatePath(path);
+  revalidatePublicPages(...slugs);
+
+  if (body?.theme) {
+    revalidatePublicTheme();
+  }
+
+  if (body?.forms || body?.formType || body?.formTypes?.length) {
+    revalidatePublicForms(body.formType, ...(body.formTypes ?? []));
   }
 
   return NextResponse.json({
     ok: true,
     revalidatedAt: new Date().toISOString(),
     scope: body ? 'targeted' : 'home',
+    forms: Boolean(body?.forms || body?.formType || body?.formTypes?.length),
     paths,
+    theme: Boolean(body?.theme),
   });
 }
 
@@ -49,24 +65,30 @@ async function readBody(request: NextRequest): Promise<RevalidateRequestBody | n
 }
 
 function resolveTargetPaths(body: RevalidateRequestBody | null) {
+  return resolveTargetSlugs(body)
+    .map(slugToPath)
+    .filter((path): path is string => Boolean(path));
+}
+
+function resolveTargetSlugs(body: RevalidateRequestBody | null) {
   if (!body) {
-    return ['/'];
+    return ['home'];
   }
 
   const candidates = [
-    body.path,
-    ...(body.paths ?? []),
-    slugToPath(body.slug),
-    ...(body.slugs ?? []).map(slugToPath),
+    pathToSlug(body.path),
+    ...(body.paths ?? []).map(pathToSlug),
+    body.slug,
+    ...(body.slugs ?? []),
   ];
 
-  const paths = candidates
-    .map(normalizePath)
-    .filter((path): path is string => Boolean(path));
+  const slugs = candidates
+    .map(normalizeSlug)
+    .filter((slug): slug is string => Boolean(slug));
 
-  return paths.length === 0
-    ? ['/']
-    : Array.from(new Set(paths)).sort();
+  return slugs.length === 0
+    ? ['home']
+    : Array.from(new Set(slugs)).sort();
 }
 
 function slugToPath(slug?: string) {
@@ -74,10 +96,11 @@ function slugToPath(slug?: string) {
     return undefined;
   }
 
-  return slug.trim().toLowerCase() === 'home' ? '/' : slug;
+  const normalized = slug.trim().replace(/^\/+|\/+$/g, '').toLowerCase();
+  return normalized === 'home' ? '/' : `/${normalized}`;
 }
 
-function normalizePath(value?: string) {
+function pathToSlug(value?: string) {
   const trimmed = value?.trim();
   if (!trimmed) {
     return undefined;
@@ -87,6 +110,11 @@ function normalizePath(value?: string) {
     return undefined;
   }
 
-  const path = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
-  return path.replace(/\/{2,}/g, '/').replace(/\/+$/g, '') || '/';
+  const path = trimmed.replace(/\/{2,}/g, '/').replace(/^\/+|\/+$/g, '').toLowerCase();
+  return path || 'home';
+}
+
+function normalizeSlug(value?: string) {
+  const normalized = value?.trim().replace(/^\/+|\/+$/g, '').toLowerCase();
+  return normalized || undefined;
 }

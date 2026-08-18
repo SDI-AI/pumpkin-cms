@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { isStarterAdminAuthenticated } from '@/lib/admin-auth';
+import { revalidatePublicTheme } from '@/lib/public-page-cache';
 import { activateStarterAdminTheme } from '@/lib/starter-admin-themes';
 
 interface ActivateThemeRouteContext {
@@ -16,6 +17,7 @@ export async function POST(_request: NextRequest, { params }: ActivateThemeRoute
   try {
     const { id } = await params;
     const theme = await activateStarterAdminTheme(id);
+    revalidatePublicTheme();
     return NextResponse.json(theme);
   } catch (error) {
     return NextResponse.json(

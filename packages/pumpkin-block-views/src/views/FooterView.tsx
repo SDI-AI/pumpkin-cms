@@ -20,6 +20,8 @@ function isEmoji(s: string): boolean {
 
 export function FooterView({ footer, menu, logoUrl, logoAlt, classNames }: FooterViewProps) {
   const cx = mergeClasses(footerDefaults, classNames);
+  const logoIsEmoji = Boolean(logoUrl && isEmoji(logoUrl));
+  const logoIsImage = Boolean(logoUrl && !logoIsEmoji);
 
   // Visible, sorted top-level items that have children become footer columns
   const columns = menu
@@ -39,14 +41,14 @@ export function FooterView({ footer, menu, logoUrl, logoAlt, classNames }: Foote
           {/* Brand column */}
           <div className={cx.brandSection}>
             <div className={cx.brandLogoWrapper}>
-              {logoUrl && isEmoji(logoUrl) ? (
+              {logoIsEmoji ? (
                 <span className={cx.brandLogoIcon} role="img" aria-label={logoAlt || ''}>
                   {logoUrl}
                 </span>
-              ) : logoUrl ? (
+              ) : logoIsImage ? (
                 <img src={logoUrl} alt={logoAlt || ''} className={cx.brandLogoImage} />
               ) : null}
-              {logoAlt && <span className={cx.brandLogoText}>{logoAlt}</span>}
+              {logoAlt && !logoIsImage && <span className={cx.brandLogoText}>{logoAlt}</span>}
             </div>
             {footer.description && (
               <p className={cx.brandDescription}>{footer.description}</p>

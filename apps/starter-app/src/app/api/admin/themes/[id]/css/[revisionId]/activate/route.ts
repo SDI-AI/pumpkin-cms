@@ -1,6 +1,6 @@
-import { revalidatePath } from 'next/cache';
 import { NextResponse } from 'next/server';
 import { isStarterAdminAuthenticated } from '@/lib/admin-auth';
+import { revalidatePublicTheme } from '@/lib/public-page-cache';
 import { activateStarterAdminThemeCssRevision } from '@/lib/starter-admin-themes';
 
 interface RouteContext {
@@ -15,7 +15,7 @@ export async function POST(_request: Request, { params }: RouteContext) {
   try {
     const { id, revisionId } = await params;
     const result = await activateStarterAdminThemeCssRevision(id, revisionId);
-    revalidatePath('/', 'layout');
+    revalidatePublicTheme();
     return NextResponse.json(result);
   } catch (error) {
     return NextResponse.json(
