@@ -12,6 +12,8 @@ export interface ThemeHeader {
     logoUrl: string;
     logoAlt: string;
     sticky: boolean;
+    /** Optional announcement or promotional banner rendered above the header nav. */
+    banner?: ThemeHeaderBanner;
     /** CTA button label shown in the header (e.g. "Get Started"). Empty = hidden. */
     ctaText: string;
     /** CTA button destination URL. */
@@ -20,6 +22,13 @@ export interface ThemeHeader {
     ctaTarget: string;
     /** Style-slot class overrides applied to the header wrapper. */
     classNames: Record<string, string>;
+}
+export interface ThemeHeaderBanner {
+    enabled: boolean;
+    text: string;
+    linkText: string;
+    linkUrl: string;
+    linkTarget: string;
 }
 export interface ThemeFooter {
     copyright: string;

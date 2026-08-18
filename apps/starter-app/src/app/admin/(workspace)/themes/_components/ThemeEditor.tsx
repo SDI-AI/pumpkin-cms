@@ -424,6 +424,23 @@ export function ThemeEditor({ initialTheme, mode }: ThemeEditorProps) {
             })}
           />
           <TextField label="Logo Alt" value={theme.header.logoAlt} onChange={(value) => update('header', { ...theme.header, logoAlt: value })} />
+          <div className="pt-8">
+            <Checkbox label="Show Header Banner" checked={theme.header.banner?.enabled ?? false} onChange={(enabled) => update('header', { ...theme.header, banner: { ...defaultHeaderBanner(theme.header.banner), enabled } })} />
+          </div>
+          <TextField label="Banner Text" value={theme.header.banner?.text ?? ''} onChange={(value) => update('header', { ...theme.header, banner: { ...defaultHeaderBanner(theme.header.banner), text: value } })} />
+          <TextField label="Banner Link Text" value={theme.header.banner?.linkText ?? ''} onChange={(value) => update('header', { ...theme.header, banner: { ...defaultHeaderBanner(theme.header.banner), linkText: value } })} />
+          <PageLinkField label="Banner link or page" value={theme.header.banner?.linkUrl ?? ''} onChange={(value) => update('header', { ...theme.header, banner: { ...defaultHeaderBanner(theme.header.banner), linkUrl: value } })} />
+          <label className="block">
+            <span className="text-sm font-semibold text-neutral-800">Banner Link Target</span>
+            <select
+              value={theme.header.banner?.linkTarget ?? '_self'}
+              onChange={(event) => update('header', { ...theme.header, banner: { ...defaultHeaderBanner(theme.header.banner), linkTarget: event.target.value } })}
+              className="mt-2 h-10 w-full rounded-md border border-neutral-300 px-3 text-sm"
+            >
+              <option value="_self">Same tab</option>
+              <option value="_blank">New tab</option>
+            </select>
+          </label>
           <TextField label="CTA Text" value={theme.header.ctaText} onChange={(value) => update('header', { ...theme.header, ctaText: value })} />
           <PageLinkField label="CTA URL or page" value={theme.header.ctaUrl} onChange={(value) => update('header', { ...theme.header, ctaUrl: value })} />
           <label className="block">
@@ -676,6 +693,17 @@ function MediaField({
 
 function mediaAlt(asset: MediaAsset) {
   return asset.altText || asset.caption || asset.fileName;
+}
+
+function defaultHeaderBanner(banner: Theme['header']['banner'] = undefined) {
+  return {
+    enabled: false,
+    text: '',
+    linkText: '',
+    linkUrl: '',
+    linkTarget: '_self',
+    ...banner,
+  };
 }
 
 function isEmoji(value: string) {

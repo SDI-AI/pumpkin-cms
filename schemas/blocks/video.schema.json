@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pumpkincms.dev/schemas/blocks/video.schema.json",
+  "title": "VideoBlock",
+  "x-pumpkin": { "type": "Video", "contentType": "VideoContent", "module": "MediaBlocks", "category": "media" },
+  "allOf": [{ "$ref": "block-base.schema.json" }, { "type": "object", "properties": { "type": { "const": "Video" }, "content": { "$ref": "#/$defs/VideoContent" } } }],
+  "$defs": {
+    "VideoProvider": { "type": "string", "enum": ["YouTube", "Vimeo", "External"], "default": "YouTube" },
+    "VideoContent": { "type": "object", "required": ["title", "subtitle", "provider", "url", "caption", "aspect", "autoplay", "muted"], "properties": {
+      "title": { "type": "string", "default": "" },
+      "subtitle": { "type": "string", "default": "" },
+      "provider": { "$ref": "#/$defs/VideoProvider" },
+      "url": { "type": "string", "default": "" },
+      "caption": { "type": "string", "default": "" },
+      "aspect": { "$ref": "shared.schema.json#/$defs/ImageAspect" },
+      "autoplay": { "type": "boolean", "default": false },
+      "muted": { "type": "boolean", "default": true }
+    }, "additionalProperties": true }
+  }
+}

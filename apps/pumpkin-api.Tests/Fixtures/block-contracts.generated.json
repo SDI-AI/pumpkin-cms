@@ -190,6 +190,96 @@
     }
   },
   {
+    "id": "fixture-socialembed",
+    "name": "SocialEmbed fixture",
+    "enabled": false,
+    "schemaVersion": 1,
+    "type": "SocialEmbed",
+    "content": {
+      "title": "",
+      "subtitle": "",
+      "layout": "grid",
+      "aspect": "auto",
+      "items": []
+    }
+  },
+  {
+    "id": "fixture-sociallinks",
+    "name": "SocialLinks fixture",
+    "enabled": false,
+    "schemaVersion": 1,
+    "type": "SocialLinks",
+    "content": {
+      "title": "",
+      "subtitle": "",
+      "layout": "inline",
+      "links": []
+    }
+  },
+  {
+    "id": "fixture-menupricing",
+    "name": "MenuPricing fixture",
+    "enabled": false,
+    "schemaVersion": 1,
+    "type": "MenuPricing",
+    "content": {
+      "title": "",
+      "subtitle": "",
+      "layout": "sections",
+      "currency": "USD",
+      "showPrices": true,
+      "sections": []
+    }
+  },
+  {
+    "id": "fixture-eventpackages",
+    "name": "EventPackages fixture",
+    "enabled": false,
+    "schemaVersion": 1,
+    "type": "EventPackages",
+    "content": {
+      "title": "",
+      "subtitle": "",
+      "layout": "grid",
+      "packages": []
+    }
+  },
+  {
+    "id": "fixture-video",
+    "name": "Video fixture",
+    "enabled": false,
+    "schemaVersion": 1,
+    "type": "Video",
+    "content": {
+      "title": "",
+      "subtitle": "",
+      "provider": "YouTube",
+      "url": "",
+      "caption": "",
+      "aspect": "auto",
+      "autoplay": false,
+      "muted": true
+    }
+  },
+  {
+    "id": "fixture-hourslocation",
+    "name": "HoursLocation fixture",
+    "enabled": false,
+    "schemaVersion": 1,
+    "type": "HoursLocation",
+    "content": {
+      "title": "",
+      "subtitle": "",
+      "addressLines": [],
+      "phone": "",
+      "email": "",
+      "hours": [],
+      "mapEmbedUrl": "",
+      "ctaText": "",
+      "ctaLink": ""
+    }
+  },
+  {
     "id": "fixture-contact",
     "name": "Contact fixture",
     "enabled": false,

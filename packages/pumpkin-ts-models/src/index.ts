@@ -138,6 +138,16 @@ export type {
   TestimonialItem,
   TestimonialsContent,
   TestimonialsBlock,
+  SocialEmbedPlatform,
+  SocialEmbedLayout,
+  SocialEmbedItem,
+  SocialEmbedContent,
+  SocialEmbedBlock,
+  SocialLinksLayout,
+  SocialLinksPlatform,
+  SocialProfileLink,
+  SocialLinksContent,
+  SocialLinksBlock,
   FormField,
   SocialLink,
   ContactContent,
@@ -145,6 +155,33 @@ export type {
   FormBlockContent,
   FormBlock
 } from './models/InteractionBlocks';
+
+// Commerce blocks
+export type {
+  MenuPricingLayout,
+  MenuPricingItem,
+  MenuPricingSection,
+  MenuPricingContent,
+  MenuPricingBlock,
+  EventPackagesLayout,
+  EventPackageItem,
+  EventPackagesContent,
+  EventPackagesBlock
+} from './models/CommerceBlocks';
+
+// Media blocks
+export type {
+  VideoProvider,
+  VideoContent,
+  VideoBlock
+} from './models/MediaBlocks';
+
+// Business blocks
+export type {
+  BusinessHoursItem,
+  HoursLocationContent,
+  HoursLocationBlock
+} from './models/BusinessBlocks';
 
 // Blog blocks
 export type {
@@ -170,6 +207,7 @@ export {
 export type {
   Theme,
   ThemeHeader,
+  ThemeHeaderBanner,
   ThemeFooter,
   ThemePreview,
   ThemeTypography,

@@ -1,5 +1,9 @@
 export const headerDefaults = {
   root: 'w-full border-b border-neutral-200 bg-white',
+  banner: 'w-full bg-neutral-950 text-white',
+  bannerInner: 'max-w-6xl mx-auto px-6 min-h-9 flex flex-wrap items-center justify-center gap-2 text-center text-sm font-medium',
+  bannerText: '',
+  bannerLink: 'font-bold underline underline-offset-2 hover:text-orange-200',
   container: 'max-w-6xl mx-auto px-6 flex items-center justify-between h-16',
   logoWrapper: 'flex items-center gap-2',
   logoIcon: 'text-2xl',

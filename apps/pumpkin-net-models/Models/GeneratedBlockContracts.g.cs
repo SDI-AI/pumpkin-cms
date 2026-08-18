@@ -521,6 +521,288 @@ public class TestimonialsContent
     public List<TestimonialItem> Items { get; set; } = new();
 }
 
+public class SocialEmbedBlock : HtmlBlockBase
+{
+    [JsonPropertyName("type")]
+    public override string Type { get; set; } = "SocialEmbed";
+
+    [JsonPropertyName("content")]
+    public override object Content { get; set; } = new SocialEmbedContent();
+}
+
+public class SocialEmbedItem
+{
+    [JsonPropertyName("platform")]
+    public string Platform { get; set; } = "Instagram";
+
+    [JsonPropertyName("url")]
+    public string Url { get; set; } = string.Empty;
+
+    [JsonPropertyName("caption")]
+    public string Caption { get; set; } = string.Empty;
+}
+
+public class SocialEmbedContent
+{
+    [JsonPropertyName("title")]
+    public string Title { get; set; } = string.Empty;
+
+    [JsonPropertyName("subtitle")]
+    public string Subtitle { get; set; } = string.Empty;
+
+    [JsonPropertyName("layout")]
+    public string Layout { get; set; } = "grid";
+
+    [JsonPropertyName("aspect")]
+    public string Aspect { get; set; } = "auto";
+
+    [JsonPropertyName("items")]
+    public List<SocialEmbedItem> Items { get; set; } = new();
+}
+
+public class SocialLinksBlock : HtmlBlockBase
+{
+    [JsonPropertyName("type")]
+    public override string Type { get; set; } = "SocialLinks";
+
+    [JsonPropertyName("content")]
+    public override object Content { get; set; } = new SocialLinksContent();
+}
+
+public class SocialProfileLink
+{
+    [JsonPropertyName("platform")]
+    public string Platform { get; set; } = "Instagram";
+
+    [JsonPropertyName("url")]
+    public string Url { get; set; } = string.Empty;
+
+    [JsonPropertyName("label")]
+    public string Label { get; set; } = string.Empty;
+
+    [JsonPropertyName("icon")]
+    public string Icon { get; set; } = string.Empty;
+}
+
+public class SocialLinksContent
+{
+    [JsonPropertyName("title")]
+    public string Title { get; set; } = string.Empty;
+
+    [JsonPropertyName("subtitle")]
+    public string Subtitle { get; set; } = string.Empty;
+
+    [JsonPropertyName("layout")]
+    public string Layout { get; set; } = "inline";
+
+    [JsonPropertyName("links")]
+    public List<SocialProfileLink> Links { get; set; } = new();
+}
+
+public class MenuPricingBlock : HtmlBlockBase
+{
+    [JsonPropertyName("type")]
+    public override string Type { get; set; } = "MenuPricing";
+
+    [JsonPropertyName("content")]
+    public override object Content { get; set; } = new MenuPricingContent();
+}
+
+public class MenuPricingItem
+{
+    [JsonPropertyName("name")]
+    public string Name { get; set; } = string.Empty;
+
+    [JsonPropertyName("description")]
+    public string Description { get; set; } = string.Empty;
+
+    [JsonPropertyName("price")]
+    public string Price { get; set; } = string.Empty;
+
+    [JsonPropertyName("badge")]
+    public string Badge { get; set; } = string.Empty;
+
+    [JsonPropertyName("image")]
+    public string Image { get; set; } = string.Empty;
+
+    [JsonPropertyName("imageAlt")]
+    public string ImageAlt { get; set; } = string.Empty;
+}
+
+public class MenuPricingSection
+{
+    [JsonPropertyName("title")]
+    public string Title { get; set; } = string.Empty;
+
+    [JsonPropertyName("description")]
+    public string Description { get; set; } = string.Empty;
+
+    [JsonPropertyName("items")]
+    public List<MenuPricingItem> Items { get; set; } = new();
+}
+
+public class MenuPricingContent
+{
+    [JsonPropertyName("title")]
+    public string Title { get; set; } = string.Empty;
+
+    [JsonPropertyName("subtitle")]
+    public string Subtitle { get; set; } = string.Empty;
+
+    [JsonPropertyName("layout")]
+    public string Layout { get; set; } = "sections";
+
+    [JsonPropertyName("currency")]
+    public string Currency { get; set; } = "USD";
+
+    [JsonPropertyName("showPrices")]
+    public bool ShowPrices { get; set; } = true;
+
+    [JsonPropertyName("sections")]
+    public List<MenuPricingSection> Sections { get; set; } = new();
+}
+
+public class EventPackagesBlock : HtmlBlockBase
+{
+    [JsonPropertyName("type")]
+    public override string Type { get; set; } = "EventPackages";
+
+    [JsonPropertyName("content")]
+    public override object Content { get; set; } = new EventPackagesContent();
+}
+
+public class EventPackageItem
+{
+    [JsonPropertyName("name")]
+    public string Name { get; set; } = string.Empty;
+
+    [JsonPropertyName("description")]
+    public string Description { get; set; } = string.Empty;
+
+    [JsonPropertyName("price")]
+    public string Price { get; set; } = string.Empty;
+
+    [JsonPropertyName("priceNote")]
+    public string PriceNote { get; set; } = string.Empty;
+
+    [JsonPropertyName("image")]
+    public string Image { get; set; } = string.Empty;
+
+    [JsonPropertyName("imageAlt")]
+    public string ImageAlt { get; set; } = string.Empty;
+
+    [JsonPropertyName("features")]
+    public List<string> Features { get; set; } = new();
+
+    [JsonPropertyName("ctaText")]
+    public string CtaText { get; set; } = string.Empty;
+
+    [JsonPropertyName("ctaLink")]
+    public string CtaLink { get; set; } = string.Empty;
+
+    [JsonPropertyName("highlighted")]
+    public bool Highlighted { get; set; } = false;
+}
+
+public class EventPackagesContent
+{
+    [JsonPropertyName("title")]
+    public string Title { get; set; } = string.Empty;
+
+    [JsonPropertyName("subtitle")]
+    public string Subtitle { get; set; } = string.Empty;
+
+    [JsonPropertyName("layout")]
+    public string Layout { get; set; } = "grid";
+
+    [JsonPropertyName("packages")]
+    public List<EventPackageItem> Packages { get; set; } = new();
+}
+
+public class VideoBlock : HtmlBlockBase
+{
+    [JsonPropertyName("type")]
+    public override string Type { get; set; } = "Video";
+
+    [JsonPropertyName("content")]
+    public override object Content { get; set; } = new VideoContent();
+}
+
+public class VideoContent
+{
+    [JsonPropertyName("title")]
+    public string Title { get; set; } = string.Empty;
+
+    [JsonPropertyName("subtitle")]
+    public string Subtitle { get; set; } = string.Empty;
+
+    [JsonPropertyName("provider")]
+    public string Provider { get; set; } = "YouTube";
+
+    [JsonPropertyName("url")]
+    public string Url { get; set; } = string.Empty;
+
+    [JsonPropertyName("caption")]
+    public string Caption { get; set; } = string.Empty;
+
+    [JsonPropertyName("aspect")]
+    public string Aspect { get; set; } = "auto";
+
+    [JsonPropertyName("autoplay")]
+    public bool Autoplay { get; set; } = false;
+
+    [JsonPropertyName("muted")]
+    public bool Muted { get; set; } = true;
+}
+
+public class HoursLocationBlock : HtmlBlockBase
+{
+    [JsonPropertyName("type")]
+    public override string Type { get; set; } = "HoursLocation";
+
+    [JsonPropertyName("content")]
+    public override object Content { get; set; } = new HoursLocationContent();
+}
+
+public class BusinessHoursItem
+{
+    [JsonPropertyName("label")]
+    public string Label { get; set; } = string.Empty;
+
+    [JsonPropertyName("value")]
+    public string Value { get; set; } = string.Empty;
+}
+
+public class HoursLocationContent
+{
+    [JsonPropertyName("title")]
+    public string Title { get; set; } = string.Empty;
+
+    [JsonPropertyName("subtitle")]
+    public string Subtitle { get; set; } = string.Empty;
+
+    [JsonPropertyName("addressLines")]
+    public List<string> AddressLines { get; set; } = new();
+
+    [JsonPropertyName("phone")]
+    public string Phone { get; set; } = string.Empty;
+
+    [JsonPropertyName("email")]
+    public string Email { get; set; } = string.Empty;
+
+    [JsonPropertyName("hours")]
+    public List<BusinessHoursItem> Hours { get; set; } = new();
+
+    [JsonPropertyName("mapEmbedUrl")]
+    public string MapEmbedUrl { get; set; } = string.Empty;
+
+    [JsonPropertyName("ctaText")]
+    public string CtaText { get; set; } = string.Empty;
+
+    [JsonPropertyName("ctaLink")]
+    public string CtaLink { get; set; } = string.Empty;
+}
+
 public class ContactBlock : HtmlBlockBase
 {
     [JsonPropertyName("type")]
@@ -730,6 +1012,12 @@ internal static class GeneratedBlockTypeRegistry
         ["LocalProTips"] = typeof(LocalProTipsBlock),
         ["Gallery"] = typeof(GalleryBlock),
         ["Testimonials"] = typeof(TestimonialsBlock),
+        ["SocialEmbed"] = typeof(SocialEmbedBlock),
+        ["SocialLinks"] = typeof(SocialLinksBlock),
+        ["MenuPricing"] = typeof(MenuPricingBlock),
+        ["EventPackages"] = typeof(EventPackagesBlock),
+        ["Video"] = typeof(VideoBlock),
+        ["HoursLocation"] = typeof(HoursLocationBlock),
         ["Contact"] = typeof(ContactBlock),
         ["Form"] = typeof(FormBlock),
         ["Blog"] = typeof(BlogBlock),
@@ -754,6 +1042,12 @@ public static class HtmlBlockContractValidator
             ["LocalProTips"] = new[] { "title", "items" },
             ["Gallery"] = new[] { "title", "subtitle", "images" },
             ["Testimonials"] = new[] { "title", "subtitle", "layout", "items" },
+            ["SocialEmbed"] = new[] { "title", "subtitle", "layout", "aspect", "items" },
+            ["SocialLinks"] = new[] { "title", "subtitle", "layout", "links" },
+            ["MenuPricing"] = new[] { "title", "subtitle", "layout", "currency", "showPrices", "sections" },
+            ["EventPackages"] = new[] { "title", "subtitle", "layout", "packages" },
+            ["Video"] = new[] { "title", "subtitle", "provider", "url", "caption", "aspect", "autoplay", "muted" },
+            ["HoursLocation"] = new[] { "title", "subtitle", "addressLines", "phone", "email", "hours", "mapEmbedUrl", "ctaText", "ctaLink" },
             ["Contact"] = new[] { "id", "title", "subtitle", "address", "phone", "email", "hours", "formFields", "submitButtonText", "socialLinks" },
             ["Form"] = new[] { "formType", "title", "subtitle", "layout", "successMessage" },
             ["Blog"] = new[] { "title", "subtitle", "author", "authorImage", "authorBio", "publishedDate", "featuredImage", "featuredImageAlt", "excerpt", "body", "tags", "categories", "readingTime", "relatedPosts" },

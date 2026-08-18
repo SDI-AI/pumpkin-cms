@@ -5,7 +5,7 @@ export interface BlockTypeInfo {
   type: string;
   label: string;
   icon: string;
-  category: 'hero' | 'cta' | 'content' | 'navigation' | 'interaction' | 'blog';
+  category: 'hero' | 'cta' | 'content' | 'navigation' | 'interaction' | 'commerce' | 'media' | 'business' | 'blog';
   description: string;
 }
 
@@ -23,6 +23,12 @@ export const BLOCK_TYPE_INFO: BlockTypeInfo[] = [
   { type: 'LocalProTips', label: 'Local Pro Tips', icon: 'TIP', category: 'navigation', description: 'Expert tips section.' },
   { type: 'Gallery', label: 'Gallery', icon: 'IMG', category: 'interaction', description: 'Image gallery with captions.' },
   { type: 'Testimonials', label: 'Testimonials', icon: 'REV', category: 'interaction', description: 'Customer reviews and testimonials.' },
+  { type: 'SocialEmbed', label: 'Social Embeds', icon: 'SOC', category: 'interaction', description: 'Curated embeds from supported social platforms.' },
+  { type: 'SocialLinks', label: 'Social Links', icon: 'LNK', category: 'interaction', description: 'Linked social profiles and review channels.' },
+  { type: 'MenuPricing', label: 'Menu / Pricing', icon: 'MNU', category: 'commerce', description: 'Menu sections, service lists, and visible pricing.' },
+  { type: 'EventPackages', label: 'Event Packages', icon: 'PKG', category: 'commerce', description: 'Bookable packages with features, prices, and CTAs.' },
+  { type: 'Video', label: 'Video', icon: 'VID', category: 'media', description: 'YouTube, Vimeo, or trusted external video embeds.' },
+  { type: 'HoursLocation', label: 'Hours & Location', icon: 'HRS', category: 'business', description: 'Address, hours, contact details, and a map embed.' },
   { type: 'Contact', label: 'Contact', icon: 'CON', category: 'interaction', description: 'Contact form with details.' },
   { type: 'Form', label: 'Form', icon: 'FRM', category: 'interaction', description: 'Form definition renderer.' },
   { type: 'Blog', label: 'Blog', icon: 'BLG', category: 'blog', description: 'Blog post content block.' },
@@ -34,6 +40,9 @@ export const BLOCK_CATEGORIES = [
   { key: 'content', label: 'Content' },
   { key: 'navigation', label: 'Navigation & Info' },
   { key: 'interaction', label: 'Interactive' },
+  { key: 'commerce', label: 'Commerce' },
+  { key: 'media', label: 'Media' },
+  { key: 'business', label: 'Business Info' },
   { key: 'blog', label: 'Blog' },
 ] as const;
 

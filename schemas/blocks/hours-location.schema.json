@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pumpkincms.dev/schemas/blocks/hours-location.schema.json",
+  "title": "HoursLocationBlock",
+  "x-pumpkin": { "type": "HoursLocation", "contentType": "HoursLocationContent", "module": "BusinessBlocks", "category": "business" },
+  "allOf": [{ "$ref": "block-base.schema.json" }, { "type": "object", "properties": { "type": { "const": "HoursLocation" }, "content": { "$ref": "#/$defs/HoursLocationContent" } } }],
+  "$defs": {
+    "BusinessHoursItem": { "type": "object", "required": ["label", "value"], "properties": {
+      "label": { "type": "string", "default": "" },
+      "value": { "type": "string", "default": "" }
+    }, "additionalProperties": true },
+    "HoursLocationContent": { "type": "object", "required": ["title", "subtitle", "addressLines", "phone", "email", "hours", "mapEmbedUrl", "ctaText", "ctaLink"], "properties": {
+      "title": { "type": "string", "default": "" },
+      "subtitle": { "type": "string", "default": "" },
+      "addressLines": { "type": "array", "items": { "type": "string" }, "default": [] },
+      "phone": { "type": "string", "default": "" },
+      "email": { "type": "string", "default": "" },
+      "hours": { "type": "array", "items": { "$ref": "#/$defs/BusinessHoursItem" }, "default": [], "x-pumpkin-editor": "collection" },
+      "mapEmbedUrl": { "type": "string", "default": "" },
+      "ctaText": { "type": "string", "default": "" },
+      "ctaLink": { "type": "string", "default": "", "x-pumpkin-editor": "page-link" }
+    }, "additionalProperties": true }
+  }
+}

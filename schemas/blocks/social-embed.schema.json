@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pumpkincms.dev/schemas/blocks/social-embed.schema.json",
+  "title": "SocialEmbedBlock",
+  "x-pumpkin": { "type": "SocialEmbed", "contentType": "SocialEmbedContent", "module": "InteractionBlocks", "category": "interaction" },
+  "allOf": [
+    { "$ref": "block-base.schema.json" },
+    { "type": "object", "properties": { "type": { "const": "SocialEmbed" }, "content": { "$ref": "#/$defs/SocialEmbedContent" } } }
+  ],
+  "$defs": {
+    "SocialEmbedPlatform": {
+      "type": "string",
+      "enum": ["Instagram", "YouTube", "TikTok", "Facebook", "X", "Pinterest", "LinkedIn"],
+      "default": "Instagram"
+    },
+    "SocialEmbedLayout": {
+      "type": "string",
+      "enum": ["grid", "stack", "carousel"],
+      "default": "grid"
+    },
+    "SocialEmbedItem": {
+      "type": "object",
+      "required": ["platform", "url", "caption"],
+      "properties": {
+        "platform": { "$ref": "#/$defs/SocialEmbedPlatform" },
+        "url": { "type": "string", "default": "" },
+        "caption": { "type": "string", "default": "" }
+      },
+      "additionalProperties": true
+    },
+    "SocialEmbedContent": {
+      "type": "object",
+      "required": ["title", "subtitle", "layout", "aspect", "items"],
+      "properties": {
+        "title": { "type": "string", "default": "" },
+        "subtitle": { "type": "string", "default": "" },
+        "layout": { "$ref": "#/$defs/SocialEmbedLayout" },
+        "aspect": { "$ref": "shared.schema.json#/$defs/ImageAspect", "default": "auto" },
+        "items": { "type": "array", "items": { "$ref": "#/$defs/SocialEmbedItem" }, "default": [], "x-pumpkin-editor": "collection" }
+      },
+      "additionalProperties": true
+    }
+  }
+}

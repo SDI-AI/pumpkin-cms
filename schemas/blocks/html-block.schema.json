@@ -7,6 +7,8 @@
     { "$ref": "card-grid.schema.json" }, { "$ref": "faq.schema.json" }, { "$ref": "hub-spokes.schema.json" },
     { "$ref": "breadcrumbs.schema.json" }, { "$ref": "trust-bar.schema.json" }, { "$ref": "how-it-works.schema.json" },
     { "$ref": "service-area-map.schema.json" }, { "$ref": "local-pro-tips.schema.json" }, { "$ref": "gallery.schema.json" },
-    { "$ref": "testimonials.schema.json" }, { "$ref": "contact.schema.json" }, { "$ref": "form.schema.json" }, { "$ref": "blog.schema.json" }
+    { "$ref": "testimonials.schema.json" }, { "$ref": "social-embed.schema.json" }, { "$ref": "social-links.schema.json" },
+    { "$ref": "menu-pricing.schema.json" }, { "$ref": "event-packages.schema.json" }, { "$ref": "video.schema.json" },
+    { "$ref": "hours-location.schema.json" }, { "$ref": "contact.schema.json" }, { "$ref": "form.schema.json" }, { "$ref": "blog.schema.json" }
   ]
 }

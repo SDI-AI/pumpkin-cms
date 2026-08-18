@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pumpkincms.dev/schemas/blocks/social-links.schema.json",
+  "title": "SocialLinksBlock",
+  "x-pumpkin": { "type": "SocialLinks", "contentType": "SocialLinksContent", "module": "InteractionBlocks", "category": "interaction" },
+  "allOf": [{ "$ref": "block-base.schema.json" }, { "type": "object", "properties": { "type": { "const": "SocialLinks" }, "content": { "$ref": "#/$defs/SocialLinksContent" } } }],
+  "$defs": {
+    "SocialLinksLayout": { "type": "string", "enum": ["inline", "grid", "stack"], "default": "inline" },
+    "SocialLinksPlatform": { "type": "string", "enum": ["Instagram", "Facebook", "TikTok", "YouTube", "X", "Pinterest", "LinkedIn", "Yelp", "GoogleBusiness", "Other"], "default": "Instagram" },
+    "SocialProfileLink": { "type": "object", "required": ["platform", "url", "label", "icon"], "properties": {
+      "platform": { "$ref": "#/$defs/SocialLinksPlatform" },
+      "url": { "type": "string", "default": "" },
+      "label": { "type": "string", "default": "" },
+      "icon": { "type": "string", "default": "" }
+    }, "additionalProperties": true },
+    "SocialLinksContent": { "type": "object", "required": ["title", "subtitle", "layout", "links"], "properties": {
+      "title": { "type": "string", "default": "" },
+      "subtitle": { "type": "string", "default": "" },
+      "layout": { "$ref": "#/$defs/SocialLinksLayout" },
+      "links": { "type": "array", "items": { "$ref": "#/$defs/SocialProfileLink" }, "default": [], "x-pumpkin-editor": "collection" }
+    }, "additionalProperties": true }
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pumpkincms.dev/schemas/blocks/menu-pricing.schema.json",
+  "title": "MenuPricingBlock",
+  "x-pumpkin": { "type": "MenuPricing", "contentType": "MenuPricingContent", "module": "CommerceBlocks", "category": "commerce" },
+  "allOf": [{ "$ref": "block-base.schema.json" }, { "type": "object", "properties": { "type": { "const": "MenuPricing" }, "content": { "$ref": "#/$defs/MenuPricingContent" } } }],
+  "$defs": {
+    "MenuPricingLayout": { "type": "string", "enum": ["sections", "cards", "compact"], "default": "sections" },
+    "MenuPricingItem": { "type": "object", "required": ["name", "description", "price", "badge", "image", "imageAlt"], "properties": {
+      "name": { "type": "string", "default": "" },
+      "description": { "type": "string", "default": "" },
+      "price": { "type": "string", "default": "" },
+      "badge": { "type": "string", "default": "" },
+      "image": { "type": "string", "default": "", "x-pumpkin-editor": "media" },
+      "imageAlt": { "type": "string", "default": "" }
+    }, "additionalProperties": true },
+    "MenuPricingSection": { "type": "object", "required": ["title", "description", "items"], "properties": {
+      "title": { "type": "string", "default": "" },
+      "description": { "type": "string", "default": "" },
+      "items": { "type": "array", "items": { "$ref": "#/$defs/MenuPricingItem" }, "default": [], "x-pumpkin-editor": "collection" }
+    }, "additionalProperties": true },
+    "MenuPricingContent": { "type": "object", "required": ["title", "subtitle", "layout", "currency", "showPrices", "sections"], "properties": {
+      "title": { "type": "string", "default": "" },
+      "subtitle": { "type": "string", "default": "" },
+      "layout": { "$ref": "#/$defs/MenuPricingLayout" },
+      "currency": { "type": "string", "default": "USD" },
+      "showPrices": { "type": "boolean", "default": true },
+      "sections": { "type": "array", "items": { "$ref": "#/$defs/MenuPricingSection" }, "default": [], "x-pumpkin-editor": "collection" }
+    }, "additionalProperties": true }
+  }
+}

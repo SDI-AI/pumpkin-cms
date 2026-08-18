@@ -47,6 +47,18 @@ export default function BlockEditorFields({ block, onChange }: BlockEditorFields
       return <GalleryFields content={content} update={update} onChange={onChange} />
     case 'Testimonials':
       return <TestimonialsFields content={content} update={update} onChange={onChange} />
+    case 'SocialEmbed':
+      return <SocialEmbedFields content={content} update={update} onChange={onChange} />
+    case 'SocialLinks':
+      return <SocialLinksFields content={content} update={update} onChange={onChange} />
+    case 'MenuPricing':
+      return <MenuPricingFields content={content} update={update} onChange={onChange} />
+    case 'EventPackages':
+      return <EventPackagesFields content={content} update={update} onChange={onChange} />
+    case 'Video':
+      return <VideoFields content={content} update={update} />
+    case 'HoursLocation':
+      return <HoursLocationFields content={content} update={update} onChange={onChange} />
     case 'Contact':
       return <ContactFields content={content} update={update} onChange={onChange} />
     case 'Form':
@@ -84,6 +96,15 @@ function NumberField({ label, value, onChange }: { label: string; value: number;
       <label className={labelClass}>{label}</label>
       <input type="number" value={value ?? 0} onChange={e => onChange(parseInt(e.target.value) || 0)} className={inputClass} />
     </div>
+  )
+}
+
+function CheckboxField({ checked, label, onChange }: { checked: boolean; label: string; onChange: (checked: boolean) => void }) {
+  return (
+    <label className="flex items-center gap-2 text-xs text-neutral-600">
+      <input type="checkbox" checked={checked} onChange={e => onChange(e.target.checked)} className="rounded border-neutral-300 text-pumpkin-600" />
+      {label}
+    </label>
   )
 }
 
@@ -586,6 +607,270 @@ function TestimonialsFields({ content, update, onChange }: { content: any; updat
           </div>
         )}
       />
+    </div>
+  )
+}
+
+function SocialEmbedFields({ content, update, onChange }: { content: any; update: (k: string, v: any) => void; onChange: (c: any) => void }) {
+  return (
+    <div className="space-y-3">
+      <Field label="Title" value={content.title} onChange={v => update('title', v)} />
+      <Field label="Subtitle" value={content.subtitle} onChange={v => update('subtitle', v)} multiline />
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className={labelClass}>Layout</label>
+          <select value={content.layout || 'grid'} onChange={e => update('layout', e.target.value)} className={inputClass}>
+            <option value="grid">Grid</option>
+            <option value="stack">Stack</option>
+            <option value="carousel">Carousel</option>
+          </select>
+        </div>
+        <PresetSelect label="Embed Aspect" value={content.aspect || 'auto'} options={aspectOptions} onChange={v => update('aspect', v)} />
+      </div>
+      <ArrayManager
+        label="Embeds"
+        items={content.items || []}
+        onUpdate={items => onChange({ ...content, items })}
+        createItem={() => ({ platform: 'Instagram', url: '', caption: '' })}
+        renderItem={(item: any, _i, updateItem) => (
+          <div className="space-y-2">
+            <div>
+              <label className={labelClass}>Platform</label>
+              <select value={item.platform || 'Instagram'} onChange={e => updateItem({ ...item, platform: e.target.value })} className={inputClass}>
+                <option value="Instagram">Instagram</option>
+                <option value="YouTube">YouTube</option>
+                <option value="TikTok">TikTok</option>
+                <option value="Facebook">Facebook</option>
+                <option value="X">X / Twitter</option>
+                <option value="Pinterest">Pinterest</option>
+                <option value="LinkedIn">LinkedIn</option>
+              </select>
+            </div>
+            <Field label="Public URL or embed URL" value={item.url} onChange={v => updateItem({ ...item, url: v })} placeholder="https://www.instagram.com/p/..." />
+            <Field label="Caption" value={item.caption} onChange={v => updateItem({ ...item, caption: v })} />
+          </div>
+        )}
+      />
+    </div>
+  )
+}
+
+/* Social Links */
+
+function SocialLinksFields({ content, update, onChange }: { content: any; update: (k: string, v: any) => void; onChange: (c: any) => void }) {
+  return (
+    <div className="space-y-3">
+      <Field label="Title" value={content.title} onChange={v => update('title', v)} />
+      <Field label="Subtitle" value={content.subtitle} onChange={v => update('subtitle', v)} multiline />
+      <div>
+        <label className={labelClass}>Layout</label>
+        <select value={content.layout || 'inline'} onChange={e => update('layout', e.target.value)} className={inputClass}>
+          <option value="inline">Inline</option>
+          <option value="grid">Grid</option>
+          <option value="stack">Stack</option>
+        </select>
+      </div>
+      <ArrayManager
+        label="Social Profiles"
+        items={content.links || []}
+        onUpdate={links => onChange({ ...content, links })}
+        createItem={() => ({ platform: 'Instagram', url: '', label: 'Instagram', icon: 'Instagram' })}
+        renderItem={(link: any, _i, updateLink) => (
+          <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className={labelClass}>Platform</label>
+                <select value={link.platform || 'Instagram'} onChange={e => updateLink({ ...link, platform: e.target.value })} className={inputClass}>
+                  <option value="Instagram">Instagram</option>
+                  <option value="Facebook">Facebook</option>
+                  <option value="TikTok">TikTok</option>
+                  <option value="YouTube">YouTube</option>
+                  <option value="X">X / Twitter</option>
+                  <option value="Pinterest">Pinterest</option>
+                  <option value="LinkedIn">LinkedIn</option>
+                  <option value="Yelp">Yelp</option>
+                  <option value="GoogleBusiness">Google Business</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <Field label="Label" value={link.label} onChange={v => updateLink({ ...link, label: v })} />
+            </div>
+            <Field label="Profile URL" value={link.url} onChange={v => updateLink({ ...link, url: v })} placeholder="https://www.instagram.com/..." />
+            <IconPickerField value={link.icon} onChange={v => updateLink({ ...link, icon: v })} />
+          </div>
+        )}
+      />
+    </div>
+  )
+}
+
+/* Menu / Pricing */
+
+function MenuPricingFields({ content, update, onChange }: { content: any; update: (k: string, v: any) => void; onChange: (c: any) => void }) {
+  return (
+    <div className="space-y-3">
+      <Field label="Title" value={content.title} onChange={v => update('title', v)} />
+      <Field label="Subtitle" value={content.subtitle} onChange={v => update('subtitle', v)} multiline />
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className={labelClass}>Layout</label>
+          <select value={content.layout || 'sections'} onChange={e => update('layout', e.target.value)} className={inputClass}>
+            <option value="sections">Sections</option>
+            <option value="cards">Cards</option>
+            <option value="compact">Compact</option>
+          </select>
+        </div>
+        <Field label="Currency Label" value={content.currency} onChange={v => update('currency', v)} placeholder="USD" />
+      </div>
+      <CheckboxField checked={content.showPrices !== false} label="Show prices" onChange={checked => update('showPrices', checked)} />
+      <ArrayManager
+        label="Sections"
+        items={content.sections || []}
+        onUpdate={sections => onChange({ ...content, sections })}
+        createItem={() => ({ title: '', description: '', items: [] })}
+        renderItem={(section: any, _sectionIndex, updateSection) => (
+          <div className="space-y-3">
+            <Field label="Section Title" value={section.title} onChange={v => updateSection({ ...section, title: v })} />
+            <Field label="Section Description" value={section.description} onChange={v => updateSection({ ...section, description: v })} multiline />
+            <ArrayManager
+              label="Items"
+              items={section.items || []}
+              onUpdate={items => updateSection({ ...section, items })}
+              createItem={() => ({ name: '', description: '', price: '', badge: '', image: '', imageAlt: '' })}
+              renderItem={(item: any, _itemIndex, updateItem) => (
+                <div className="space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <Field label="Name" value={item.name} onChange={v => updateItem({ ...item, name: v })} />
+                    <Field label="Price" value={item.price} onChange={v => updateItem({ ...item, price: v })} />
+                  </div>
+                  <Field label="Description" value={item.description} onChange={v => updateItem({ ...item, description: v })} multiline />
+                  <Field label="Badge" value={item.badge} onChange={v => updateItem({ ...item, badge: v })} placeholder="Popular" />
+                  <div className="grid grid-cols-2 gap-2">
+                    <MediaField
+                      label="Image"
+                      value={item.image}
+                      onChange={v => updateItem({ ...item, image: v })}
+                      onSelect={asset => updateItem({ ...item, image: asset.publicUrl, imageAlt: item.imageAlt || mediaAlt(asset) })}
+                    />
+                    <Field label="Image Alt" value={item.imageAlt} onChange={v => updateItem({ ...item, imageAlt: v })} />
+                  </div>
+                </div>
+              )}
+            />
+          </div>
+        )}
+      />
+    </div>
+  )
+}
+
+/* Event Packages */
+
+function EventPackagesFields({ content, update, onChange }: { content: any; update: (k: string, v: any) => void; onChange: (c: any) => void }) {
+  return (
+    <div className="space-y-3">
+      <Field label="Title" value={content.title} onChange={v => update('title', v)} />
+      <Field label="Subtitle" value={content.subtitle} onChange={v => update('subtitle', v)} multiline />
+      <div>
+        <label className={labelClass}>Layout</label>
+        <select value={content.layout || 'grid'} onChange={e => update('layout', e.target.value)} className={inputClass}>
+          <option value="grid">Grid</option>
+          <option value="featured">Featured</option>
+          <option value="compact">Compact</option>
+        </select>
+      </div>
+      <ArrayManager
+        label="Packages"
+        items={content.packages || []}
+        onUpdate={packages => onChange({ ...content, packages })}
+        createItem={() => ({ name: '', description: '', price: '', priceNote: '', image: '', imageAlt: '', features: [], ctaText: '', ctaLink: '', highlighted: false })}
+        renderItem={(pkg: any, _i, updatePackage) => (
+          <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-2">
+              <Field label="Name" value={pkg.name} onChange={v => updatePackage({ ...pkg, name: v })} />
+              <Field label="Price" value={pkg.price} onChange={v => updatePackage({ ...pkg, price: v })} />
+            </div>
+            <Field label="Description" value={pkg.description} onChange={v => updatePackage({ ...pkg, description: v })} multiline />
+            <Field label="Price Note" value={pkg.priceNote} onChange={v => updatePackage({ ...pkg, priceNote: v })} />
+            <div className="grid grid-cols-2 gap-2">
+              <MediaField
+                label="Image"
+                value={pkg.image}
+                onChange={v => updatePackage({ ...pkg, image: v })}
+                onSelect={asset => updatePackage({ ...pkg, image: asset.publicUrl, imageAlt: pkg.imageAlt || mediaAlt(asset) })}
+              />
+              <Field label="Image Alt" value={pkg.imageAlt} onChange={v => updatePackage({ ...pkg, imageAlt: v })} />
+            </div>
+            <TagsInput label="Features" value={pkg.features || []} onChange={features => updatePackage({ ...pkg, features })} />
+            <div className="grid grid-cols-2 gap-2">
+              <Field label="CTA Text" value={pkg.ctaText} onChange={v => updatePackage({ ...pkg, ctaText: v })} />
+              <PageLinkField label="CTA link or page" value={pkg.ctaLink} onChange={v => updatePackage({ ...pkg, ctaLink: v })} />
+            </div>
+            <CheckboxField checked={pkg.highlighted || false} label="Highlight package" onChange={highlighted => updatePackage({ ...pkg, highlighted })} />
+          </div>
+        )}
+      />
+    </div>
+  )
+}
+
+/* Video */
+
+function VideoFields({ content, update }: { content: any; update: (k: string, v: any) => void }) {
+  return (
+    <div className="space-y-3">
+      <Field label="Title" value={content.title} onChange={v => update('title', v)} />
+      <Field label="Subtitle" value={content.subtitle} onChange={v => update('subtitle', v)} multiline />
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className={labelClass}>Provider</label>
+          <select value={content.provider || 'YouTube'} onChange={e => update('provider', e.target.value)} className={inputClass}>
+            <option value="YouTube">YouTube</option>
+            <option value="Vimeo">Vimeo</option>
+            <option value="External">External</option>
+          </select>
+        </div>
+        <PresetSelect label="Aspect" value={content.aspect || '16:9'} options={aspectOptions} onChange={v => update('aspect', v)} />
+      </div>
+      <Field label="Video URL" value={content.url} onChange={v => update('url', v)} placeholder="https://www.youtube.com/watch?v=..." />
+      <Field label="Caption" value={content.caption} onChange={v => update('caption', v)} />
+      <div className="flex flex-wrap gap-4">
+        <CheckboxField checked={content.autoplay || false} label="Autoplay" onChange={checked => update('autoplay', checked)} />
+        <CheckboxField checked={content.muted || false} label="Muted" onChange={checked => update('muted', checked)} />
+      </div>
+    </div>
+  )
+}
+
+/* Hours & Location */
+
+function HoursLocationFields({ content, update, onChange }: { content: any; update: (k: string, v: any) => void; onChange: (c: any) => void }) {
+  return (
+    <div className="space-y-3">
+      <Field label="Title" value={content.title} onChange={v => update('title', v)} />
+      <Field label="Subtitle" value={content.subtitle} onChange={v => update('subtitle', v)} multiline />
+      <TagsInput label="Address Lines" value={content.addressLines || []} onChange={addressLines => update('addressLines', addressLines)} />
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Phone" value={content.phone} onChange={v => update('phone', v)} />
+        <Field label="Email" value={content.email} onChange={v => update('email', v)} type="email" />
+      </div>
+      <ArrayManager
+        label="Hours"
+        items={content.hours || []}
+        onUpdate={hours => onChange({ ...content, hours })}
+        createItem={() => ({ label: '', value: '' })}
+        renderItem={(item: any, _i, updateItem) => (
+          <div className="grid grid-cols-2 gap-2">
+            <Field label="Label" value={item.label} onChange={v => updateItem({ ...item, label: v })} placeholder="Monday" />
+            <Field label="Value" value={item.value} onChange={v => updateItem({ ...item, value: v })} placeholder="9 AM - 5 PM" />
+          </div>
+        )}
+      />
+      <Field label="Map Embed URL" value={content.mapEmbedUrl} onChange={v => update('mapEmbedUrl', v)} placeholder="https://www.google.com/maps/embed?..." />
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="CTA Text" value={content.ctaText} onChange={v => update('ctaText', v)} />
+        <PageLinkField label="CTA link or page" value={content.ctaLink} onChange={v => update('ctaLink', v)} />
+      </div>
     </div>
   )
 }
