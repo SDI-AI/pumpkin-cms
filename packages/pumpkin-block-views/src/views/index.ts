@@ -40,6 +40,21 @@ export type { TestimonialsBlockViewProps } from './TestimonialsBlockView';
 export { SocialEmbedBlockView } from './SocialEmbedBlockView';
 export type { SocialEmbedBlockViewProps } from './SocialEmbedBlockView';
 
+export { SocialLinksBlockView } from './SocialLinksBlockView';
+export type { SocialLinksBlockViewProps } from './SocialLinksBlockView';
+
+export { MenuPricingBlockView } from './MenuPricingBlockView';
+export type { MenuPricingBlockViewProps } from './MenuPricingBlockView';
+
+export { EventPackagesBlockView } from './EventPackagesBlockView';
+export type { EventPackagesBlockViewProps } from './EventPackagesBlockView';
+
+export { VideoBlockView } from './VideoBlockView';
+export type { VideoBlockViewProps } from './VideoBlockView';
+
+export { HoursLocationBlockView } from './HoursLocationBlockView';
+export type { HoursLocationBlockViewProps } from './HoursLocationBlockView';
+
 export { ContactBlockView } from './ContactBlockView';
 export type { ContactBlockViewProps } from './ContactBlockView';
 

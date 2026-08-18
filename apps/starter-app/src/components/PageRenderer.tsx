@@ -155,6 +155,11 @@ function getSectionId(block: CmsBlock) {
     Testimonials: 'testimonials',
     Gallery: 'gallery',
     SocialEmbed: 'social',
+    SocialLinks: 'social-links',
+    MenuPricing: 'menu',
+    EventPackages: 'packages',
+    Video: 'video',
+    HoursLocation: 'location',
   };
 
   return ids[block.type] ?? block.id ?? block.type.toLowerCase();

@@ -5,7 +5,9 @@ import type {
   CardGridBlock, FaqBlock, HubSpokesBlock, BreadcrumbsBlock,
   TrustBarBlock, HowItWorksBlock, ServiceAreaMapBlock,
   LocalProTipsBlock, GalleryBlock, TestimonialsBlock,
-  SocialEmbedBlock, ContactBlock, FormBlock, FormDefinition, BlogBlock,
+  SocialEmbedBlock, SocialLinksBlock, MenuPricingBlock,
+  EventPackagesBlock, VideoBlock, HoursLocationBlock,
+  ContactBlock, FormBlock, FormDefinition, BlogBlock,
 } from 'pumpkin-ts-models';
 
 import { HeroBlockView } from './views/HeroBlockView';
@@ -22,6 +24,11 @@ import { LocalProTipsBlockView } from './views/LocalProTipsBlockView';
 import { GalleryBlockView } from './views/GalleryBlockView';
 import { TestimonialsBlockView } from './views/TestimonialsBlockView';
 import { SocialEmbedBlockView } from './views/SocialEmbedBlockView';
+import { SocialLinksBlockView } from './views/SocialLinksBlockView';
+import { MenuPricingBlockView } from './views/MenuPricingBlockView';
+import { EventPackagesBlockView } from './views/EventPackagesBlockView';
+import { VideoBlockView } from './views/VideoBlockView';
+import { HoursLocationBlockView } from './views/HoursLocationBlockView';
 import { ContactBlockView } from './views/ContactBlockView';
 import { FormBlockView } from './views/FormBlockView';
 import { BlogBlockView } from './views/BlogBlockView';
@@ -40,6 +47,11 @@ import type { LocalProTipsClassNames } from './defaults/localProTips';
 import type { GalleryClassNames } from './defaults/gallery';
 import type { TestimonialsClassNames } from './defaults/testimonials';
 import type { SocialEmbedClassNames } from './defaults/socialEmbed';
+import type { SocialLinksClassNames } from './defaults/socialLinks';
+import type { MenuPricingClassNames } from './defaults/menuPricing';
+import type { EventPackagesClassNames } from './defaults/eventPackages';
+import type { VideoClassNames } from './defaults/video';
+import type { HoursLocationClassNames } from './defaults/hoursLocation';
 import type { ContactClassNames } from './defaults/contact';
 import type { FormClassNames } from './defaults/form';
 import type { BlogClassNames } from './defaults/blog';
@@ -62,6 +74,11 @@ export interface BlockClassNamesMap {
   Gallery?: GalleryClassNames;
   Testimonials?: TestimonialsClassNames;
   SocialEmbed?: SocialEmbedClassNames;
+  SocialLinks?: SocialLinksClassNames;
+  MenuPricing?: MenuPricingClassNames;
+  EventPackages?: EventPackagesClassNames;
+  Video?: VideoClassNames;
+  HoursLocation?: HoursLocationClassNames;
   Contact?: ContactClassNames;
   Form?: FormClassNames;
   Blog?: BlogClassNames;
@@ -149,6 +166,21 @@ export function BlockViewRenderer({ block, classNames, overrides, fallback }: Bl
 
     case 'SocialEmbed':
       return <SocialEmbedBlockView block={block as SocialEmbedBlock} classNames={classNames?.SocialEmbed} />;
+
+    case 'SocialLinks':
+      return <SocialLinksBlockView block={block as SocialLinksBlock} classNames={classNames?.SocialLinks} />;
+
+    case 'MenuPricing':
+      return <MenuPricingBlockView block={block as MenuPricingBlock} classNames={classNames?.MenuPricing} />;
+
+    case 'EventPackages':
+      return <EventPackagesBlockView block={block as EventPackagesBlock} classNames={classNames?.EventPackages} />;
+
+    case 'Video':
+      return <VideoBlockView block={block as VideoBlock} classNames={classNames?.Video} />;
+
+    case 'HoursLocation':
+      return <HoursLocationBlockView block={block as HoursLocationBlock} classNames={classNames?.HoursLocation} />;
 
     case 'Contact':
       return (

@@ -11,7 +11,8 @@ for (const file of [
   'breadcrumbs.schema.json', 'trust-bar.schema.json', 'how-it-works.schema.json',
   'service-area-map.schema.json', 'local-pro-tips.schema.json', 'gallery.schema.json',
   'testimonials.schema.json', 'contact.schema.json', 'form.schema.json', 'blog.schema.json',
-  'social-embed.schema.json',
+  'social-embed.schema.json', 'social-links.schema.json', 'menu-pricing.schema.json',
+  'event-packages.schema.json', 'video.schema.json', 'hours-location.schema.json',
 ]) {
   schemas.set(file, JSON.parse(await readFile(path.join(schemaRoot, file), 'utf8')));
 }

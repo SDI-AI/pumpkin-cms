@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pumpkincms.dev/schemas/blocks/event-packages.schema.json",
+  "title": "EventPackagesBlock",
+  "x-pumpkin": { "type": "EventPackages", "contentType": "EventPackagesContent", "module": "CommerceBlocks", "category": "commerce" },
+  "allOf": [{ "$ref": "block-base.schema.json" }, { "type": "object", "properties": { "type": { "const": "EventPackages" }, "content": { "$ref": "#/$defs/EventPackagesContent" } } }],
+  "$defs": {
+    "EventPackagesLayout": { "type": "string", "enum": ["grid", "featured", "compact"], "default": "grid" },
+    "EventPackageItem": { "type": "object", "required": ["name", "description", "price", "priceNote", "image", "imageAlt", "features", "ctaText", "ctaLink", "highlighted"], "properties": {
+      "name": { "type": "string", "default": "" },
+      "description": { "type": "string", "default": "" },
+      "price": { "type": "string", "default": "" },
+      "priceNote": { "type": "string", "default": "" },
+      "image": { "type": "string", "default": "", "x-pumpkin-editor": "media" },
+      "imageAlt": { "type": "string", "default": "" },
+      "features": { "type": "array", "items": { "type": "string" }, "default": [] },
+      "ctaText": { "type": "string", "default": "" },
+      "ctaLink": { "type": "string", "default": "", "x-pumpkin-editor": "page-link" },
+      "highlighted": { "type": "boolean", "default": false }
+    }, "additionalProperties": true },
+    "EventPackagesContent": { "type": "object", "required": ["title", "subtitle", "layout", "packages"], "properties": {
+      "title": { "type": "string", "default": "" },
+      "subtitle": { "type": "string", "default": "" },
+      "layout": { "$ref": "#/$defs/EventPackagesLayout" },
+      "packages": { "type": "array", "items": { "$ref": "#/$defs/EventPackageItem" }, "default": [], "x-pumpkin-editor": "collection" }
+    }, "additionalProperties": true }
+  }
+}

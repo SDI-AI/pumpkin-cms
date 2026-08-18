@@ -1,0 +1,26 @@
+export const menuPricingDefaults = {
+  root: 'w-full py-12',
+  container: 'max-w-6xl mx-auto px-6',
+  header: 'text-center mb-10',
+  title: 'text-3xl font-bold text-neutral-900',
+  subtitle: 'text-base text-neutral-600 mt-2',
+  sections: 'grid gap-10',
+  section: 'grid gap-5',
+  sectionHeader: 'max-w-3xl',
+  sectionTitle: 'text-2xl font-semibold text-neutral-900',
+  sectionDescription: 'mt-2 text-neutral-600',
+  items: 'grid gap-4',
+  itemsCards: 'md:grid-cols-2 lg:grid-cols-3',
+  itemsCompact: 'md:grid-cols-2',
+  item: 'overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-sm',
+  itemImage: 'h-44 w-full object-cover',
+  itemBody: 'p-5',
+  itemHeader: 'flex items-start justify-between gap-4',
+  itemTitle: 'text-lg font-semibold text-neutral-900',
+  itemDescription: 'mt-2 text-sm leading-6 text-neutral-600',
+  itemPrice: 'shrink-0 text-base font-semibold text-neutral-900',
+  badge: 'mt-3 inline-flex rounded-full bg-neutral-100 px-3 py-1 text-xs font-semibold text-neutral-700',
+  empty: 'rounded-lg border border-dashed border-neutral-300 bg-neutral-50 p-6 text-center text-sm text-neutral-500',
+};
+
+export type MenuPricingClassNames = Partial<typeof menuPricingDefaults>;

@@ -12,6 +12,11 @@ export { localProTipsDefaults, type LocalProTipsClassNames } from './localProTip
 export { galleryDefaults, type GalleryClassNames } from './gallery';
 export { testimonialsDefaults, type TestimonialsClassNames } from './testimonials';
 export { socialEmbedDefaults, type SocialEmbedClassNames } from './socialEmbed';
+export { socialLinksDefaults, type SocialLinksClassNames } from './socialLinks';
+export { menuPricingDefaults, type MenuPricingClassNames } from './menuPricing';
+export { eventPackagesDefaults, type EventPackagesClassNames } from './eventPackages';
+export { videoDefaults, type VideoClassNames } from './video';
+export { hoursLocationDefaults, type HoursLocationClassNames } from './hoursLocation';
 export { contactDefaults, type ContactClassNames } from './contact';
 export { formDefaults, type FormClassNames } from './form';
 export { blogDefaults, type BlogClassNames } from './blog';

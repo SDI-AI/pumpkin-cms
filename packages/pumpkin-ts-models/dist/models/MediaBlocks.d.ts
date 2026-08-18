@@ -1,0 +1,18 @@
+import type { IHtmlBlock } from './IHtmlBlock';
+import type { ImageAspect } from './ImagePresentation';
+export type VideoProvider = "YouTube" | "Vimeo" | "External";
+export interface VideoContent {
+    title: string;
+    subtitle: string;
+    provider: VideoProvider;
+    url: string;
+    caption: string;
+    aspect: ImageAspect;
+    autoplay: boolean;
+    muted: boolean;
+}
+export interface VideoBlock extends IHtmlBlock {
+    type: "Video";
+    content: VideoContent;
+}
+//# sourceMappingURL=MediaBlocks.d.ts.map

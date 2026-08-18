@@ -1,0 +1,21 @@
+import type { IHtmlBlock } from './IHtmlBlock';
+export interface BusinessHoursItem {
+    label: string;
+    value: string;
+}
+export interface HoursLocationContent {
+    title: string;
+    subtitle: string;
+    addressLines: string[];
+    phone: string;
+    email: string;
+    hours: BusinessHoursItem[];
+    mapEmbedUrl: string;
+    ctaText: string;
+    ctaLink: string;
+}
+export interface HoursLocationBlock extends IHtmlBlock {
+    type: "HoursLocation";
+    content: HoursLocationContent;
+}
+//# sourceMappingURL=BusinessBlocks.d.ts.map

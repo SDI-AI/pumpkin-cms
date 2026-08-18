@@ -15,6 +15,11 @@ import type { LocalProTipsBlock } from './NavigationBlocks';
 import type { GalleryBlock } from './InteractionBlocks';
 import type { TestimonialsBlock } from './InteractionBlocks';
 import type { SocialEmbedBlock } from './InteractionBlocks';
+import type { SocialLinksBlock } from './InteractionBlocks';
+import type { MenuPricingBlock } from './CommerceBlocks';
+import type { EventPackagesBlock } from './CommerceBlocks';
+import type { VideoBlock } from './MediaBlocks';
+import type { HoursLocationBlock } from './BusinessBlocks';
 import type { ContactBlock } from './InteractionBlocks';
 import type { FormBlock } from './InteractionBlocks';
 import type { BlogBlock } from './BlogBlocks';
@@ -34,6 +39,11 @@ export type HtmlBlock =
   | GalleryBlock
   | TestimonialsBlock
   | SocialEmbedBlock
+  | SocialLinksBlock
+  | MenuPricingBlock
+  | EventPackagesBlock
+  | VideoBlock
+  | HoursLocationBlock
   | ContactBlock
   | FormBlock
   | BlogBlock
@@ -54,6 +64,11 @@ export const BLOCK_TYPE_MAP = {
   "Gallery": "GalleryBlock",
   "Testimonials": "TestimonialsBlock",
   "SocialEmbed": "SocialEmbedBlock",
+  "SocialLinks": "SocialLinksBlock",
+  "MenuPricing": "MenuPricingBlock",
+  "EventPackages": "EventPackagesBlock",
+  "Video": "VideoBlock",
+  "HoursLocation": "HoursLocationBlock",
   "Contact": "ContactBlock",
   "Form": "FormBlock",
   "Blog": "BlogBlock",

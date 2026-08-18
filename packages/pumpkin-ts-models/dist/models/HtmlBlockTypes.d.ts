@@ -13,10 +13,15 @@ import type { LocalProTipsBlock } from './NavigationBlocks';
 import type { GalleryBlock } from './InteractionBlocks';
 import type { TestimonialsBlock } from './InteractionBlocks';
 import type { SocialEmbedBlock } from './InteractionBlocks';
+import type { SocialLinksBlock } from './InteractionBlocks';
+import type { MenuPricingBlock } from './CommerceBlocks';
+import type { EventPackagesBlock } from './CommerceBlocks';
+import type { VideoBlock } from './MediaBlocks';
+import type { HoursLocationBlock } from './BusinessBlocks';
 import type { ContactBlock } from './InteractionBlocks';
 import type { FormBlock } from './InteractionBlocks';
 import type { BlogBlock } from './BlogBlocks';
-export type HtmlBlock = HeroBlock | PrimaryCtaBlock | SecondaryCtaBlock | CardGridBlock | FaqBlock | HubSpokesBlock | BreadcrumbsBlock | TrustBarBlock | HowItWorksBlock | ServiceAreaMapBlock | LocalProTipsBlock | GalleryBlock | TestimonialsBlock | SocialEmbedBlock | ContactBlock | FormBlock | BlogBlock;
+export type HtmlBlock = HeroBlock | PrimaryCtaBlock | SecondaryCtaBlock | CardGridBlock | FaqBlock | HubSpokesBlock | BreadcrumbsBlock | TrustBarBlock | HowItWorksBlock | ServiceAreaMapBlock | LocalProTipsBlock | GalleryBlock | TestimonialsBlock | SocialEmbedBlock | SocialLinksBlock | MenuPricingBlock | EventPackagesBlock | VideoBlock | HoursLocationBlock | ContactBlock | FormBlock | BlogBlock;
 export declare const BLOCK_TYPE_MAP: {
     readonly Hero: "HeroBlock";
     readonly PrimaryCTA: "PrimaryCtaBlock";
@@ -32,6 +37,11 @@ export declare const BLOCK_TYPE_MAP: {
     readonly Gallery: "GalleryBlock";
     readonly Testimonials: "TestimonialsBlock";
     readonly SocialEmbed: "SocialEmbedBlock";
+    readonly SocialLinks: "SocialLinksBlock";
+    readonly MenuPricing: "MenuPricingBlock";
+    readonly EventPackages: "EventPackagesBlock";
+    readonly Video: "VideoBlock";
+    readonly HoursLocation: "HoursLocationBlock";
     readonly Contact: "ContactBlock";
     readonly Form: "FormBlock";
     readonly Blog: "BlogBlock";

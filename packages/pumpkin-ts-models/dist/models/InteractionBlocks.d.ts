@@ -51,6 +51,24 @@ export interface SocialEmbedBlock extends IHtmlBlock {
     type: "SocialEmbed";
     content: SocialEmbedContent;
 }
+export type SocialLinksLayout = "inline" | "grid" | "stack";
+export type SocialLinksPlatform = "Instagram" | "Facebook" | "TikTok" | "YouTube" | "X" | "Pinterest" | "LinkedIn" | "Yelp" | "GoogleBusiness" | "Other";
+export interface SocialProfileLink {
+    platform: SocialLinksPlatform;
+    url: string;
+    label: string;
+    icon: string;
+}
+export interface SocialLinksContent {
+    title: string;
+    subtitle: string;
+    layout: SocialLinksLayout;
+    links: SocialProfileLink[];
+}
+export interface SocialLinksBlock extends IHtmlBlock {
+    type: "SocialLinks";
+    content: SocialLinksContent;
+}
 export interface FormField {
     label: string;
     type: string;
