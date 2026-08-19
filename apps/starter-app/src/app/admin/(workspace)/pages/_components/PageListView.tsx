@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ExternalLink, FileText, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ExternalLink, FileText, Plus, Search } from 'lucide-react';
 import type { Page } from 'pumpkin-ts-models';
 
 interface PageListViewProps {
@@ -10,8 +10,13 @@ interface PageListViewProps {
   unavailablePages: string[];
 }
 
+const PAGE_SIZE_OPTIONS = [10, 25, 50];
+
 export function PageListView({ pages, unavailablePages }: PageListViewProps) {
   const [query, setQuery] = useState('');
+  const [pageIndex, setPageIndex] = useState(0);
+  const [pageSize, setPageSize] = useState(PAGE_SIZE_OPTIONS[0]);
+
   const filteredPages = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
     if (!normalizedQuery) return [...pages].sort(comparePages);
@@ -31,6 +36,13 @@ export function PageListView({ pages, unavailablePages }: PageListViewProps) {
       .sort(comparePages);
   }, [pages, query]);
 
+  const pageCount = Math.max(1, Math.ceil(filteredPages.length / pageSize));
+  const currentPageIndex = Math.min(pageIndex, pageCount - 1);
+  const pageStart = currentPageIndex * pageSize;
+  const visiblePages = filteredPages.slice(pageStart, pageStart + pageSize);
+  const resultStart = filteredPages.length === 0 ? 0 : pageStart + 1;
+  const resultEnd = Math.min(pageStart + pageSize, filteredPages.length);
+
   return (
     <div className="space-y-5">
       <div className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
@@ -41,12 +53,19 @@ export function PageListView({ pages, unavailablePages }: PageListViewProps) {
             <Stat label="Hubs" value={String(pages.filter((page) => page.contentRelationships?.isHub).length)} />
           </div>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Filter pages"
-              className="h-10 w-full rounded-md border border-neutral-300 px-3 text-sm outline-none focus:border-pumpkin-500 focus:ring-2 focus:ring-pumpkin-100 sm:w-72"
-            />
+            <label className="relative block w-full sm:w-72">
+              <span className="sr-only">Search pages</span>
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" aria-hidden="true" />
+              <input
+                value={query}
+                onChange={(event) => {
+                  setQuery(event.target.value);
+                  setPageIndex(0);
+                }}
+                placeholder="Search pages"
+                className="h-10 w-full rounded-md border border-neutral-300 px-3 pl-9 text-sm outline-none focus:border-pumpkin-500 focus:ring-2 focus:ring-pumpkin-100"
+              />
+            </label>
             <Link
               href="/admin/pages/new"
               className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-pumpkin-600 px-3 text-sm font-bold text-white hover:bg-pumpkin-700"
@@ -85,7 +104,7 @@ export function PageListView({ pages, unavailablePages }: PageListViewProps) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-200">
-                {filteredPages.map((page) => (
+                {visiblePages.map((page) => (
                   <tr key={page.pageSlug} className="hover:bg-neutral-50">
                     <td className="px-4 py-3">
                       <Link href={`/admin/pages/${page.pageSlug}`} className="font-semibold text-neutral-950 hover:text-pumpkin-700">
@@ -125,8 +144,95 @@ export function PageListView({ pages, unavailablePages }: PageListViewProps) {
                 ))}
               </tbody>
             </table>
+            <PaginationControls
+              label="Pages"
+              pageIndex={currentPageIndex}
+              pageCount={pageCount}
+              pageSize={pageSize}
+              pageSizeOptions={PAGE_SIZE_OPTIONS}
+              resultStart={resultStart}
+              resultEnd={resultEnd}
+              total={filteredPages.length}
+              onPageChange={setPageIndex}
+              onPageSizeChange={(value) => {
+                setPageSize(value);
+                setPageIndex(0);
+              }}
+            />
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+function PaginationControls({
+  label,
+  pageIndex,
+  pageCount,
+  pageSize,
+  pageSizeOptions,
+  resultStart,
+  resultEnd,
+  total,
+  onPageChange,
+  onPageSizeChange,
+}: {
+  label: string;
+  pageIndex: number;
+  pageCount: number;
+  pageSize: number;
+  pageSizeOptions: number[];
+  resultStart: number;
+  resultEnd: number;
+  total: number;
+  onPageChange: (pageIndex: number) => void;
+  onPageSizeChange: (pageSize: number) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-3 border-t border-neutral-200 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+      <p className="text-sm text-neutral-600">
+        Showing <span className="font-semibold text-neutral-900">{resultStart}</span>
+        {'-'}
+        <span className="font-semibold text-neutral-900">{resultEnd}</span>
+        {' '}of <span className="font-semibold text-neutral-900">{total}</span> {label.toLowerCase()}
+      </p>
+      <div className="flex flex-wrap items-center gap-2">
+        <label className="flex items-center gap-2 text-sm text-neutral-600">
+          <span>Rows</span>
+          <select
+            value={pageSize}
+            onChange={(event) => onPageSizeChange(Number(event.target.value))}
+            className="h-9 rounded-md border border-neutral-300 bg-white px-2 text-sm outline-none focus:border-pumpkin-500 focus:ring-2 focus:ring-pumpkin-100"
+          >
+            {pageSizeOptions.map((option) => (
+              <option key={option} value={option}>{option}</option>
+            ))}
+          </select>
+        </label>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => onPageChange(Math.max(0, pageIndex - 1))}
+            disabled={pageIndex === 0}
+            className="inline-flex h-9 items-center gap-1 rounded-md border border-neutral-300 px-2.5 text-sm font-semibold text-neutral-800 hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+            <span>Previous</span>
+          </button>
+          <span className="px-2 text-sm text-neutral-600">
+            {pageIndex + 1} / {pageCount}
+          </span>
+          <button
+            type="button"
+            onClick={() => onPageChange(Math.min(pageCount - 1, pageIndex + 1))}
+            disabled={pageIndex >= pageCount - 1}
+            className="inline-flex h-9 items-center gap-1 rounded-md border border-neutral-300 px-2.5 text-sm font-semibold text-neutral-800 hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <span>Next</span>
+            <ChevronRight className="h-4 w-4" aria-hidden="true" />
+          </button>
+        </div>
       </div>
     </div>
   );
