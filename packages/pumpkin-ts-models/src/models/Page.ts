@@ -28,6 +28,7 @@ export interface Page {
   seo: SeoData;
   isPublished: boolean;
   publishedAt: string | null;
+  scheduledPublishAt: string | null;
   includeInSitemap: boolean;
   /**
    * Saved XYFlow node positions for page relationship visualization

@@ -65,6 +65,7 @@ export const fallbackHomePage: Page = {
   },
   isPublished: true,
   publishedAt: '2026-07-03T00:00:00Z',
+  scheduledPublishAt: null,
   includeInSitemap: true,
   contentRelationships: {
     isHub: true,

@@ -42,6 +42,8 @@ export function PageListView({ pages, unavailablePages }: PageListViewProps) {
   const visiblePages = filteredPages.slice(pageStart, pageStart + pageSize);
   const resultStart = filteredPages.length === 0 ? 0 : pageStart + 1;
   const resultEnd = Math.min(pageStart + pageSize, filteredPages.length);
+  const publishedCount = pages.filter((page) => getPublicationState(page) === 'published').length;
+  const scheduledCount = pages.filter((page) => getPublicationState(page) === 'scheduled').length;
 
   return (
     <div className="space-y-5">
@@ -49,7 +51,8 @@ export function PageListView({ pages, unavailablePages }: PageListViewProps) {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex gap-3">
             <Stat label="Pages" value={String(pages.length)} />
-            <Stat label="Published" value={String(pages.filter((page) => page.isPublished).length)} />
+            <Stat label="Published" value={String(publishedCount)} />
+            <Stat label="Scheduled" value={String(scheduledCount)} />
             <Stat label="Hubs" value={String(pages.filter((page) => page.contentRelationships?.isHub).length)} />
           </div>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -113,12 +116,7 @@ export function PageListView({ pages, unavailablePages }: PageListViewProps) {
                     </td>
                     <td className="px-4 py-3 text-sm text-neutral-600">/{page.pageSlug}</td>
                     <td className="px-4 py-3">
-                      <span className={[
-                        'rounded-full px-2 py-1 text-xs font-semibold',
-                        page.isPublished ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800',
-                      ].join(' ')}>
-                        {page.isPublished ? 'Published' : 'Draft'}
-                      </span>
+                      <PublicationStatusBadge page={page} />
                     </td>
                     <td className="px-4 py-3 text-sm text-neutral-600">{page.MetaData?.pageType || 'Page'}</td>
                     <td className="px-4 py-3 text-sm text-neutral-600">{formatDate(page.MetaData?.updatedAt)}</td>
@@ -255,6 +253,26 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
+function PublicationStatusBadge({ page }: { page: Page }) {
+  const state = getPublicationState(page);
+  const styles = {
+    draft: 'bg-amber-100 text-amber-800',
+    scheduled: 'bg-blue-100 text-blue-800',
+    published: 'bg-green-100 text-green-800',
+  } satisfies Record<string, string>;
+  const labels = {
+    draft: 'Draft',
+    scheduled: 'Scheduled',
+    published: 'Published',
+  } satisfies Record<string, string>;
+
+  return (
+    <span className={['rounded-full px-2 py-1 text-xs font-semibold', styles[state]].join(' ')}>
+      {labels[state]}
+    </span>
+  );
+}
+
 function comparePages(a: Page, b: Page) {
   return (a.MetaData?.title || a.pageSlug).localeCompare(b.MetaData?.title || b.pageSlug);
 }
@@ -267,4 +285,11 @@ function formatDate(value?: string) {
     day: 'numeric',
     year: 'numeric',
   }).format(new Date(value));
+}
+
+function getPublicationState(page: Page): 'draft' | 'scheduled' | 'published' {
+  if (!page.isPublished) return 'draft';
+  if (!page.scheduledPublishAt) return 'published';
+  const timestamp = Date.parse(page.scheduledPublishAt);
+  return Number.isFinite(timestamp) && timestamp > Date.now() ? 'scheduled' : 'published';
 }

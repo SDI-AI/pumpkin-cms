@@ -199,6 +199,7 @@ export function createStarterAdminPageDraft(input: {
     },
     isPublished: false,
     publishedAt: null,
+    scheduledPublishAt: null,
     includeInSitemap: true,
   };
 }

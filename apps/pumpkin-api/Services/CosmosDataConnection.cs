@@ -67,10 +67,12 @@ public class CosmosDataConnection : IDataConnection, IDisposable
             _logger.LogInformation("Querying with normalized slug: '{NormalizedSlug}'", normalizedSlug);
             
             // Query for page by pageSlug and tenantId (partition key)
-            var query = "SELECT * FROM c WHERE c.tenantId = @tenantId AND c.pageSlug = @slug AND c.isPublished = true";
+            var now = DateTime.UtcNow;
+            var query = "SELECT * FROM c WHERE c.tenantId = @tenantId AND c.pageSlug = @slug AND c.isPublished = true AND (NOT IS_DEFINED(c.scheduledPublishAt) OR IS_NULL(c.scheduledPublishAt) OR c.scheduledPublishAt <= @now)";
             var queryDefinition = new QueryDefinition(query)
                 .WithParameter("@slug", normalizedSlug)
-                .WithParameter("@tenantId", tenantId);
+                .WithParameter("@tenantId", tenantId)
+                .WithParameter("@now", now);
 
             using var iterator = pagesContainer.GetItemQueryIterator<Page>(queryDefinition, requestOptions: new QueryRequestOptions
             {
@@ -398,9 +400,11 @@ public class CosmosDataConnection : IDataConnection, IDisposable
             var pagesContainer = _database.GetContainer("Page");
             
             // Query for published pages with includeInSitemap = true, including date fields for lastmod
-            var query = "SELECT c.pageSlug, c.publishedAt, c.MetaData.updatedAt FROM c WHERE c.tenantId = @tenantId AND c.isPublished = true AND c.includeInSitemap = true";
+            var now = DateTime.UtcNow;
+            var query = "SELECT c.pageSlug, c.publishedAt, c.MetaData.updatedAt FROM c WHERE c.tenantId = @tenantId AND c.isPublished = true AND c.includeInSitemap = true AND (NOT IS_DEFINED(c.scheduledPublishAt) OR IS_NULL(c.scheduledPublishAt) OR c.scheduledPublishAt <= @now)";
             var queryDefinition = new QueryDefinition(query)
-                .WithParameter("@tenantId", tenantId);
+                .WithParameter("@tenantId", tenantId)
+                .WithParameter("@now", now);
 
             var sitemapEntries = new List<SitemapEntry>();
             using var iterator = pagesContainer.GetItemQueryIterator<System.Text.Json.JsonElement>(queryDefinition, requestOptions: new QueryRequestOptions
@@ -480,10 +484,12 @@ public class CosmosDataConnection : IDataConnection, IDisposable
             var safeLimit = Math.Clamp(limit <= 0 ? 12 : limit, 1, 50);
             var normalizedHubSlug = hubPageSlug.Trim().ToLowerInvariant();
             var pagesContainer = _database.GetContainer("Page");
-            var query = $"SELECT TOP {safeLimit} * FROM c WHERE c.tenantId = @tenantId AND c.contentRelationships.hubPageSlug = @hubPageSlug AND c.isPublished = true AND (NOT IS_DEFINED(c.contentRelationships.isHub) OR c.contentRelationships.isHub = false) ORDER BY c.contentRelationships.spokePriority DESC, c.MetaData.updatedAt DESC";
+            var now = DateTime.UtcNow;
+            var query = $"SELECT TOP {safeLimit} * FROM c WHERE c.tenantId = @tenantId AND c.contentRelationships.hubPageSlug = @hubPageSlug AND c.isPublished = true AND (NOT IS_DEFINED(c.scheduledPublishAt) OR IS_NULL(c.scheduledPublishAt) OR c.scheduledPublishAt <= @now) AND (NOT IS_DEFINED(c.contentRelationships.isHub) OR c.contentRelationships.isHub = false) ORDER BY c.contentRelationships.spokePriority DESC, c.MetaData.updatedAt DESC";
             var queryDefinition = new QueryDefinition(query)
                 .WithParameter("@tenantId", tenantId)
-                .WithParameter("@hubPageSlug", normalizedHubSlug);
+                .WithParameter("@hubPageSlug", normalizedHubSlug)
+                .WithParameter("@now", now);
 
             var spokes = new List<Page>();
             using var iterator = pagesContainer.GetItemQueryIterator<Page>(queryDefinition, requestOptions: new QueryRequestOptions

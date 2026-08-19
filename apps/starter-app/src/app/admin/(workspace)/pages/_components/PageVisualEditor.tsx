@@ -38,6 +38,7 @@ const sectionLabels: Record<SectionKey, string> = {
 
 type EditorBlock = IHtmlBlock & { id?: string; name?: string; enabled?: boolean };
 type PreviewWidth = 'desktop' | 'tablet' | 'mobile';
+type PublicationState = 'draft' | 'scheduled' | 'published';
 
 export function PageVisualEditor({ initialPage, initialTheme, mode, menuPages, originalSlug, stylesheet }: PageVisualEditorProps) {
   const router = useRouter();
@@ -122,10 +123,20 @@ export function PageVisualEditor({ initialPage, initialTheme, mode, menuPages, o
       }
 
       target[keys[keys.length - 1]] = value;
-      updated.MetaData.updatedAt = new Date().toISOString();
+      const now = new Date().toISOString();
+      updated.MetaData.updatedAt = now;
 
       if (path === 'isPublished') {
-        updated.publishedAt = value && !updated.publishedAt ? new Date().toISOString() : updated.publishedAt;
+        updated.publishedAt = value && !isFutureDate(updated.scheduledPublishAt) && !updated.publishedAt ? now : updated.publishedAt;
+      }
+
+      if (path === 'scheduledPublishAt') {
+        if (isFutureDate(value)) {
+          updated.isPublished = true;
+          updated.publishedAt = null;
+        } else if (value && updated.isPublished && !updated.publishedAt) {
+          updated.publishedAt = now;
+        }
       }
 
       return updated;
@@ -307,7 +318,7 @@ export function PageVisualEditor({ initialPage, initialTheme, mode, menuPages, o
       <div className="sticky top-0 z-20 rounded-lg border border-neutral-200 bg-white/95 p-4 shadow-sm backdrop-blur">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
           <div className="flex flex-wrap items-center gap-2">
-            <StatusButton published={page.isPublished} onClick={() => updateField('isPublished', !page.isPublished)} />
+            <StatusButton state={getPublicationState(page)} onClick={() => updateField('isPublished', !page.isPublished)} />
             <ToolbarStat label="Blocks" value={String(page.ContentData.ContentBlocks.length)} />
             <ToolbarStat label="Types" value={String(blockTypes.length)} />
             <ToolbarStat label="Version" value={String(page.PageVersion || 1)} />
@@ -358,6 +369,20 @@ export function PageVisualEditor({ initialPage, initialTheme, mode, menuPages, o
                 onChange={(value) => updateField('Layout', value)}
                 options={['standard', 'full-width', 'sidebar', 'landing']}
               />
+            </div>
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
+              <label className="block">
+                <span className="mb-1 block text-xs font-bold uppercase tracking-wide text-neutral-600">Publish at</span>
+                <input
+                  type="datetime-local"
+                  value={toDateTimeLocalValue(page.scheduledPublishAt)}
+                  onChange={(event) => updateField('scheduledPublishAt', toIsoStringOrNull(event.target.value))}
+                  className="h-10 w-full rounded-md border border-neutral-300 px-3 text-sm outline-none focus:border-pumpkin-500 focus:ring-2 focus:ring-pumpkin-100"
+                />
+              </label>
+              <div className="flex items-end">
+                <StatusButton state={getPublicationState(page)} onClick={() => updateField('isPublished', !page.isPublished)} />
+              </div>
             </div>
             <label className="mt-4 flex items-center gap-2 text-sm font-medium text-neutral-700">
               <input
@@ -1000,17 +1025,28 @@ function SelectField({
   );
 }
 
-function StatusButton({ published, onClick }: { published: boolean; onClick: () => void }) {
+function StatusButton({ state, onClick }: { state: PublicationState; onClick: () => void }) {
+  const styles: Record<PublicationState, string> = {
+    draft: 'bg-amber-100 text-amber-800 hover:bg-amber-200',
+    scheduled: 'bg-blue-100 text-blue-800 hover:bg-blue-200',
+    published: 'bg-green-100 text-green-800 hover:bg-green-200',
+  };
+  const labels: Record<PublicationState, string> = {
+    draft: 'Draft',
+    scheduled: 'Scheduled',
+    published: 'Published',
+  };
+
   return (
     <button
       type="button"
       onClick={onClick}
       className={[
         'inline-flex h-10 items-center rounded-md px-3 text-sm font-bold',
-        published ? 'bg-green-100 text-green-800 hover:bg-green-200' : 'bg-amber-100 text-amber-800 hover:bg-amber-200',
+        styles[state],
       ].join(' ')}
     >
-      {published ? 'Published' : 'Draft'}
+      {labels[state]}
     </button>
   );
 }
@@ -1110,6 +1146,7 @@ function normalizePage(page: Page): Page {
     },
     isPublished: page.isPublished ?? false,
     publishedAt: page.publishedAt ?? null,
+    scheduledPublishAt: page.scheduledPublishAt ?? null,
     includeInSitemap: page.includeInSitemap ?? true,
   };
 }
@@ -1131,6 +1168,31 @@ function normalizeSlug(value: string) {
 
 function encodeSlugPath(slug: string) {
   return slug.split('/').map((segment) => encodeURIComponent(segment)).join('/');
+}
+
+function getPublicationState(page: Page): PublicationState {
+  if (!page.isPublished) return 'draft';
+  return isFutureDate(page.scheduledPublishAt) ? 'scheduled' : 'published';
+}
+
+function isFutureDate(value: unknown) {
+  if (typeof value !== 'string' || !value) return false;
+  const timestamp = Date.parse(value);
+  return Number.isFinite(timestamp) && timestamp > Date.now();
+}
+
+function toDateTimeLocalValue(value: string | null | undefined) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return localDate.toISOString().slice(0, 16);
+}
+
+function toIsoStringOrNull(value: string) {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
 }
 
 function ensureBlockIds(blocks: IHtmlBlock[]): IHtmlBlock[] {
