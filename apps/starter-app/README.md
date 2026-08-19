@@ -17,6 +17,7 @@ NEXT_PUBLIC_PUMPKIN_API_URL=http://localhost:5064
 PUMPKIN_TENANT_ID=existing-tenant-id
 PUMPKIN_API_KEY=existing-tenant-api-key
 PUMPKIN_SITE_NAME=Optional Site Name
+PUMPKIN_GOOGLE_ANALYTICS_ID=G-XXXXXXXXXX
 ```
 
 2. Optional local development file written before app startup by a CLI or developer:
@@ -41,8 +42,13 @@ az webapp config appsettings set \
   NEXT_PUBLIC_PUMPKIN_API_URL=https://your-pumpkin-api.azurewebsites.net \
   PUMPKIN_TENANT_ID=existing-tenant-id \
   PUMPKIN_API_KEY=<tenant-api-key> \
-  PUMPKIN_SITE_NAME="Tenant Site"
+  PUMPKIN_SITE_NAME="Tenant Site" \
+  PUMPKIN_GOOGLE_ANALYTICS_ID=G-XXXXXXXXXX
 ```
+
+## Google Analytics
+
+Set `PUMPKIN_GOOGLE_ANALYTICS_ID` to a GA4 measurement ID such as `G-XXXXXXXXXX` to enable Google Analytics on public site routes. The starter app ignores empty or invalid values and does not render analytics scripts on admin routes. The measurement ID is public configuration, not a secret, but it should stay in deployment settings rather than page JSON, theme JSON, or custom HTML blocks.
 
 ## Run
 
