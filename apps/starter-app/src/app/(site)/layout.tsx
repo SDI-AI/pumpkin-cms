@@ -1,6 +1,9 @@
 import type { FooterClassNames, HeaderClassNames } from 'pumpkin-block-views';
+import { Suspense } from 'react';
+import { GoogleAnalytics } from '@/components/GoogleAnalytics';
 import { SiteFooter } from '@/components/SiteFooter';
 import { SiteHeader } from '@/components/SiteHeader';
+import { getGoogleAnalyticsMeasurementId } from '@/lib/analytics';
 import { getSiteTheme } from '@/lib/pumpkin-api';
 import { getThemeCustomStylesheet, getThemeStylesheet } from '@/themes/registry';
 
@@ -8,9 +11,15 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
   const theme = await getSiteTheme();
   const stylesheet = getThemeStylesheet(theme);
   const customStylesheet = getThemeCustomStylesheet(theme);
+  const googleAnalyticsMeasurementId = getGoogleAnalyticsMeasurementId();
 
   return (
     <>
+      {googleAnalyticsMeasurementId && (
+        <Suspense fallback={null}>
+          <GoogleAnalytics measurementId={googleAnalyticsMeasurementId} />
+        </Suspense>
+      )}
       <link
         rel="stylesheet"
         href={stylesheet.href}
