@@ -77,6 +77,9 @@ public class Page
     [JsonPropertyName("publishedAt")]
     public DateTime? PublishedAt { get; set; } = null;
 
+    [JsonPropertyName("scheduledPublishAt")]
+    public DateTime? ScheduledPublishAt { get; set; } = null;
+
     [JsonPropertyName("includeInSitemap")]
     public bool IncludeInSitemap { get; set; } = true;
 

@@ -35,6 +35,16 @@ public class MongoDataConnection : IDataConnection, IDisposable
             mongoSettings.DatabaseName);
     }
 
+    private static FilterDefinition<Page> PublishedNowFilter()
+    {
+        var now = DateTime.UtcNow;
+        return Builders<Page>.Filter.And(
+            Builders<Page>.Filter.Eq(page => page.IsPublished, true),
+            Builders<Page>.Filter.Or(
+                Builders<Page>.Filter.Eq(page => page.ScheduledPublishAt, null),
+                Builders<Page>.Filter.Lte(page => page.ScheduledPublishAt, now)));
+    }
+
     public async Task<Page?> GetPageAsync(string apiKey, string tenantId, string pageSlug)
     {
         try
@@ -60,7 +70,7 @@ public class MongoDataConnection : IDataConnection, IDisposable
             var filter = Builders<Page>.Filter.And(
                 Builders<Page>.Filter.Eq(p => p.TenantId, tenantId),
                 Builders<Page>.Filter.Eq(p => p.PageSlug, normalizedSlug),
-                Builders<Page>.Filter.Eq(p => p.IsPublished, true)
+                PublishedNowFilter()
             );
 
             var page = await pagesCollection.Find(filter).FirstOrDefaultAsync();
@@ -368,7 +378,7 @@ public class MongoDataConnection : IDataConnection, IDisposable
             // Query for published pages with includeInSitemap = true
             var filter = Builders<Page>.Filter.And(
                 Builders<Page>.Filter.Eq(p => p.TenantId, tenantId),
-                Builders<Page>.Filter.Eq(p => p.IsPublished, true),
+                PublishedNowFilter(),
                 Builders<Page>.Filter.Eq(p => p.IncludeInSitemap, true)
             );
 
@@ -1142,7 +1152,7 @@ public class MongoDataConnection : IDataConnection, IDisposable
         var filter = Builders<Page>.Filter.And(
             Builders<Page>.Filter.Eq(page => page.TenantId, tenantId),
             Builders<Page>.Filter.Eq(page => page.ContentRelationships.HubPageSlug, normalizedHubSlug),
-            Builders<Page>.Filter.Eq(page => page.IsPublished, true),
+            PublishedNowFilter(),
             Builders<Page>.Filter.Eq(page => page.ContentRelationships.IsHub, false));
         var sort = Builders<Page>.Sort
             .Descending(page => page.ContentRelationships.SpokePriority)
