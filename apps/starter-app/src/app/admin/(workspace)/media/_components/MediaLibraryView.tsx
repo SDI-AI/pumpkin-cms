@@ -3,7 +3,7 @@
 import { useMemo, useState, useTransition } from 'react';
 import NextImage from 'next/image';
 import { useRouter } from 'next/navigation';
-import { Copy, File, Image as ImageIcon, Search, Trash2, Upload } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Copy, File, Image as ImageIcon, Search, Trash2, Upload } from 'lucide-react';
 import type { ChangeEvent, FormEvent } from 'react';
 import type { MediaAsset } from 'pumpkin-ts-models';
 
@@ -11,9 +11,13 @@ interface MediaLibraryViewProps {
   assets: MediaAsset[];
 }
 
+const PAGE_SIZE_OPTIONS = [12, 24, 48];
+
 export function MediaLibraryView({ assets }: MediaLibraryViewProps) {
   const router = useRouter();
   const [query, setQuery] = useState('');
+  const [pageIndex, setPageIndex] = useState(0);
+  const [pageSize, setPageSize] = useState(PAGE_SIZE_OPTIONS[0]);
   const [file, setFile] = useState<File | null>(null);
   const [folder, setFolder] = useState('');
   const [altText, setAltText] = useState('');
@@ -39,6 +43,13 @@ export function MediaLibraryView({ assets }: MediaLibraryViewProps) {
       ...(asset.tags ?? []),
     ].filter(Boolean).join(' ').toLowerCase().includes(normalized));
   }, [assets, query]);
+
+  const pageCount = Math.max(1, Math.ceil(filteredAssets.length / pageSize));
+  const currentPageIndex = Math.min(pageIndex, pageCount - 1);
+  const pageStart = currentPageIndex * pageSize;
+  const visibleAssets = filteredAssets.slice(pageStart, pageStart + pageSize);
+  const resultStart = filteredAssets.length === 0 ? 0 : pageStart + 1;
+  const resultEnd = Math.min(pageStart + pageSize, filteredAssets.length);
 
   const imageCount = assets.filter((asset) => asset.contentType?.startsWith('image/')).length;
   const folderCount = new Set(assets.map((asset) => asset.folder).filter(Boolean)).size;
@@ -140,7 +151,10 @@ export function MediaLibraryView({ assets }: MediaLibraryViewProps) {
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" aria-hidden="true" />
               <input
                 value={query}
-                onChange={(event) => setQuery(event.target.value)}
+                onChange={(event) => {
+                  setQuery(event.target.value);
+                  setPageIndex(0);
+                }}
                 placeholder="Search media"
                 className="h-10 w-full rounded-md border border-neutral-300 px-3 pl-9 text-sm outline-none focus:border-pumpkin-500 focus:ring-2 focus:ring-pumpkin-100"
               />
@@ -176,7 +190,7 @@ export function MediaLibraryView({ assets }: MediaLibraryViewProps) {
       </div>
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {filteredAssets.map((asset) => (
+        {visibleAssets.map((asset) => (
           <article key={asset.mediaAssetId} className="overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-sm">
             <div className="relative flex aspect-video items-center justify-center bg-neutral-100">
               {asset.contentType?.startsWith('image/') ? (
@@ -236,6 +250,24 @@ export function MediaLibraryView({ assets }: MediaLibraryViewProps) {
           <h2 className="text-base font-bold text-neutral-950">No media found</h2>
         </div>
       )}
+
+      {filteredAssets.length > 0 && (
+        <PaginationControls
+          label="Assets"
+          pageIndex={currentPageIndex}
+          pageCount={pageCount}
+          pageSize={pageSize}
+          pageSizeOptions={PAGE_SIZE_OPTIONS}
+          resultStart={resultStart}
+          resultEnd={resultEnd}
+          total={filteredAssets.length}
+          onPageChange={setPageIndex}
+          onPageSizeChange={(value) => {
+            setPageSize(value);
+            setPageIndex(0);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -245,6 +277,78 @@ function Stat({ label, value }: { label: string; value: string }) {
     <div className="rounded-md bg-neutral-100 px-3 py-2">
       <p className="text-xs font-medium text-neutral-500">{label}</p>
       <p className="text-lg font-bold text-neutral-950">{value}</p>
+    </div>
+  );
+}
+
+function PaginationControls({
+  label,
+  pageIndex,
+  pageCount,
+  pageSize,
+  pageSizeOptions,
+  resultStart,
+  resultEnd,
+  total,
+  onPageChange,
+  onPageSizeChange,
+}: {
+  label: string;
+  pageIndex: number;
+  pageCount: number;
+  pageSize: number;
+  pageSizeOptions: number[];
+  resultStart: number;
+  resultEnd: number;
+  total: number;
+  onPageChange: (pageIndex: number) => void;
+  onPageSizeChange: (pageSize: number) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-3 rounded-lg border border-neutral-200 bg-white px-4 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+      <p className="text-sm text-neutral-600">
+        Showing <span className="font-semibold text-neutral-900">{resultStart}</span>
+        {'-'}
+        <span className="font-semibold text-neutral-900">{resultEnd}</span>
+        {' '}of <span className="font-semibold text-neutral-900">{total}</span> {label.toLowerCase()}
+      </p>
+      <div className="flex flex-wrap items-center gap-2">
+        <label className="flex items-center gap-2 text-sm text-neutral-600">
+          <span>Rows</span>
+          <select
+            value={pageSize}
+            onChange={(event) => onPageSizeChange(Number(event.target.value))}
+            className="h-9 rounded-md border border-neutral-300 bg-white px-2 text-sm outline-none focus:border-pumpkin-500 focus:ring-2 focus:ring-pumpkin-100"
+          >
+            {pageSizeOptions.map((option) => (
+              <option key={option} value={option}>{option}</option>
+            ))}
+          </select>
+        </label>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => onPageChange(Math.max(0, pageIndex - 1))}
+            disabled={pageIndex === 0}
+            className="inline-flex h-9 items-center gap-1 rounded-md border border-neutral-300 px-2.5 text-sm font-semibold text-neutral-800 hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+            <span>Previous</span>
+          </button>
+          <span className="px-2 text-sm text-neutral-600">
+            {pageIndex + 1} / {pageCount}
+          </span>
+          <button
+            type="button"
+            onClick={() => onPageChange(Math.min(pageCount - 1, pageIndex + 1))}
+            disabled={pageIndex >= pageCount - 1}
+            className="inline-flex h-9 items-center gap-1 rounded-md border border-neutral-300 px-2.5 text-sm font-semibold text-neutral-800 hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <span>Next</span>
+            <ChevronRight className="h-4 w-4" aria-hidden="true" />
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
